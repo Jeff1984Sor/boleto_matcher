@@ -3,16 +3,73 @@
 {% block title %}Home - Mayacorp{% endblock %}
 
 {% block content %}
-<div class="d-flex flex-column align-items-center justify-content-center text-center" style="height: 70vh;">
-    
-    <h1 class="display-3 fw-bold mb-3">Bem-vindo à Mayacorp</h1>
-    
-    <p class="lead text-muted mb-5" style="max-width: 600px;">
-        Inteligência Artificial aplicada à gestão de documentos.
-        Acesse nossas ferramentas no menu superior para começar.
-    </p>
 
-    <!-- Opcional: Uma imagem sutil ou ilustração aqui ficaria top -->
-    
+<!-- Se tiver banners, mostra o carrossel -->
+{% if banners %}
+<div id="carouselHome" class="carousel slide mb-5" data-bs-ride="carousel">
+  <div class="carousel-inner rounded shadow">
+    {% for banner in banners %}
+    <div class="carousel-item {% if forloop.first %}active{% endif %}">
+      {% if banner.imagem %}
+        <img src="{{ banner.imagem.url }}" class="d-block w-100" style="height: 400px; object-fit: cover;" alt="{{ banner.titulo }}">
+      {% else %}
+        <!-- Placeholder cinza se não tiver imagem -->
+        <div class="d-block w-100 bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 400px;">
+            <h2>{{ banner.titulo }}</h2>
+        </div>
+      {% endif %}
+      
+      <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-3">
+        <h3>{{ banner.titulo }}</h3>
+        <p>{{ banner.subtitulo }}</p>
+        {% if banner.link_botao %}
+            <a href="{{ banner.link_botao }}" class="btn btn-warning">{{ banner.texto_botao }}</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  
+  <button class="carousel-control-prev" type="button" data-bs-target="#carouselHome" data-bs-slide="prev">
+    <span class="carousel-control-prev-icon"></span>
+  </button>
+  <button class="carousel-control-next" type="button" data-bs-target="#carouselHome" data-bs-slide="next">
+    <span class="carousel-control-next-icon"></span>
+  </button>
 </div>
+{% endif %}
+
+<!-- Seção de Produtos (Vitrine) -->
+<div class="row text-center">
+    <div class="col-lg-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body">
+                <h2 class="card-title">📄 Conciliador PDF</h2>
+                <p class="card-text">Cruze boletos e comprovantes automaticamente usando Inteligência Artificial.</p>
+                <a href="{% url 'pdf_home' %}" class="btn btn-outline-primary">Acessar Ferramenta</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body">
+                <h2 class="card-title">📊 Dashboard Financeiro</h2>
+                <p class="card-text">Em breve: Gráficos e relatórios completos para sua empresa.</p>
+                <button class="btn btn-secondary" disabled>Em Breve</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body">
+                <h2 class="card-title">🤖 Chat Corporativo</h2>
+                <p class="card-text">Tire dúvidas sobre seus documentos com nossa IA exclusiva.</p>
+                <button class="btn btn-secondary" disabled>Em Breve</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

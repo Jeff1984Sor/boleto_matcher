@@ -35,3 +35,18 @@ class HistoricoConsumo(models.Model):
     def __str__(self):
         return f"{self.usuario} - {self.paginas_no_ciclo} pgs em {self.data_fechamento.strftime('%m/%Y')}"
     
+class BannerHome(models.Model):
+    titulo = models.CharField(max_length=200)
+    subtitulo = models.CharField(max_length=300, blank=True)
+    imagem = models.ImageField(upload_to='banners/', blank=True, null=True, help_text="Tamanho ideal: 1200x400px")
+    link_botao = models.CharField(max_length=200, blank=True, help_text="Ex: /tools/pdf/ ou https://google.com")
+    texto_botao = models.CharField(max_length=50, default="Saiba Mais")
+    ativo = models.BooleanField(default=True)
+    ordem = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['ordem']
+
+    def __str__(self):
+        return self.titulo
+    

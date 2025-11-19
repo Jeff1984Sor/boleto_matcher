@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser,Produto,HistoricoConsumo
+from .models import CustomUser,Produto,HistoricoConsumo, BannerHome
 
 # Para gerenciar os produtos
 @admin.register(Produto)
@@ -30,3 +30,8 @@ class CustomUserAdmin(UserAdmin):
 
 
 admin.site.register(CustomUser, CustomUserAdmin)
+
+@admin.register(BannerHome)
+class BannerAdmin(admin.ModelAdmin):
+    list_display = ['titulo', 'ativo', 'ordem']
+    list_editable = ['ativo', 'ordem']

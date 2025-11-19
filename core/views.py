@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login
 from .forms import CustomUserCreationForm
+from .models import BannerHome
 
 # Essa função agora manda o HTML completo (com menu)
 def home(request):
@@ -17,3 +18,7 @@ def cadastro(request):
         form = CustomUserCreationForm()
     
     return render(request, 'registration/cadastro.html', {'form': form})
+
+def home(request):
+    banners = BannerHome.objects.filter(ativo=True)
+    return render(request, 'home.html', {'banners': banners})
