@@ -1,4 +1,5 @@
 import io
+import os # <--- Adicionado
 import zipfile
 import time
 from pypdf import PdfReader, PdfWriter
@@ -6,20 +7,17 @@ import google.generativeai as genai
 import json
 from django.conf import settings
 
-# Configura a chave
 genai.configure(api_key=settings.GOOGLE_API_KEY)
 
-def extract_text_from_pdf(pdf_file):
-    reader = PdfReader(pdf_file)
+def extract_text_from_pdf(pdf_path):
+    # Agora abrimos o arquivo do disco
+    reader = PdfReader(pdf_path)
     text = ""
     for page in reader.pages:
         text += page.extract_text() + "\n"
     return text
 
 def analisar_com_gemini(texto, tipo_doc):
-    """
-    Usa o modelo FLASH (mais rápido) com sistema de Retry para erro 429.
-    """
     model = genai.GenerativeModel('gemini-2.0-flash')
     
     prompt = f"""
@@ -32,7 +30,6 @@ def analisar_com_gemini(texto, tipo_doc):
     {texto[:4000]}
     """
     
-    # Tentativas de Retry (caso o Google bloqueie temporariamente)
     for tentativa in range(1, 4):
         try:
             response = model.generate_content(prompt)
@@ -41,33 +38,24 @@ def analisar_com_gemini(texto, tipo_doc):
         except Exception as e:
             print(f"Tentativa {tentativa} falhou: {e}")
             if "429" in str(e):
-                print("Limite atingido. Esperando 10 segundos...")
                 time.sleep(10)
             else:
-                break # Outro erro, para de tentar
-
+                break
     return {"valor": 0.0, "identificador": ""}
 
-def processar_conciliacao(lista_boletos, arquivo_comprovantes):
-    # 1. INICIA O CONTADOR DE PÁGINAS
+def processar_conciliacao(lista_caminhos_boletos, caminho_comprovantes):
     total_paginas_contadas = 0
 
-    # A. Ler Comprovantes
+    # A. Ler Comprovantes (Lendo do disco)
     comprovantes_map = []
-    reader_comp = PdfReader(arquivo_comprovantes)
+    reader_comp = PdfReader(caminho_comprovantes)
     
-    # SOMA AS PÁGINAS DO ARQUIVO DE COMPROVANTES
     total_paginas_contadas += len(reader_comp.pages)
-    
-    print(f"Processando {len(reader_comp.pages)} comprovantes...")
     
     for i, page in enumerate(reader_comp.pages):
         texto_pg = page.extract_text()
-        
         dados = analisar_com_gemini(texto_pg, "comprovante")
-        print(f"Comprovante {i+1}: {dados}")
-        
-        time.sleep(4) # Delay de segurança
+        time.sleep(4) 
         
         writer_temp = PdfWriter()
         writer_temp.add_page(page)
@@ -86,21 +74,16 @@ def processar_conciliacao(lista_boletos, arquivo_comprovantes):
     
     with zipfile.ZipFile(output_zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         
-        for boleto_file in lista_boletos:
-            # Conta páginas deste boleto
-            temp_reader = PdfReader(boleto_file)
+        for boleto_path in lista_caminhos_boletos:
+            # Ler do disco
+            temp_reader = PdfReader(boleto_path)
             total_paginas_contadas += len(temp_reader.pages)
             
-            # Reseta o ponteiro do arquivo para o início (importante!)
-            boleto_file.seek(0)
-            
-            texto_boleto = extract_text_from_pdf(boleto_file)
+            texto_boleto = extract_text_from_pdf(boleto_path)
             dados_boleto = analisar_com_gemini(texto_boleto, "boleto")
+            time.sleep(4)
             
-            print(f"Boleto processado: {dados_boleto}")
-            time.sleep(4) # Delay de segurança
-            
-            # Lógica de Matching
+            # Matching
             comprovante_match = None
             for comp in comprovantes_map:
                 if not comp['usado']:
@@ -112,29 +95,23 @@ def processar_conciliacao(lista_boletos, arquivo_comprovantes):
                         comp['usado'] = True
                         break
             
-            # Cria o PDF Final
+            # Cria PDF Final
             writer_final = PdfWriter()
             
-            # Adiciona Boleto
-            boleto_file.seek(0)
-            reader_bol = PdfReader(boleto_file)
+            reader_bol = PdfReader(boleto_path)
             for p in reader_bol.pages:
                 writer_final.add_page(p)
             
-            # Adiciona Comprovante (se achou)
             if comprovante_match:
                 reader_match = PdfReader(comprovante_match['page_obj'])
                 writer_final.add_page(reader_match.pages[0])
             
-            # NOME DO ARQUIVO = ORIGINAL
-            nome_arquivo = boleto_file.name
+            # PEGA O NOME DO ARQUIVO A PARTIR DO CAMINHO
+            nome_arquivo = os.path.basename(boleto_path)
             
-            # Salva no ZIP
             pdf_output = io.BytesIO()
             writer_final.write(pdf_output)
             zip_file.writestr(nome_arquivo, pdf_output.getvalue())
 
     output_zip_buffer.seek(0)
-    
-    # RETORNA O ARQUIVO E O TOTAL DE PÁGINAS
     return output_zip_buffer, total_paginas_contadas
