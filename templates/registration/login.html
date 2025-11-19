@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Login - Mayacorp{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="height: 70vh;">
+    <div class="col-md-4">
+        <div class="card shadow border-0">
+            <div class="card-body p-4">
+                <h3 class="text-center mb-4">Acessar Sistema</h3>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Renderiza o form com estilo Bootstrap -->
+                    {{ form|crispy }}
+                    
+                    <div class="d-grid mt-3">
+                        <button type="submit" class="btn btn-dark btn-lg">Entrar</button>
+                    </div>
+                </form>
+                
+                <hr class="my-4">
+                
+                <div class="text-center">
+                    <p class="mb-0">Ainda não tem conta?</p>
+                    <a href="{% url 'cadastro' %}" class="text-decoration-none fw-bold">Criar conta grátis</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

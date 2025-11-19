@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Conciliador Inteligente - Mayacorp{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-dark text-white">
+                    <h4 class="mb-0">🤖 Conciliador de Boletos + Comprovantes (By Mayacorp)</h4>
+                </div>
+                <div class="card-body p-5">
+                    
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- 1. Vários Boletos -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">1. Selecione os Arquivos dos Boletos (PDFs separados)</label>
+                            <input class="form-control form-control-lg" type="file" name="boletos" multiple accept=".pdf" required>
+                            <div class="form-text">Pode selecionar 10, 20, 50 arquivos de uma vez.</div>
+                        </div>
+
+                        <!-- 2. Arquivão de Comprovantes -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">2. Selecione o Arquivo com os Comprovantes (PDF Único)</label>
+                            <input class="form-control form-control-lg" type="file" name="comprovantes" accept=".pdf" required>
+                            <div class="form-text">O sistema vai ler página por página desse arquivo.</div>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <small>⏳ O processamento usa Inteligência Artificial. Pode levar alguns segundos por boleto. Aguarde o download iniciar.</small>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                ⚡ Iniciar Conciliação e Baixar ZIP
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
