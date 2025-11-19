@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+
+{% block title %}Mayacorp Explorer{% endblock %}
+
+{% block content %}
+<style>
+    .drop-zone { border: 2px dashed #ccc; border-radius: 10px; padding: 20px; text-align: center; background: #f9f9f9; cursor: pointer; transition: all 0.3s; }
+    .drop-zone:hover { border-color: #007bff; background: #e9ecef; }
+    .file-list { max-height: 300px; overflow-y: auto; margin-top: 15px; border: 1px solid #ddd; border-radius: 5px; }
+    .file-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; background: #fff; }
+    .file-item:last-child { border-bottom: none; }
+    .status-icon { margin-right: 10px; font-size: 1.2rem; }
+    .status-waiting { color: #ccc; }
+    .status-processing { animation: spin 1s linear infinite; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+</style>
+
+<div class="container-fluid">
+    <h2 class="mb-4">📂 Gerenciador de Conciliação</h2>
+    
+    <div class="row">
+        <!-- LADO ESQUERDO: BOLETOS -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">1. Boletos (PDFs Separados)</div>
+                <div class="card-body">
+                    <div class="drop-zone" id="drop-boletos" onclick="document.getElementById('input-boletos').click()">
+                        <p class="mb-0">Arraste os boletos aqui ou clique para selecionar</p>
+                        <input type="file" id="input-boletos" multiple accept=".pdf" hidden onchange="handleUpload(this.files, 'boletos')">
+                    </div>
+                    
+                    <div class="file-list" id="list-boletos">
+                        <!-- Lista preenchida via JS -->
+                        {% for f in arquivos.boletos %}
+                        <div class="file-item" id="file-row-{{ f }}">
+                            <div><span class="status-icon status-waiting">📄</span> {{ f }}</div>
+                            <button class="btn btn-sm btn-danger" onclick="deleteFile('boletos', '{{ f }}')">×</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LADO DIREITO: COMPROVANTES -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">2. Arquivo de Comprovantes</div>
+                <div class="card-body">
+                    <div class="drop-zone" id="drop-comprovantes" onclick="document.getElementById('input-comprovantes').click()">
+                        <p class="mb-0">Arraste o arquivão aqui</p>
+                        <input type="file" id="input-comprovantes" accept=".pdf" hidden onchange="handleUpload(this.files, 'comprovantes')">
+                    </div>
+                    
+                    <div class="file-list" id="list-comprovantes">
+                        {% for f in arquivos.comprovantes %}
+                        <div class="file-item" id="file-row-{{ f }}">
+                            <div><span class="status-icon status-waiting">🗂️</span> {{ f }}</div>
+                            <button class="btn btn-sm btn-danger" onclick="deleteFile('comprovantes', '{{ f }}')">×</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RODAPÉ: AÇÕES -->
+    <div class="card mt-4 shadow">
+        <div class="card-body d-flex justify-content-between align-items-center">
+            <div id="status-bar" class="text-muted">Aguardando arquivos...</div>
+            <button id="btn-processar" class="btn btn-dark btn-lg" onclick="startProcessing()">
+                ⚡ Iniciar Conciliação
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 1. UPLOAD ---
+    async function handleUpload(files, tipo) {
+        const listId = `list-${tipo}`;
+        const container = document.getElementById(listId);
+        
+        for (let file of files) {
+            // Cria UI temporária
+            const div = document.createElement('div');
+            div.className = 'file-item';
+            div.innerHTML = `<div><span class="spinner-border spinner-border-sm"></span> ${file.name}</div>`;
+            container.appendChild(div);
+
+            // Envia pro servidor
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('tipo', tipo);
+
+            try {
+                const res = await fetch("{% url 'api_upload' %}", { method: 'POST', body: formData });
+                const data = await res.json();
+                if(data.status === 'ok') {
+                    // Atualiza UI para sucesso
+                    div.id = `file-row-${data.filename}`;
+                    div.innerHTML = `
+                        <div><span class="status-icon status-waiting">📄</span> ${data.filename}</div>
+                        <button class="btn btn-sm btn-danger" onclick="deleteFile('${tipo}', '${data.filename}')">×</button>
+                    `;
+                }
+            } catch(e) {
+                div.innerHTML = `<span class="text-danger">Erro ao subir ${file.name}</span>`;
+            }
+        }
+    }
+
+    // --- 2. DELETAR ---
+    async function deleteFile(tipo, filename) {
+        if(!confirm('Remover arquivo?')) return;
+        
+        try {
+            await fetch("{% url 'api_delete' %}", {
+                method: 'POST',
+                body: JSON.stringify({ tipo, filename }),
+                headers: { 'Content-Type': 'application/json' }
+            });
+            document.getElementById(`file-row-${filename}`).remove();
+        } catch(e) { alert('Erro ao deletar'); }
+    }
+
+    // --- 3. PROCESSAMENTO (STREAM) ---
+    async function startProcessing() {
+        const btn = document.getElementById('btn-processar');
+        const status = document.getElementById('status-bar');
+        
+        btn.disabled = true;
+        btn.innerText = "Processando...";
+        status.innerText = "Iniciando conexão com IA...";
+
+        const response = await fetch("{% url 'api_processar' %}");
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+            
+            for (let line of lines) {
+                if (!line.trim()) continue;
+                try {
+                    const event = JSON.parse(line);
+                    handleEvent(event);
+                } catch(e) {}
+            }
+        }
+    }
+
+    function handleEvent(ev) {
+        const status = document.getElementById('status-bar');
+        
+        if(ev.type === 'log') {
+            status.innerText = ev.data;
+        }
+        else if(ev.type === 'file_start') {
+            // Marca o ícone como "girando"
+            const row = document.getElementById(`file-row-${ev.data.filename}`);
+            if(row) row.querySelector('.status-icon').innerText = '⏳';
+        }
+        else if(ev.type === 'file_done') {
+            // Marca check verde ou alerta
+            const row = document.getElementById(`file-row-${ev.data.filename}`);
+            if(row) {
+                const icon = row.querySelector('.status-icon');
+                if(ev.data.status === 'success') {
+                    icon.innerText = '✅';
+                    row.style.backgroundColor = '#d4edda'; // Verde claro
+                } else {
+                    icon.innerText = '⚠️';
+                    row.style.backgroundColor = '#fff3cd'; // Amarelo
+                }
+            }
+        }
+        else if(ev.type === 'finish') {
+            status.innerHTML = `<a href="${ev.data.url}" class="btn btn-success fw-bold">⬇️ DOWNLOAD ZIP COMPLETO</a>`;
+            document.getElementById('btn-processar').innerText = "Concluído";
+        }
+    }
+</script>
+{% endblock %}
