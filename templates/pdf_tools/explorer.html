@@ -196,5 +196,31 @@
             document.getElementById('btn-processar').innerText = "Concluído";
         }
     }
+    async function limparTudo() {
+        if (!confirm("Tem certeza que deseja apagar TODOS os arquivos da lista?")) {
+            return;
+        }
+
+        try {
+            // Chama o backend para apagar os arquivos fisicamente
+            const res = await fetch("{% url 'api_limpar' %}", { method: 'POST' });
+            const data = await res.json();
+
+            if (data.status === 'ok') {
+                // Limpa a tela visualmente
+                document.getElementById('list-boletos').innerHTML = '';
+                document.getElementById('list-comprovantes').innerHTML = '';
+                document.getElementById('status-bar').innerText = "Arquivos removidos com sucesso.";
+                
+                // Reseta cores e ícones se tiver sobrado algo
+                document.getElementById('btn-processar').disabled = false;
+                document.getElementById('btn-processar').innerText = "⚡ Iniciar Conciliação";
+            } else {
+                alert("Erro ao limpar: " + data.error);
+            }
+        } catch(e) {
+            alert("Erro de conexão ao tentar limpar.");
+        }
+    }
 </script>
 {% endblock %}
