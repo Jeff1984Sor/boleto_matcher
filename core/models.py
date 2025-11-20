@@ -9,19 +9,24 @@ class Produto(models.Model):
 
     def __str__(self):
         return self.nome
+    
+class Organizacao(models.Model):
+    nome = models.CharField(max_length=100, verbose_name="Nome da Empresa")
+    cnpj = models.CharField(max_length=18, blank=True, null=True)
+    # Agora os produtos ficam AQUI, não mais no usuário
+    produtos = models.ManyToManyField(Produto, blank=True, verbose_name="Produtos Contratados")
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.nome
 
 # 2. Atualizar o Usuário
 class CustomUser(AbstractUser):
     telefone = models.CharField(max_length=15, blank=True, null=True, verbose_name="Telefone/WhatsApp")
     cpf = models.CharField(max_length=14, blank=True, null=True, verbose_name="CPF")
-    nome_empresa = models.CharField(max_length=100, blank=True, null=True, verbose_name="Nome da Empresa")
-    
+    organizacao = models.ForeignKey(Organizacao, on_delete=models.SET_NULL, null=True, blank=True, related_name="usuarios", verbose_name="Organização")   
     # Mantemos isso para controle geral
     is_assinante = models.BooleanField(default=False, verbose_name="É Assinante?")
-    
-    # NOVO: Lista de produtos que esse usuário comprou
-    produtos = models.ManyToManyField(Produto, blank=True, verbose_name="Produtos Contratados")
-
     paginas_processadas = models.PositiveIntegerField(default=0, verbose_name="Páginas Analisadas")
 
     def __str__(self):

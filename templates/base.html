@@ -1,4 +1,5 @@
-{% load static %} 
+{% load static %}
+{% load core_extras %}
 <!doctype html>
 <html lang="pt-br">
   <head>
@@ -18,18 +19,21 @@
         <!-- Lado Direito: Links de Ação -->
         <div class="nav-links">
             
-            <!-- Link da Ferramenta (Sempre visível) -->
-            <a class="nav-item" href="{% url 'pdf_home' %}">Conciliador PDF</a>
-
+            
             {% if user.is_authenticated %}
+
+                
+                {% if user|tem_acesso:"gerador-pdf" %}
+                <a class="nav-item" href="{% url 'pdf_home' %}">Conciliador PDF</a>
+                {% endif %}
                 <!-- Se estiver logado -->
                 <span class="nav-item" style="opacity: 0.5;">|</span> 
-                
+                {% if user|tem_acesso:"gerador-pdf" %}
                 <!-- NOVO: CONTADOR DE PÁGINAS -->
                 <span class="nav-item text-warning fw-bold" title="Total de páginas analisadas">
                     ⚡ {{ user.paginas_processadas }} pgs
                 </span>
-
+                {% endif %}
                 <span class="nav-item" style="opacity: 0.5;">|</span>
                 
                 <span class="nav-item">{{ user.username }}</span>
