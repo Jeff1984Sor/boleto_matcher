@@ -22,7 +22,12 @@
         <!-- LADO ESQUERDO: BOLETOS -->
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header bg-primary text-white">1. Boletos (PDFs Separados)</div>
+                <!-- ATUALIZADO: Cabeçalho com Contador -->
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <span>1. Boletos (PDFs Separados)</span>
+                    <span id="count-boletos" class="badge bg-white text-primary rounded-pill">{{ arquivos.boletos|length }}</span>
+                </div>
+                
                 <div class="card-body">
                     <div class="drop-zone" id="drop-boletos" onclick="document.getElementById('input-boletos').click()">
                         <p class="mb-0">Arraste os boletos aqui ou clique para selecionar</p>
@@ -45,7 +50,12 @@
         <!-- LADO DIREITO: COMPROVANTES -->
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header bg-success text-white">2. Arquivo de Comprovantes</div>
+                <!-- ATUALIZADO: Cabeçalho com Contador -->
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <span>2. Arquivo de Comprovantes</span>
+                    <span id="count-comprovantes" class="badge bg-white text-success rounded-pill">{{ arquivos.comprovantes|length }}</span>
+                </div>
+
                 <div class="card-body">
                     <div class="drop-zone" id="drop-comprovantes" onclick="document.getElementById('input-comprovantes').click()">
                         <p class="mb-0">Arraste o arquivão aqui</p>
@@ -88,6 +98,18 @@
     </div>
 
 <script>
+    // --- FUNÇÃO AUXILIAR: ATUALIZAR CONTADOR ---
+    function updateCounter(tipo, delta) {
+        const badgeId = (tipo === 'boletos') ? 'count-boletos' : 'count-comprovantes';
+        const badge = document.getElementById(badgeId);
+        if(badge) {
+            let current = parseInt(badge.innerText || "0");
+            let novo = current + delta;
+            if(novo < 0) novo = 0;
+            badge.innerText = novo;
+        }
+    }
+
     // --- 1. UPLOAD ---
     async function handleUpload(files, tipo) {
         const listId = `list-${tipo}`;
@@ -115,6 +137,8 @@
                         <div><span class="status-icon status-waiting">📄</span> ${data.filename}</div>
                         <button class="btn btn-sm btn-danger" onclick="deleteFile('${tipo}', '${data.filename}')">×</button>
                     `;
+                    // ATUALIZA O CONTADOR (+1)
+                    updateCounter(tipo, 1);
                 }
             } catch(e) {
                 div.innerHTML = `<span class="text-danger">Erro ao subir ${file.name}</span>`;
@@ -133,6 +157,10 @@
                 headers: { 'Content-Type': 'application/json' }
             });
             document.getElementById(`file-row-${filename}`).remove();
+            
+            // ATUALIZA O CONTADOR (-1)
+            updateCounter(tipo, -1);
+
         } catch(e) { alert('Erro ao deletar'); }
     }
 
@@ -196,6 +224,7 @@
             document.getElementById('btn-processar').innerText = "Concluído";
         }
     }
+
     async function limparTudo() {
         if (!confirm("Tem certeza que deseja apagar TODOS os arquivos da lista?")) {
             return;
@@ -215,6 +244,11 @@
                 // Reseta cores e ícones se tiver sobrado algo
                 document.getElementById('btn-processar').disabled = false;
                 document.getElementById('btn-processar').innerText = "⚡ Iniciar Conciliação";
+
+                // ZERA OS CONTADORES VISUALMENTE
+                document.getElementById('count-boletos').innerText = "0";
+                document.getElementById('count-comprovantes').innerText = "0";
+
             } else {
                 alert("Erro ao limpar: " + data.error);
             }
