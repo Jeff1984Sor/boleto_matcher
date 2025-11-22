@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('cadastros_fit', '0001_initial'),
-        ('core', '0001_initial'),
+        
     ]
 
     operations = [
