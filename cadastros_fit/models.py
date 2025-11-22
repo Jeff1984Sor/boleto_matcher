@@ -1,8 +1,9 @@
 from django.db import models
-
-# Create your models here.
-from django.db import models
 from core.models import Organizacao
+
+# ==============================================================================
+# 1. ESTRUTURA BÁSICA (Unidade vem primeiro para evitar erro de dependência)
+# ==============================================================================
 
 class Unidade(models.Model):
     organizacao = models.ForeignKey(Organizacao, on_delete=models.CASCADE, related_name='unidades')
@@ -24,6 +25,10 @@ class Profissional(models.Model):
 
     def __str__(self):
         return self.nome
+
+# ==============================================================================
+# 2. ALUNOS
+# ==============================================================================
 
 class Aluno(models.Model):
     organizacao = models.ForeignKey(Organizacao, on_delete=models.CASCADE)
@@ -57,8 +62,12 @@ class DocumentoAluno(models.Model):
     def __str__(self):
         return self.titulo
 
-# --- IOT / CATRACA ---
+# ==============================================================================
+# 3. IOT / CATRACA (Depende de Unidade e Aluno)
+# ==============================================================================
+
 class DispositivoAcesso(models.Model):
+    # Aqui garantimos que Unidade já foi lida pelo Python
     unidade = models.ForeignKey(Unidade, on_delete=models.CASCADE)
     nome = models.CharField(max_length=50, help_text="Ex: Catraca Entrada")
     ip_address = models.GenericIPAddressField(blank=True, null=True)
