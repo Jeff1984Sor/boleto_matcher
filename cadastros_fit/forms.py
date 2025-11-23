@@ -1,6 +1,8 @@
 from django import forms
 from .models import Aluno, Profissional, Unidade
 
+from .models import DocumentoAluno
+
 class AlunoForm(forms.ModelForm):
     class Meta:
         model = Aluno
@@ -24,3 +26,8 @@ class UnidadeForm(forms.ModelForm):
     class Meta:
         model = Unidade
         exclude = ['organizacao']
+
+class DocumentoExtraForm(forms.ModelForm):
+    class Meta:
+        model = DocumentoAluno
+        fields = ['titulo', 'arquivo']

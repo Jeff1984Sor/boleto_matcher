@@ -28,29 +28,65 @@ class Profissional(models.Model):
 # ==============================================================================
 # 2. ALUNOS
 # ==============================================================================
+def formatar_nome(nome):
+    excecoes = ['da', 'de', 'do', 'das', 'dos', 'e']
+    palavras = nome.lower().split()
+    nome_formatado = [p if p in excecoes else p.capitalize() for p in palavras]
+    return " ".join(nome_formatado)
 
 class Aluno(models.Model):
-    # REMOVIDO: organizacao = ForeignKey...
+    # --- DADOS PESSOAIS ---
     nome = models.CharField(max_length=100)
-    cpf = models.CharField(max_length=14, blank=True, null=True)
+    cpf = models.CharField(max_length=14, unique=True, null=True, blank=True) # CPF deve ser único se existir
     data_nascimento = models.DateField(blank=True, null=True)
     telefone = models.CharField(max_length=20, blank=True)
     email = models.EmailField(blank=True)
-    endereco = models.TextField(blank=True)
     
-    # Saúde
+    # Documento de Identificação (Digitalizado)
+    doc_identidade_foto = models.ImageField(upload_to='alunos/docs_pessoais/', blank=True, null=True, verbose_name="Foto RG/CNH")
+
+    # --- ENDEREÇO (Quebrado para facilitar) ---
+    cep = models.CharField(max_length=9, blank=True)
+    logradouro = models.CharField(max_length=150, blank=True, verbose_name="Rua/Av")
+    numero = models.CharField(max_length=20, blank=True, verbose_name="Número")
+    complemento = models.CharField(max_length=100, blank=True)
+    bairro = models.CharField(max_length=100, blank=True)
+    cidade = models.CharField(max_length=100, blank=True)
+    estado = models.CharField(max_length=2, blank=True) # UF (SP, RJ...)
+    
+    # Comprovante de Endereço (Digitalizado)
+    comprovante_residencia_foto = models.ImageField(upload_to='alunos/docs_residencia/', blank=True, null=True)
+    
+    # --- SAÚDE ---
     anamnese = models.JSONField(default=dict, blank=True, verbose_name="Ficha de Saúde")
     
-    # Segurança
+    # --- SEGURANÇA / CATRACA ---
     foto_rosto = models.ImageField(upload_to='alunos/fotos/', blank=True, null=True)
-    biometria_template = models.TextField(blank=True, null=True, help_text="Hash da digital")
-    bloqueado_catraca = models.BooleanField(default=False, help_text="Bloqueio financeiro")
+    biometria_template = models.TextField(blank=True, null=True, help_text="Hash da digital ou face")
+    bloqueado_catraca = models.BooleanField(default=False, help_text="Bloqueio financeiro/manual")
     
     criado_em = models.DateTimeField(auto_now_add=True)
     ativo = models.BooleanField(default=True)
 
+    def save(self, *args, **kwargs):
+        if self.nome:
+            self.nome = formatar_nome(self.nome)
+        if self.logradouro:
+            self.logradouro = formatar_nome(self.logradouro)
+        if self.bairro:
+            self.bairro = formatar_nome(self.bairro)
+        if self.cidade:
+            self.cidade = formatar_nome(self.cidade)
+        if self.estado:
+            self.estado = self.estado.upper() # Estado sempre MAIÚSCULO (SP, RJ)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.nome
+    
+    @property
+    def endereco_completo(self):
+        return f"{self.logradouro}, {self.numero} - {self.bairro}, {self.cidade}/{self.estado}"
 
 class DocumentoAluno(models.Model):
     aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name='documentos')

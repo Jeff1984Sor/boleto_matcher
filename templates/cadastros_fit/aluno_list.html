@@ -4,41 +4,49 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>🏃‍♂️ Gestão de Alunos</h2>
-        <a href="{% url 'aluno_create' %}" class="btn btn-primary">
-            + Novo Aluno
+        <a href="{% url 'aluno_create' %}" class="btn btn-primary shadow-sm">
+            <i class="fas fa-plus"></i> Novo Aluno
         </a>
     </div>
 
-    <div class="card shadow-sm">
+    <div class="card shadow-sm border-0">
         <div class="card-body p-0">
-            <table class="table table-hover mb-0">
+            <table class="table table-hover mb-0 align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th>Nome</th>
+                        <th class="ps-4">Aluno</th>
                         <th>CPF</th>
                         <th>Telefone</th>
                         <th>Status</th>
-                        <th class="text-end">Ações</th>
+                        <th class="text-end pe-4">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for aluno in alunos %}
-                    <tr>
-                        <td class="align-middle">
+                    <!-- Torna a linha toda clicável (opcional) ou foca no nome -->
+                    <tr style="cursor: pointer;" onclick="window.location='{% url 'aluno_detail' aluno.pk %}'">
+                        
+                        <td class="ps-4">
                             <div class="d-flex align-items-center">
                                 {% if aluno.foto_rosto %}
-                                    <img src="{{ aluno.foto_rosto.url }}" class="rounded-circle me-2" width="40" height="40" style="object-fit: cover;">
+                                    <img src="{{ aluno.foto_rosto.url }}" class="rounded-circle me-3 border" width="45" height="45" style="object-fit: cover;">
                                 {% else %}
-                                    <div class="rounded-circle bg-secondary text-white d-flex justify-content-center align-items-center me-2" style="width: 40px; height: 40px;">
-                                        {{ aluno.nome|first }}
+                                    <div class="rounded-circle bg-secondary text-white d-flex justify-content-center align-items-center me-3 shadow-sm" style="width: 45px; height: 45px; font-size: 1.2rem;">
+                                        {{ aluno.nome|first|upper }}
                                     </div>
                                 {% endif %}
-                                <div class="fw-bold">{{ aluno.nome }}</div>
+                                
+                                <div>
+                                    <div class="fw-bold text-dark">{{ aluno.nome }}</div>
+                                    <small class="text-muted">{{ aluno.email|default:"" }}</small>
+                                </div>
                             </div>
                         </td>
-                        <td class="align-middle">{{ aluno.cpf|default:"-" }}</td>
-                        <td class="align-middle">{{ aluno.telefone }}</td>
-                        <td class="align-middle">
+
+                        <td>{{ aluno.cpf|default:"-" }}</td>
+                        <td>{{ aluno.telefone }}</td>
+                        
+                        <td>
                             {% if aluno.bloqueado_catraca %}
                                 <span class="badge bg-danger">Bloqueado</span>
                             {% elif aluno.ativo %}
@@ -47,14 +55,21 @@
                                 <span class="badge bg-secondary">Inativo</span>
                             {% endif %}
                         </td>
-                        <td class="text-end align-middle">
-                            <a href="{% url 'aluno_update' aluno.pk %}" class="btn btn-sm btn-outline-primary">Editar</a>
-                            <a href="{% url 'aluno_delete' aluno.pk %}" class="btn btn-sm btn-outline-danger">Excluir</a>
+
+                        <td class="text-end pe-4">
+                            <!-- O stopPropagation evita que clicar no botão abra a ficha, indo direto pro editar -->
+                            <a href="{% url 'aluno_update' aluno.pk %}" class="btn btn-sm btn-light border" onclick="event.stopPropagation();" title="Editar Cadastro">
+                                <i class="fas fa-edit text-primary"></i>
+                            </a>
+                            <a href="{% url 'aluno_delete' aluno.pk %}" class="btn btn-sm btn-light border ms-1" onclick="event.stopPropagation();" title="Excluir">
+                                <i class="fas fa-trash text-danger"></i>
+                            </a>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="text-center py-5 text-muted">
+                        <td colspan="5" class="text-center py-5 text-muted bg-light">
+                            <i class="fas fa-user-slash fa-3x mb-3 text-secondary"></i><br>
                             Nenhum aluno cadastrado ainda.
                         </td>
                     </tr>

@@ -2,83 +2,332 @@
 {% load crispy_forms_tags %}
 
 {% block content %}
-<div class="container">
+<style>
+    /* Estilos específicos do Wizard */
+    .wizard-step { display: none; }
+    .wizard-step.active { display: block; animation: fadeIn 0.5s; }
+    .camera-box { border: 2px dashed #ccc; padding: 20px; text-align: center; border-radius: 10px; background: #f8f9fa; cursor: pointer; transition: 0.3s; }
+    .camera-box:hover { border-color: #007bff; background: #e9ecef; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+</style>
+
+<div class="container py-4" style="max-width: 900px;">
+    
     <div class="card shadow-sm">
-        <div class="card-header bg-white">
-            <h4 class="mb-0">{% if form.instance.pk %}Editar{% else %}Cadastrar{% endif %} Aluno</h4>
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0 text-primary fw-bold">
+                {% if form.instance.pk %}✏️ Editar Aluno{% else %}✨ Novo Aluno{% endif %}
+            </h4>
+            {% if not form.instance.pk %}
+            <span class="badge bg-success">Modo Assistente IA</span>
+            {% endif %}
         </div>
+        
         <div class="card-body">
-            
-            <form method="post" enctype="multipart/form-data">
+            <form method="post" enctype="multipart/form-data" id="alunoForm">
                 {% csrf_token %}
 
-                <!-- Navegação das Abas -->
-                <ul class="nav nav-tabs mb-3" id="alunoTab" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="dados-tab" data-bs-toggle="tab" data-bs-target="#dados" type="button" role="tab">👤 Dados Pessoais</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="saude-tab" data-bs-toggle="tab" data-bs-target="#saude" type="button" role="tab">❤️ Saúde / Anamnese</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="sistema-tab" data-bs-toggle="tab" data-bs-target="#sistema" type="button" role="tab">🔐 Sistema & Acesso</button>
-                    </li>
-                </ul>
-
-                <!-- Conteúdo das Abas -->
-                <div class="tab-content" id="alunoTabContent">
+                <!-- ========================================================= -->
+                <!-- MODO EDIÇÃO (FORMULÁRIO DIRETO)                           -->
+                <!-- ========================================================= -->
+                {% if form.instance.pk %}
                     
-                    <!-- ABA 1: DADOS -->
-                    <div class="tab-pane fade show active" id="dados" role="tabpanel">
+                    <!-- Botões de IA opcionais na edição -->
+                    <div class="alert alert-light border mb-4">
+                        <small class="fw-bold text-muted text-uppercase">Atualizar Documentos via IA:</small>
+                        <div class="d-flex gap-2 mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('input-doc-ia-edit').click()">
+                                <i class="fas fa-id-card"></i> Ler Novo RG/CNH
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-success" onclick="document.getElementById('input-end-ia-edit').click()">
+                                <i class="fas fa-map-marker-alt"></i> Ler Novo Comprovante
+                            </button>
+                        </div>
+                        
+                        <!-- Inputs escondidos para trigger da IA na edição -->
+                        <input type="file" id="input-doc-ia-edit" accept="image/*" hidden onchange="lerDocumentoIA('identidade', this)">
+                        <input type="file" id="input-end-ia-edit" accept="image/*" hidden onchange="lerDocumentoIA('endereco', this)">
+                        
+                        <div id="loading-ia-edit" class="mt-2 text-primary small fw-bold" style="display:none;">
+                            <div class="spinner-border spinner-border-sm"></div> Processando imagem e preenchendo campos...
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">{{ form.nome|as_crispy_field }}</div>
+                        <div class="col-md-3">{{ form.cpf|as_crispy_field }}</div>
+                        <div class="col-md-3">{{ form.data_nascimento|as_crispy_field }}</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">{{ form.email|as_crispy_field }}</div>
+                        <div class="col-md-6">{{ form.telefone|as_crispy_field }}</div>
+                    </div>
+                    
+                    <hr>
+                    <h6 class="fw-bold text-muted">ENDEREÇO</h6>
+                    <div class="row">
+                        <div class="col-md-3">{{ form.cep|as_crispy_field }}</div>
+                        <div class="col-md-6">{{ form.logradouro|as_crispy_field }}</div>
+                        <div class="col-md-3">{{ form.numero|as_crispy_field }}</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">{{ form.bairro|as_crispy_field }}</div>
+                        <div class="col-md-4">{{ form.cidade|as_crispy_field }}</div>
+                        <div class="col-md-2">{{ form.estado|as_crispy_field }}</div>
+                        <div class="col-md-2">{{ form.complemento|as_crispy_field }}</div>
+                    </div>
+
+                    <!-- Campos de Arquivo (Escondidos visualmente, mas necessários para salvar se a IA for usada) -->
+                    <div class="d-none">
+                        {{ form.doc_identidade_foto }}
+                        {{ form.comprovante_residencia_foto }}
+                    </div>
+
+                    <hr>
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'aluno_list' %}" class="btn btn-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-primary px-4">Salvar Alterações</button>
+                    </div>
+
+                <!-- ========================================================= -->
+                <!-- MODO CRIAÇÃO (WIZARD COM IA)                              -->
+                <!-- ========================================================= -->
+                {% else %}
+                    
+                    <!-- Barra de Progresso -->
+                    <div class="progress mb-4" style="height: 5px;">
+                        <div class="progress-bar bg-success" id="progress-bar" style="width: 33%;"></div>
+                    </div>
+
+                    <!-- PASSO 1: IDENTIFICAÇÃO -->
+                    <div class="wizard-step active" id="step1">
+                        <div class="text-center mb-4">
+                            <div class="camera-box" onclick="document.getElementById('input-doc-ia-new').click()">
+                                <i class="fas fa-id-card fa-3x text-primary mb-2"></i>
+                                <h5 class="fw-bold">1. Identificação</h5>
+                                <p class="text-muted mb-0">Clique para carregar RG ou CNH</p>
+                                <input type="file" id="input-doc-ia-new" accept="image/*" hidden onchange="lerDocumentoIA('identidade', this)">
+                            </div>
+                            <div id="loading-ia-1" class="mt-3 text-primary fw-bold" style="display:none;">
+                                <div class="spinner-border"></div> <br> Lendo documento...
+                            </div>
+                        </div>
+                        
                         <div class="row">
-                            <div class="col-md-6">{{ form.nome|as_crispy_field }}</div>
-                            <div class="col-md-3">{{ form.cpf|as_crispy_field }}</div>
-                            <div class="col-md-3">{{ form.data_nascimento|as_crispy_field }}</div>
+                            <div class="col-md-8">{{ form.nome|as_crispy_field }}</div>
+                            <div class="col-md-4">{{ form.data_nascimento|as_crispy_field }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-md-6">{{ form.email|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.cpf|as_crispy_field }}</div>
                             <div class="col-md-6">{{ form.telefone|as_crispy_field }}</div>
                         </div>
-                        {{ form.endereco|as_crispy_field }}
-                    </div>
+                        {{ form.email|as_crispy_field }}
 
-                    <!-- ABA 2: SAÚDE -->
-                    <div class="tab-pane fade" id="saude" role="tabpanel">
-                        <div class="alert alert-info">
-                            📝 Registre aqui o histórico médico relevante para as aulas.
+                        <!-- INPUT OCULTO REAL (Onde o Django pega o arquivo) -->
+                        <div class="d-none">
+                            <input type="file" name="doc_identidade_foto" id="id_doc_identidade_foto">
                         </div>
-                        {{ form.anamnese|as_crispy_field }}
+
+                        <div class="text-end mt-3">
+                            <button type="button" class="btn btn-primary px-4" onclick="nextStep(2)">Próximo ➡️</button>
+                        </div>
                     </div>
 
-                    <!-- ABA 3: SISTEMA -->
-                    <div class="tab-pane fade" id="sistema" role="tabpanel">
+                    <!-- PASSO 2: ENDEREÇO -->
+                    <div class="wizard-step" id="step2">
+                        <div class="text-center mb-4">
+                            <div class="camera-box" onclick="document.getElementById('input-end-ia-new').click()">
+                                <i class="fas fa-map-marked-alt fa-3x text-success mb-2"></i>
+                                <h5 class="fw-bold">2. Comprovante de Endereço</h5>
+                                <p class="text-muted mb-0">Clique para carregar conta de Luz/Água</p>
+                                <input type="file" id="input-end-ia-new" accept="image/*" hidden onchange="lerDocumentoIA('endereco', this)">
+                            </div>
+                            <div id="loading-ia-2" class="mt-3 text-success fw-bold" style="display:none;">
+                                <div class="spinner-border"></div> <br> Lendo endereço...
+                            </div>
+                        </div>
+
                         <div class="row">
-                            <div class="col-md-4">
-                                {{ form.foto_rosto|as_crispy_field }}
-                                {% if form.instance.foto_rosto %}
-                                    <img src="{{ form.instance.foto_rosto.url }}" class="img-thumbnail mt-2" width="150">
-                                {% endif %}
-                            </div>
-                            <div class="col-md-8">
-                                <div class="card bg-light">
-                                    <div class="card-body">
-                                        {{ form.ativo|as_crispy_field }}
-                                        <hr>
-                                        {{ form.bloqueado_catraca|as_crispy_field }}
-                                        <small class="text-muted">Marque para impedir acesso na catraca (ex: falta de pagamento).</small>
-                                    </div>
-                                </div>
-                            </div>
+                            <div class="col-md-3">{{ form.cep|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.logradouro|as_crispy_field }}</div>
+                            <div class="col-md-3">{{ form.numero|as_crispy_field }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-5">{{ form.bairro|as_crispy_field }}</div>
+                            <div class="col-md-5">{{ form.cidade|as_crispy_field }}</div>
+                            <div class="col-md-2">{{ form.estado|as_crispy_field }}</div>
+                        </div>
+
+                        <!-- INPUT OCULTO REAL -->
+                        <div class="d-none">
+                            <input type="file" name="comprovante_residencia_foto" id="id_comprovante_residencia_foto">
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-3">
+                            <button type="button" class="btn btn-secondary" onclick="nextStep(1)">⬅️ Voltar</button>
+                            <button type="button" class="btn btn-primary px-4" onclick="nextStep(3)">Próximo ➡️</button>
                         </div>
                     </div>
-                </div>
 
-                <div class="mt-4 text-end">
-                    <a href="{% url 'aluno_list' %}" class="btn btn-secondary">Cancelar</a>
-                    <button type="submit" class="btn btn-success px-4">Salvar Aluno</button>
-                </div>
+                    <!-- PASSO 3: FOTO FACIAL -->
+                    <div class="wizard-step" id="step3">
+                        <h5 class="fw-bold text-center mb-3">3. Foto Facial (Catraca) & Finalizar</h5>
+                        
+                        <!-- Webcam Area -->
+                        <div class="text-center mb-3 bg-light p-3 rounded border">
+                            <video id="webcam" style="width:100%; max-width:300px; border-radius:10px; display:none;" autoplay playsinline></video>
+                            <canvas id="canvas" style="display:none;"></canvas>
+                            <img id="foto-preview" style="max-width:150px; border-radius:10px; display:none; margin:0 auto; border: 3px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+                            
+                            <div class="mt-3">
+                                <button type="button" class="btn btn-sm btn-info text-white" onclick="startCamera()">
+                                    <i class="fas fa-camera"></i> Abrir Câmera
+                                </button>
+                                <button type="button" class="btn btn-sm btn-warning" onclick="takePhoto()">
+                                    <i class="fas fa-bolt"></i> Capturar Foto
+                                </button>
+                            </div>
+                            
+                            <!-- Input oculto para a foto -->
+                            <input type="file" name="foto_rosto" id="id_foto_rosto" hidden>
+                        </div>
+
+                        <div class="alert alert-secondary mt-3">
+                            {{ form.anamnese|as_crispy_field }}
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" class="btn btn-secondary" onclick="nextStep(2)">⬅️ Voltar</button>
+                            <button type="submit" class="btn btn-success btn-lg px-5">✅ Salvar Cadastro</button>
+                        </div>
+                    </div>
+
+                {% endif %}
             </form>
         </div>
     </div>
 </div>
+
+<script>
+    // --- WIZARD NAVIGATION ---
+    function nextStep(step) {
+        document.querySelectorAll('.wizard-step').forEach(el => el.classList.remove('active'));
+        document.getElementById('step' + step).classList.add('active');
+        const width = step === 1 ? '33%' : step === 2 ? '66%' : '100%';
+        if(document.getElementById('progress-bar')) document.getElementById('progress-bar').style.width = width;
+    }
+
+    // --- FORMATAÇÃO DE TEXTO (Title Case) ---
+    function titleCase(str) {
+        if(!str) return '';
+        const excecoes = ['da', 'de', 'do', 'das', 'dos', 'e'];
+        return str.toLowerCase().split(' ').map(word => {
+            return excecoes.includes(word) ? word : word.charAt(0).toUpperCase() + word.slice(1);
+        }).join(' ');
+    }
+
+    // --- LÓGICA IA E TRANSFERÊNCIA DE ARQUIVO ---
+    async function lerDocumentoIA(tipo, input) {
+        if (!input.files[0]) return;
+
+        console.log(`[IA] Arquivo selecionado para ${tipo}:`, input.files[0].name);
+
+        // 1. Mostra o loading correto
+        const loadingId = document.getElementById('loading-ia-edit') ? 'loading-ia-edit' : (tipo==='identidade' ? 'loading-ia-1' : 'loading-ia-2');
+        document.getElementById(loadingId).style.display = 'block';
+
+        // 2. TRANSFERE O ARQUIVO PARA O INPUT OCULTO (IMPORTANTE!)
+        // Isso garante que o arquivo seja enviado no POST do formulário para salvar
+        let hiddenInputId = (tipo === 'identidade') ? 'id_doc_identidade_foto' : 'id_comprovante_residencia_foto';
+        let hiddenInput = document.getElementById(hiddenInputId);
+        
+        if (hiddenInput) {
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(input.files[0]);
+            hiddenInput.files = dataTransfer.files;
+            console.log(`[IA] Arquivo copiado para input oculto: ${hiddenInputId}`);
+        } else {
+            console.warn(`[IA] Input oculto ${hiddenInputId} não encontrado. Arquivo não será salvo.`);
+        }
+
+        // 3. Envia para o Backend processar o texto (AJAX)
+        const formData = new FormData();
+        formData.append('imagem', input.files[0]);
+        formData.append('tipo', tipo);
+
+        try {
+            const res = await fetch("{% url 'api_ler_documento' %}", { method: 'POST', body: formData });
+            const dados = await res.json();
+
+            if (tipo === 'identidade') {
+                if(dados.nome) document.getElementById('id_nome').value = titleCase(dados.nome);
+                if(dados.cpf) document.getElementById('id_cpf').value = dados.cpf;
+                
+                // TRATAMENTO DE DATA (Corrige o problema de salvar)
+                if(dados.data_nascimento) {
+                    let dt = dados.data_nascimento;
+                    // Se vier DD/MM/YYYY, converte para YYYY-MM-DD
+                    if (dt.includes('/')) {
+                        const parts = dt.split('/'); // [25, 12, 1990]
+                        if(parts.length === 3) dt = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    }
+                    document.getElementById('id_data_nascimento').value = dt;
+                }
+            } else {
+                if(dados.cep) document.getElementById('id_cep').value = dados.cep;
+                if(dados.logradouro) document.getElementById('id_logradouro').value = titleCase(dados.logradouro);
+                if(dados.numero) document.getElementById('id_numero').value = dados.numero;
+                if(dados.bairro) document.getElementById('id_bairro').value = titleCase(dados.bairro);
+                if(dados.cidade) document.getElementById('id_cidade').value = titleCase(dados.cidade);
+                if(dados.estado) document.getElementById('id_estado').value = dados.estado.toUpperCase();
+            }
+
+        } catch (error) {
+            console.error(error);
+            alert('A IA não conseguiu ler os dados com precisão. Por favor, preencha manualmente.');
+        } finally {
+            document.getElementById(loadingId).style.display = 'none';
+        }
+    }
+
+    // --- WEBCAM ---
+    let videoStream;
+    function startCamera() {
+        const video = document.getElementById('webcam');
+        video.style.display = 'block';
+        document.getElementById('foto-preview').style.display = 'none';
+        
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                videoStream = stream;
+                video.srcObject = stream;
+            })
+            .catch(err => alert("Erro ao abrir câmera: " + err));
+    }
+
+    function takePhoto() {
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        
+        canvas.toBlob(blob => {
+            const file = new File([blob], "foto_rosto.jpg", { type: "image/jpeg" });
+            
+            // Coloca a foto no input oculto
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            document.getElementById('id_foto_rosto').files = dt.files;
+            
+            // Mostra preview
+            document.getElementById('foto-preview').src = URL.createObjectURL(blob);
+            document.getElementById('foto-preview').style.display = 'block';
+            video.style.display = 'none';
+            
+            if(videoStream) videoStream.getTracks().forEach(t => t.stop());
+        }, 'image/jpeg');
+    }
+</script>
 {% endblock %}

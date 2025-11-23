@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 600px;">
+    <div class="card shadow-sm border-danger">
+        <div class="card-header bg-danger text-white fw-bold">
+            ⚠️ Confirmar Exclusão
+        </div>
+        <div class="card-body text-center">
+            <h4 class="mb-4 text-danger">Tem certeza que deseja excluir?</h4>
+            
+            <p class="lead">
+                Você está prestes a excluir o aluno: <br>
+                <strong>{{ object.nome }}</strong>
+            </p>
+            
+            <div class="alert alert-warning mt-3">
+                <i class="fas fa-exclamation-triangle"></i>
+                Esta ação não pode ser desfeita. Todo o histórico do aluno será apagado.
+            </div>
+
+            <form method="post" class="mt-4">
+                {% csrf_token %}
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-center">
+                    <a href="{% url 'aluno_list' %}" class="btn btn-secondary px-4">Cancelar</a>
+                    <button type="submit" class="btn btn-danger px-4">Sim, Excluir Definitivamente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
