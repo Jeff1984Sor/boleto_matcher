@@ -1,7 +1,6 @@
 """
 PROJETO: Reconciliação de Boletos com Comprovantes
 Usando Google Gemini Vision + Conversão de formato de números (. → ,)
-Chave de API lida do settings.py ou variáveis de ambiente
 """
 
 import io
@@ -18,42 +17,13 @@ import google.generativeai as genai
 from django.conf import settings
 
 # ============================================================
-# CARREGAR CHAVE DO GEMINI
+# CONFIGURAR GEMINI COM CHAVE
 # ============================================================
 
 GEMINI_API_KEY = 'AIzaSyAeFFYrpTCRDP9NZPRRwoa4vC8KWE7UNVQ'
 
-# 1. Tenta settings.py primeiro (forma Django padrão)
-try:
-    GEMINI_API_KEY = getattr(settings, 'GEMINI_API_KEY', None)
-except:
-    pass
-
-# 2. Se não tiver, tenta variável de ambiente
-if not GEMINI_API_KEY:
-    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-
-# 3. Se ainda não tiver, tenta do .env (se python-dotenv está instalado)
-if not GEMINI_API_KEY:
-    try:
-        from dotenv import load_dotenv
-        load_dotenv()
-        GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-    except:
-        pass
-
-# Configura Gemini se tiver chave
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-    print(f"✅ Gemini configurado com sucesso!")
-else:
-    print(
-        "⚠️  AVISO: GEMINI_API_KEY não encontrada!\n"
-        "Adicione uma das opções:\n"
-        "1. No settings.py: GEMINI_API_KEY = 'sua-chave-aqui'\n"
-        "2. Variável de ambiente: export GEMINI_API_KEY=sua-chave-aqui\n"
-        "3. No .env: GEMINI_API_KEY=sua-chave-aqui (com python-dotenv instalado)"
-    )
+genai.configure(api_key=GEMINI_API_KEY)
+print(f"✅ Gemini configurado com sucesso!")
 
 # ============================================================
 # UTILITÁRIOS: CONVERSÃO DE NÚMEROS
@@ -138,9 +108,6 @@ def extrair_com_gemini(pdf_bytes_ou_caminho, use_first_page_only=True):
     Usa Google Gemini Vision para extrair código de barras e valor de um PDF.
     Retorna: {'codigo': '...', 'valor': 0.0, 'valor_formatado': 'XXX,XX', 'empresa': '...'}
     """
-    
-    if not GEMINI_API_KEY:
-        raise ValueError("GEMINI_API_KEY não configurada! Veja as instruções acima.")
     
     try:
         # Converter PDF para imagens
