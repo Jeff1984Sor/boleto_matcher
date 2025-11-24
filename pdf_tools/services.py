@@ -70,6 +70,10 @@ def processar_conciliacao_json_stream(lista_caminhos_boletos, caminho_comprovant
 
     yield send('log', '🚀 Iniciando arquitetura em 5 fases...')
 
+    # --- NOVO: Enviar lista inicial de arquivos para a tela desenhar a tabela ---
+    nomes_boletos = [os.path.basename(p) for p in lista_caminhos_boletos]
+    yield send('init_list', {'files': nomes_boletos})
+
     # Tabelas em memória
     tb_boletos: List[DocumentoItem] = []
     tb_comprovantes: List[DocumentoItem] = []
@@ -226,7 +230,7 @@ def processar_conciliacao_json_stream(lista_caminhos_boletos, caminho_comprovant
             if comp.resolvido: continue
             
             match_found = False
-             motivo = ""
+            motivo = "" # CORREÇÃO AQUI: Estava com indentação errada
             
             # 1. Tenta Código de novo (agora com dados da IA Pro)
             if bol.codigo_limpo and comp.codigo_limpo:
