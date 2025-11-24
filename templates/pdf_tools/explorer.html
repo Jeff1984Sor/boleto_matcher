@@ -4,17 +4,16 @@
 
 {% block content %}
 <style>
-    /* Estilos Gerais */
+    /* Estilos mantidos... */
     .drop-zone { border: 2px dashed #ccc; border-radius: 10px; padding: 20px; text-align: center; background: #f9f9f9; cursor: pointer; transition: all 0.3s; }
-    .drop-zone:hover { border-color: #007bff; background: #e9ecef; }
+    .drop-zone:hover, .drop-zone.drag-over { border-color: #007bff; background: #e9ecef; }
     
     .file-list { max-height: 300px; overflow-y: auto; margin-top: 15px; border: 1px solid #ddd; border-radius: 5px; }
-    .file-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; background: #fff; transition: background-color 0.3s; }
+    .file-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; background: #fff; transition: all 0.3s; }
     .file-item:last-child { border-bottom: none; }
     
     .status-icon { margin-right: 10px; font-size: 1.2rem; width: 25px; text-align: center; display: inline-block; }
     
-    /* Terminal Style */
     #execution-panel { display: none; margin-top: 20px; }
     #terminal-log {
         background-color: #1a1a1a;
@@ -31,7 +30,6 @@
     #terminal-log::-webkit-scrollbar { width: 8px; }
     #terminal-log::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
 
-    /* Animações */
     .spin-icon { animation: spin 1s linear infinite; display: inline-block; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
     
@@ -41,6 +39,9 @@
         70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
         100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
     }
+    
+    /* Toast container */
+    #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
 </style>
 
 <div class="container-fluid py-4">
@@ -52,7 +53,7 @@
     </div>
     
     <div class="row">
-        <!-- LADO ESQUERDO: BOLETOS -->
+        <!-- BOLETOS -->
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
@@ -69,7 +70,7 @@
                     
                     <div class="file-list" id="list-boletos">
                         {% for f in arquivos.boletos %}
-                        <div class="file-item" id="file-row-{{ f }}">
+                        <div class="file-item" data-filename="{{ f }}">
                             <div><span class="status-icon">📄</span> <span class="filename">{{ f }}</span></div>
                             <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteFile('boletos', '{{ f }}')"><i class="fas fa-times"></i></button>
                         </div>
@@ -79,11 +80,11 @@
             </div>
         </div>
 
-        <!-- LADO DIREITO: COMPROVANTES -->
+        <!-- COMPROVANTES -->
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                    <span class="fw-bold"><i class="fas fa-receipt"></i> 2. Comprovantes</span>
+                    <span class="fw-bold"><i class="fas fa-receipt"></i> 2. Comprovantes (1 arquivo)</span>
                     <span id="count-comprovantes" class="badge bg-white text-success rounded-pill">{{ arquivos.comprovantes|length }}</span>
                 </div>
 
@@ -96,7 +97,7 @@
                     
                     <div class="file-list" id="list-comprovantes">
                         {% for f in arquivos.comprovantes %}
-                        <div class="file-item" id="file-row-{{ f }}">
+                        <div class="file-item" data-filename="{{ f }}">
                             <div><span class="status-icon">🗂️</span> {{ f }}</div>
                             <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteFile('comprovantes', '{{ f }}')"><i class="fas fa-times"></i></button>
                         </div>
@@ -110,20 +111,20 @@
     <!-- BOTÃO DE AÇÃO -->
     <div class="row mt-4">
         <div class="col-12 text-center">
-            <button id="btn-processar" class="btn btn-dark btn-lg px-5 shadow" onclick="startProcessing()">
+            <button id="btn-processar" class="btn btn-dark btn-lg px-5 shadow" onclick="startProcessing()" disabled>
                 <i class="fas fa-bolt"></i> INICIAR PROCESSAMENTO
             </button>
+            <div class="text-muted mt-2" id="btn-help-text">Aguardando arquivos...</div>
         </div>
     </div>
 
-    <!-- PAINEL DE EXECUÇÃO (Escondido inicialmente) -->
-    <div id="execution-panel" class="card border-dark shadow-lg">
+    <!-- PAINEL DE EXECUÇÃO -->
+    <div id="execution-panel" class="card border-dark shadow-lg mt-4">
         <div class="card-header bg-dark text-white">
             <i class="fas fa-terminal"></i> Log de Execução da IA
         </div>
         <div class="card-body bg-light">
             
-            <!-- Barra de Progresso -->
             <div class="mb-3">
                 <label class="form-label fw-bold text-muted" id="progress-label">Aguardando início...</label>
                 <div class="progress" style="height: 25px;">
@@ -131,24 +132,82 @@
                 </div>
             </div>
 
-            <!-- Terminal -->
             <div id="terminal-log">
                 <div>_ Sistema pronto.</div>
             </div>
 
-            <!-- Área de Download -->
             <div id="download-area" class="text-center mt-4" style="display: none;">
-                <h4 class="text-success fw-bold">Processo Finalizado!</h4>
-                <a id="download-link" href="#" class="btn btn-success btn-lg pulse-btn mt-2">
+                <h4 class="text-success fw-bold">✅ Processo Finalizado!</h4>
+                <a id="download-link" href="#" class="btn btn-success btn-lg pulse-btn mt-2" download>
                     <i class="fas fa-download"></i> BAIXAR ARQUIVO FINAL (.ZIP)
                 </a>
+                <p class="text-muted mt-2" id="stats-summary"></p>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
 <script>
-    // --- FUNÇÕES DE UI ---
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+    const MAX_BUFFER = 1024 * 1024; // 1MB para streaming
+    
+    // ============================================================
+    // UTILITÁRIOS
+    // ============================================================
+    
+    function safeId(filename) {
+        return 'file-' + filename.replace(/[^a-zA-Z0-9]/g, '_');
+    }
+    
+    function showToast(message, type = 'info') {
+        const types = {
+            'success': 'bg-success',
+            'error': 'bg-danger',
+            'warning': 'bg-warning',
+            'info': 'bg-info'
+        };
+        
+        const toastHtml = `
+            <div class="toast align-items-center text-white ${types[type]} border-0 mb-2" role="alert" data-bs-autohide="true" data-bs-delay="4000">
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+        
+        const container = document.getElementById('toast-container');
+        container.insertAdjacentHTML('beforeend', toastHtml);
+        
+        const toastElement = container.lastElementChild;
+        const toast = new bootstrap.Toast(toastElement);
+        toast.show();
+        
+        // Remover do DOM após esconder
+        toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
+    }
+    
+    function logToTerminal(msg, color='#00ff41') {
+        const term = document.getElementById('terminal-log');
+        const time = new Date().toLocaleTimeString();
+        
+        const div = document.createElement('div');
+        div.style.color = color;
+        
+        const timeSpan = document.createElement('span');
+        timeSpan.style.opacity = '0.6';
+        timeSpan.textContent = `[${time}] `;
+        
+        div.appendChild(timeSpan);
+        div.appendChild(document.createTextNode(msg));
+        
+        term.appendChild(div);
+        term.scrollTop = term.scrollHeight;
+    }
+    
     function updateCounter(tipo, delta) {
         const badgeId = (tipo === 'boletos') ? 'count-boletos' : 'count-comprovantes';
         const badge = document.getElementById(badgeId);
@@ -158,26 +217,116 @@
             if(novo < 0) novo = 0;
             badge.innerText = novo;
         }
+        verificarProntoParaProcessar();
     }
-
-    function logToTerminal(msg, color='#00ff41') {
-        const term = document.getElementById('terminal-log');
-        const time = new Date().toLocaleTimeString();
-        term.innerHTML += `<div style="color:${color}"><span style="opacity:0.6">[${time}]</span> ${msg}</div>`;
-        term.scrollTop = term.scrollHeight; // Auto-scroll
+    
+    function verificarProntoParaProcessar() {
+        const boletos = document.querySelectorAll('#list-boletos .file-item').length;
+        const comprovantes = document.querySelectorAll('#list-comprovantes .file-item').length;
+        const btn = document.getElementById('btn-processar');
+        const helpText = document.getElementById('btn-help-text');
+        
+        if (boletos > 0 && comprovantes === 1) {
+            btn.disabled = false;
+            btn.classList.add('pulse-btn');
+            helpText.textContent = `Pronto! ${boletos} boletos e 1 arquivo de comprovantes`;
+        } else {
+            btn.disabled = true;
+            btn.classList.remove('pulse-btn');
+            
+            if (boletos === 0 && comprovantes === 0) {
+                helpText.textContent = 'Envie boletos e comprovantes para começar';
+            } else if (comprovantes === 0) {
+                helpText.textContent = 'Falta o arquivo de comprovantes';
+            } else if (boletos === 0) {
+                helpText.textContent = 'Envie pelo menos 1 boleto';
+            } else if (comprovantes > 1) {
+                helpText.textContent = '⚠️ Envie apenas 1 arquivo de comprovantes';
+            }
+        }
     }
-
-    // --- 1. UPLOAD ---
+    
+    // ============================================================
+    // DRAG & DROP
+    // ============================================================
+    
+    function setupDragAndDrop() {
+        ['drop-boletos', 'drop-comprovantes'].forEach(id => {
+            const zone = document.getElementById(id);
+            const tipo = id.split('-')[1];
+            
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                zone.classList.add('drag-over');
+            });
+            
+            zone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                zone.classList.remove('drag-over');
+            });
+            
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                zone.classList.remove('drag-over');
+                handleUpload(e.dataTransfer.files, tipo);
+            });
+        });
+    }
+    
+    // ============================================================
+    // UPLOAD
+    // ============================================================
+    
     async function handleUpload(files, tipo) {
+        if (!files || files.length === 0) return;
+        
+        // Validações específicas para comprovantes
+        if (tipo === 'comprovantes') {
+            const atual = document.querySelectorAll('#list-comprovantes .file-item').length;
+            
+            if (atual > 0) {
+                if (!confirm('Já existe um arquivo de comprovantes. Substituir?')) {
+                    return;
+                }
+                // Limpar existente
+                const items = document.querySelectorAll('#list-comprovantes .file-item');
+                for (let item of items) {
+                    const filename = item.getAttribute('data-filename');
+                    await deleteFile('comprovantes', filename, false);
+                }
+            }
+            
+            if (files.length > 1) {
+                showToast('⚠️ Apenas 1 arquivo de comprovantes é permitido', 'warning');
+                files = [files[0]];
+            }
+        }
+        
         const listId = `list-${tipo}`;
         const container = document.getElementById(listId);
         
         for (let file of files) {
-            const tempId = 'temp-' + Date.now();
+            // Validar tipo
+            if (!file.name.toLowerCase().endsWith('.pdf')) {
+                showToast(`❌ ${file.name}: Apenas PDFs são permitidos`, 'error');
+                continue;
+            }
+            
+            // Validar tamanho
+            if (file.size > MAX_FILE_SIZE) {
+                const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+                showToast(`❌ ${file.name}: Arquivo muito grande (${sizeMB}MB, máx 50MB)`, 'error');
+                continue;
+            }
+            
+            const tempId = 'temp-' + Date.now() + '-' + Math.random();
             const div = document.createElement('div');
             div.className = 'file-item';
             div.id = tempId;
-            div.innerHTML = `<div><i class="fas fa-spinner fa-spin text-primary"></i> ${file.name}</div>`;
+            div.innerHTML = `<div><i class="fas fa-spinner fa-spin text-primary"></i> Enviando ${file.name}...</div>`;
             container.appendChild(div);
 
             const formData = new FormData();
@@ -185,57 +334,100 @@
             formData.append('tipo', tipo);
 
             try {
-                const res = await fetch("{% url 'api_upload' %}", { method: 'POST', body: formData });
+                const res = await fetch("{% url 'api_upload' %}", { 
+                    method: 'POST', 
+                    body: formData 
+                });
+                
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                
                 const data = await res.json();
                 
-                if(data.status === 'ok') {
-                    // Substitui ID temporário pelo ID real baseado no nome
+                if (data.status === 'ok') {
                     const finalDiv = document.getElementById(tempId);
-                    finalDiv.id = `file-row-${data.filename}`; // ID importante para o match visual depois
+                    const safeIdValue = safeId(data.filename);
+                    
+                    finalDiv.id = safeIdValue;
+                    finalDiv.setAttribute('data-filename', data.filename);
                     finalDiv.innerHTML = `
                         <div><span class="status-icon">${tipo === 'boletos' ? '📄' : '🗂️'}</span> <span class="filename">${data.filename}</span></div>
-                        <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteFile('${tipo}', '${data.filename}')"><i class="fas fa-times"></i></button>
+                        <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteFile('${tipo}', '${data.filename.replace(/'/g, "\\'")}')"><i class="fas fa-times"></i></button>
                     `;
                     updateCounter(tipo, 1);
+                    showToast(`✅ ${data.filename} enviado`, 'success');
+                } else {
+                    throw new Error(data.error || 'Erro desconhecido');
                 }
             } catch(e) {
-                document.getElementById(tempId).innerHTML = `<span class="text-danger">Erro ao enviar.</span>`;
+                console.error('Erro no upload:', e);
+                const finalDiv = document.getElementById(tempId);
+                if (finalDiv) {
+                    finalDiv.innerHTML = `<div class="text-danger"><i class="fas fa-exclamation-triangle"></i> ${file.name}: Erro ao enviar</div>`;
+                    setTimeout(() => finalDiv.remove(), 5000);
+                }
+                showToast(`❌ Erro ao enviar ${file.name}`, 'error');
             }
         }
     }
 
-    // --- 2. DELETE ---
-    async function deleteFile(tipo, filename) {
-        if(!confirm('Remover este arquivo?')) return;
+    // ============================================================
+    // DELETE
+    // ============================================================
+    
+    async function deleteFile(tipo, filename, confirmar = true) {
+        if (confirmar && !confirm(`Remover "${filename}"?`)) return;
+        
         try {
-            await fetch("{% url 'api_delete' %}", {
+            const res = await fetch("{% url 'api_delete' %}", {
                 method: 'POST',
                 body: JSON.stringify({ tipo, filename }),
                 headers: { 'Content-Type': 'application/json' }
             });
-            const row = document.getElementById(`file-row-${filename}`);
-            if(row) row.remove();
+            
+            if (!res.ok) throw new Error('Erro na requisição');
+            
+            const row = document.querySelector(`.file-item[data-filename="${filename}"]`);
+            if (row) row.remove();
+            
             updateCounter(tipo, -1);
-        } catch(e) { alert('Erro ao deletar'); }
+            if (confirmar) showToast(`🗑️ Arquivo removido`, 'info');
+            
+        } catch(e) { 
+            console.error('Erro ao deletar:', e);
+            showToast('❌ Erro ao deletar arquivo', 'error');
+        }
     }
 
     async function limparTudo() {
-        if (!confirm("Isso apagará TODOS os arquivos da fila. Confirmar?")) return;
+        if (!confirm("Isso apagará TODOS os arquivos. Confirmar?")) return;
+        
         try {
-            await fetch("{% url 'api_limpar' %}", { method: 'POST' });
+            const res = await fetch("{% url 'api_limpar' %}", { method: 'POST' });
+            if (!res.ok) throw new Error('Erro na requisição');
+            
             document.getElementById('list-boletos').innerHTML = '';
             document.getElementById('list-comprovantes').innerHTML = '';
             document.getElementById('count-boletos').innerText = '0';
             document.getElementById('count-comprovantes').innerText = '0';
             
-            // Reset UI de processamento
+            // Reset UI
             document.getElementById('execution-panel').style.display = 'none';
-            document.getElementById('btn-processar').disabled = false;
-            document.getElementById('btn-processar').innerHTML = '<i class="fas fa-bolt"></i> INICIAR PROCESSAMENTO';
-        } catch(e) { alert("Erro ao limpar."); }
+            verificarProntoParaProcessar();
+            
+            showToast('🧹 Todos os arquivos foram removidos', 'info');
+        } catch(e) { 
+            showToast("❌ Erro ao limpar arquivos", 'error');
+        }
     }
 
-    // --- 3. PROCESSAMENTO INTELIGENTE ---
+    // ============================================================
+    // PROCESSAMENTO
+    // ============================================================
+    
+    let tempoInicio = null;
+    
     async function startProcessing() {
         const btn = document.getElementById('btn-processar');
         const panel = document.getElementById('execution-panel');
@@ -243,19 +435,25 @@
         const pBar = document.getElementById('main-progress-bar');
         const pLabel = document.getElementById('progress-label');
         
-        // Reset Visual
+        // Reset
         panel.style.display = 'block';
         panel.scrollIntoView({ behavior: 'smooth' });
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-cog fa-spin"></i> Processando...';
-        term.innerHTML = '<div>_ Iniciando conexão com o servidor...</div>';
+        term.innerHTML = '';
+        logToTerminal('🚀 Conectando ao servidor...');
         pBar.style.width = '5%';
+        pBar.classList.remove('bg-success');
+        pBar.classList.add('bg-info');
         document.getElementById('download-area').style.display = 'none';
+        tempoInicio = Date.now();
 
         try {
-            const response = await fetch("{% url 'api_processar' %}"); // Verifique se o nome da URL no urls.py é 'api_processar' ou 'api_iniciar_processamento'
+            const response = await fetch("{% url 'api_processar' %}");
             
-            if (!response.ok) throw new Error("Erro ao conectar com API");
+            if (!response.ok) {
+                throw new Error(`Erro ${response.status}: ${response.statusText}`);
+            }
 
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
@@ -266,21 +464,32 @@
                 if (done) break;
                 
                 buffer += decoder.decode(value, { stream: true });
+                
+                // Proteção contra buffer overflow
+                if (buffer.length > MAX_BUFFER) {
+                    console.warn('Buffer muito grande, reiniciando');
+                    buffer = buffer.slice(-MAX_BUFFER/2);
+                }
+                
                 const lines = buffer.split('\n');
-                buffer = lines.pop(); // Guarda o resto
+                buffer = lines.pop();
 
                 for (let line of lines) {
                     if (!line.trim()) continue;
                     try {
                         const event = JSON.parse(line);
                         handleServerEvent(event);
-                    } catch(e) { console.error(e); }
+                    } catch(e) { 
+                        console.error('Erro ao parsear evento:', e, line);
+                    }
                 }
             }
         } catch (error) {
-            logToTerminal("❌ ERRO FATAL: " + error.message, 'red');
+            console.error('Erro fatal:', error);
+            logToTerminal("❌ ERRO: " + error.message, '#ff0000');
             btn.disabled = false;
-            btn.innerText = "Tentar Novamente";
+            btn.innerHTML = '<i class="fas fa-redo"></i> Tentar Novamente';
+            showToast('❌ Erro no processamento', 'error');
         }
     }
 
@@ -292,14 +501,13 @@
             logToTerminal(ev.data);
         }
         else if (ev.type === 'comp_status') {
-            // Atualiza barra durante leitura de comprovantes
             pBar.style.width = '30%'; 
             pLabel.innerText = `Lendo Comprovantes: ${ev.data.msg}`;
         }
         else if (ev.type === 'file_start') {
-            // Marca arquivo na lista como processando
-            pLabel.innerText = `Analisando: ${ev.data.filename}`;
-            const row = document.getElementById(`file-row-${ev.data.filename}`);
+            pLabel.innerText = `🔍 Analisando: ${ev.data.filename}`;
+            
+            const row = document.querySelector(`.file-item[data-filename="${ev.data.filename}"]`);
             if(row) {
                 const icon = row.querySelector('.status-icon');
                 icon.innerHTML = '<i class="fas fa-spinner fa-spin text-primary"></i>';
@@ -307,16 +515,36 @@
             }
         }
         else if (ev.type === 'file_done') {
-            // Marca sucesso ou erro visualmente na lista
-            const row = document.getElementById(`file-row-${ev.data.filename}`);
+            const row = document.querySelector(`.file-item[data-filename="${ev.data.filename}"]`);
             if(row) {
                 const icon = row.querySelector('.status-icon');
                 if(ev.data.status === 'success') {
-                    icon.innerHTML = '✅'; // Check verde
-                    row.style.backgroundColor = '#d1e7dd'; // Verde claro bootstrap
+                    icon.innerHTML = '✅';
+                    row.style.backgroundColor = '#d1e7dd';
+                } else if (ev.data.status === 'warning') {
+                    icon.innerHTML = '⚠️';
+                    row.style.backgroundColor = '#fff3cd';
                 } else {
-                    icon.innerHTML = '⚠️'; // Warning amarelo
-                    row.style.backgroundColor = '#fff3cd'; // Amarelo bootstrap
+                    icon.innerHTML = '❌';
+                    row.style.backgroundColor = '#f8d7da';
+                }
+            }
+            
+            // Atualizar progresso
+            const total = document.querySelectorAll('#list-boletos .file-item').length;
+            const processados = document.querySelectorAll('#list-boletos .file-item [style*="d1e7dd"], #list-boletos .file-item [style*="fff3cd"], #list-boletos .file-item [style*="f8d7da"]').length;
+            const percent = Math.round((processados / total) * 70) + 30; // 30% já foi usado para comprovantes
+            pBar.style.width = percent + '%';
+            
+            // Estimativa de tempo
+            if (tempoInicio) {
+                const tempoDecorrido = (Date.now() - tempoInicio) / 1000; // segundos
+                const tempoMedio = tempoDecorrido / processados;
+                const faltam = total - processados;
+                const estimativa = Math.round(faltam * tempoMedio);
+                
+                if (estimativa > 0 && faltam > 0) {
+                    pLabel.innerText = `Processando ${processados}/${total} (~${estimativa}s restantes)`;
                 }
             }
         }
@@ -324,20 +552,36 @@
             pBar.style.width = '100%';
             pBar.classList.remove('bg-info');
             pBar.classList.add('bg-success');
-            pLabel.innerText = "Processo Concluído!";
-            logToTerminal("🏁 DOWNLOAD GERADO COM SUCESSO.", "#00ff41");
+            pLabel.innerText = "✅ Processo Concluído!";
+            logToTerminal("🏁 DOWNLOAD PRONTO!", "#00ff41");
             
-            // Mostra botão de download
+            // Estatísticas
+            const stats = `${ev.data.matches} encontrados | ${ev.data.sem_match} sem match | Total: ${ev.data.total}`;
+            document.getElementById('stats-summary').textContent = stats;
+            
+            // Mostrar download
             const dlArea = document.getElementById('download-area');
             const dlLink = document.getElementById('download-link');
             dlLink.href = ev.data.url;
             dlArea.style.display = 'block';
             
-            // Reabilita botão principal
+            // Reabilitar botão
             const btn = document.getElementById('btn-processar');
-            btn.innerHTML = '<i class="fas fa-redo"></i> Iniciar Novo';
+            btn.innerHTML = '<i class="fas fa-redo"></i> Processar Novamente';
             btn.disabled = false;
+            btn.classList.remove('pulse-btn');
+            
+            showToast('✅ Processamento concluído!', 'success');
         }
     }
+    
+    // ============================================================
+    // INICIALIZAÇÃO
+    // ============================================================
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        setupDragAndDrop();
+        verificarProntoParaProcessar();
+    });
 </script>
 {% endblock %}

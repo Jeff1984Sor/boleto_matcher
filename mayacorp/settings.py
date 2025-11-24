@@ -134,6 +134,17 @@ DATABASES = {
     }
 }
 
+# ============================================================
+# CACHE CONFIGURATION
+# ============================================================
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+        'TIMEOUT': 3600 * 24,  # 24 horas
+    }
+}
 
 # ==============================================================================
 # Password validation
@@ -221,3 +232,9 @@ STORAGES = {
 # Dica: O MULTITENANT_RELATIVE_MEDIA_ROOT diz para o Django criar pastas dentro do /media/
 # Se você não colocar nada, ele cria media/nome_schema/
 MULTITENANT_RELATIVE_MEDIA_ROOT = "%s"
+
+# ============================================================
+# GEMINI API KEY
+# ============================================================
+
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', 'AIzaSyAeFFYrpTCRDP9NZPRRwoa4vC8KWE7UNVQ')
