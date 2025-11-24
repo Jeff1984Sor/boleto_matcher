@@ -5,258 +5,296 @@ import time
 import uuid
 import json
 import re
+from dataclasses import dataclass
+from typing import List, Optional
 from pypdf import PdfReader, PdfWriter
 import google.generativeai as genai
 from django.conf import settings
 
 genai.configure(api_key=settings.GOOGLE_API_KEY)
 
+# --- ESTRUTURA DE DADOS ("TABELA TEMPORÁRIA") ---
+@dataclass
+class DocumentoItem:
+    id: str
+    tipo: str  # 'boleto' ou 'comprovante'
+    origem: str # Nome do arquivo ou indice da pagina
+    texto_bruto: str
+    pdf_bytes: io.BytesIO # O binário do PDF (pagina unica ou arquivo inteiro)
+    
+    # Dados extraídos
+    valor: float = 0.0
+    codigo_barras: str = ""
+    codigo_limpo: str = ""
+    
+    # Controle
+    resolvido: bool = False
+    par_encontrado: Optional['DocumentoItem'] = None
+
+# --- FUNÇÕES UTILITÁRIAS ---
+
 def limpar_apenas_numeros(texto):
-    """Remove tudo que não for número."""
-    if not texto:
-        return ""
+    """Remove tudo que não for dígito 0-9."""
+    if not texto: return ""
     return re.sub(r'\D', '', str(texto))
 
-def tentar_extrair_via_regex(texto):
-    """
-    Tenta achar sequências longas de números (típicas de boletos) 
-    sem gastar IA. Remove espaços e quebras de linha antes de procurar.
-    Boletos bancários = 47 digitos (linha digitavel) ou 44 (código de barras)
-    DAMSP/Impostos = 48 digitos
-    """
-    texto_limpo = texto.replace('\n', '').replace(' ', '').replace('.', '').replace('-', '')
-    # Procura sequência de 44 a 48 dígitos
-    match = re.search(r'\d{44,48}', texto_limpo)
-    if match:
-        return match.group(0)
-    return None
+def extrair_regex_seguro(texto):
+    """Tenta achar sequência de 44 a 48 digitos no texto bruto."""
+    texto_sem_formatacao = texto.replace('\n', '').replace(' ', '').replace('.', '').replace('-', '')
+    match = re.search(r'\d{44,48}', texto_sem_formatacao)
+    return match.group(0) if match else None
 
-def chamar_gemini_com_fallback(texto, tipo_doc):
+def chamar_ai(texto, modelo, tipo_doc):
+    """Chama a IA (Flash ou Pro)"""
+    model = genai.GenerativeModel(modelo)
+    prompt = f"""
+    Analise este texto de {tipo_doc}. Retorne JSON {{ "valor": float, "codigo_barras": "string" }}.
+    Priorize encontrar a linha digitável ou código de barras numérico (44-48 digitos).
+    Texto: {texto[:6000]}
     """
-    Lógica de Retentativa Inteligente:
-    1. Tenta extrair valor e código com o modelo RÁPIDO (Flash).
-    2. Verifica se o código de barras parece válido (tem > 40 numeros).
-    3. Se não for válido, tenta com o modelo POTENTE (Pro).
-    """
-    
-    # --- DEFINIÇÃO DO PROMPT ---
-    prompt_base = f"""
-    Analise o texto deste {tipo_doc}.
-    Extraia:
-    1. O valor total (float).
-    2. O Código de Barras ou Linha Digitável (sequência numérica longa).
-       - Boletos comuns têm ~47 dígitos.
-       - Impostos/DAMSP (iniciados com 8) têm ~48 dígitos.
-       - Ignore espaços, pontos e traços, quero apenas os NÚMEROS.
-    
-    Retorne JSON puro:
-    {{
-        "valor": 150.00,
-        "codigo_barras": "816200000049..."
-    }}
-    
-    Texto:
-    {texto[:6000]}
-    """
-
-    # --- 1ª PASSADA: MODELO FLASH (Rápido e Barato) ---
-    dados_extraidos = _executar_gemini(prompt_base, 'gemini-2.0-flash')
-    
-    codigo_limpo = limpar_apenas_numeros(dados_extraidos.get('codigo_barras'))
-    
-    # Critério de falha: Código vazio ou muito curto (boletos reais têm pelo menos 44 digitos)
-    if len(codigo_limpo) < 44:
-        print(f"⚠️ Flash falhou no código ({len(codigo_limpo)} dígitos). Tentando PRO...")
-        
-        # --- 2ª PASSADA: MODELO PRO (Mais caro, mas mais capaz) ---
-        dados_pro = _executar_gemini(prompt_base, 'gemini-2.5-pro')
-        
-        # Se o Pro achou algo melhor, usamos ele
-        codigo_pro_limpo = limpar_apenas_numeros(dados_pro.get('codigo_barras'))
-        if len(codigo_pro_limpo) >= 44:
-            return dados_pro
-            
-    return dados_extraidos
-
-def _executar_gemini(prompt, model_name):
-    """Função interna para chamar a API e tratar erros"""
-    model = genai.GenerativeModel(model_name)
-    for tentativa in range(1, 4):
+    for _ in range(3):
         try:
-            response = model.generate_content(prompt)
-            clean_text = response.text.replace('```json', '').replace('```', '').strip()
-            return json.loads(clean_text)
-        except Exception as e:
-            if "429" in str(e): # Too Many Requests
-                time.sleep(5)
-            else:
-                print(f"Erro na IA ({model_name}): {e}")
-                break
-    return {"valor": 0.0, "codigo_barras": ""}
+            resp = model.generate_content(prompt)
+            clean = resp.text.replace('```json', '').replace('```', '').strip()
+            return json.loads(clean)
+        except:
+            time.sleep(2)
+    return {}
 
-def extract_text_from_pdf(pdf_path):
-    try:
-        reader = PdfReader(pdf_path)
-        text = ""
-        for page in reader.pages:
-            extracted = page.extract_text()
-            if extracted:
-                text += extracted + "\n"
-        return text
-    except Exception as e:
-        print(f"Erro leitura PDF: {e}")
-        return ""
+# --- MOTOR PRINCIPAL ---
 
 def processar_conciliacao_json_stream(lista_caminhos_boletos, caminho_comprovantes, user):
     
-    def send_event(type, data):
+    def send(type, data):
         return json.dumps({'type': type, 'data': data}) + "\n"
 
-    yield send_event('log', '🚀 Iniciando processamento inteligente...')
-    
-    total_paginas_contadas = 0
-    comprovantes_map = []
-    
-    # =================================================================
-    # A. LER COMPROVANTES (Com Regex + Flash + Fallback Pro)
-    # =================================================================
-    yield send_event('log', '📂 Lendo Comprovantes (Modo Alta Precisão)...')
+    yield send('log', '🚀 Iniciando arquitetura em 5 fases...')
+
+    # Tabelas em memória
+    tb_boletos: List[DocumentoItem] = []
+    tb_comprovantes: List[DocumentoItem] = []
+    total_paginas = 0
+
+    # ====================================================
+    # FASE 1: INGESTÃO E LEITURA RÁPIDA (REGEX + FLASH)
+    # ====================================================
+    yield send('log', '📂 FASE 1: Leitura Inicial dos Arquivos...')
+
+    # 1.1 Ingestão Comprovantes (página por página)
     reader_comp = PdfReader(caminho_comprovantes)
-    total_paginas_contadas += len(reader_comp.pages)
-    
     for i, page in enumerate(reader_comp.pages):
-        yield send_event('comp_status', {'index': i, 'msg': f'Analisando pg {i+1}...'})
+        yield send('comp_status', {'index': i, 'msg': 'Lendo...'})
         
-        texto_pg = page.extract_text() or ""
+        texto = page.extract_text() or ""
+        total_paginas += 1
         
-        # 1. Tenta Regex primeiro (Custo Zero e 100% preciso se o texto existir)
-        codigo_regex = tentar_extrair_via_regex(texto_pg)
+        # Cria PDF unitário em memória
+        writer = PdfWriter()
+        writer.add_page(page)
+        buffer = io.BytesIO()
+        writer.write(buffer)
+        buffer.seek(0)
         
-        if codigo_regex:
-            # Se achou no regex, pede pra IA só pegar o VALOR pra economizar tokens/tempo
-            # Ou chama a IA completa mas já sabemos que temos o código
-            dados = chamar_gemini_com_fallback(texto_pg, "comprovante de pagamento")
-            dados['codigo_barras'] = codigo_regex # Força o uso do Regex que é mais confiavel
-            origem_cod = "REGEX"
+        item = DocumentoItem(
+            id=str(uuid.uuid4()),
+            tipo='comprovante',
+            origem=f"Pagina {i+1}",
+            texto_bruto=texto,
+            pdf_bytes=buffer
+        )
+        
+        # Tenta Regex primeiro (Custo Zero)
+        cod_regex = extrair_regex_seguro(texto)
+        if cod_regex:
+            item.codigo_limpo = cod_regex
+            # Se achou regex, pega valor via IA rapida (opcional, ou regex de valor)
+            dados_ai = chamar_ai(texto, 'gemini-2.0-flash', 'comprovante')
+            item.valor = float(dados_ai.get('valor') or 0)
         else:
-            # Se não achou regex, vai para o fluxo Flash -> Pro
-            dados = chamar_gemini_com_fallback(texto_pg, "comprovante de pagamento")
-            origem_cod = "IA"
+            # Se não achou regex, tenta IA Flash
+            dados_ai = chamar_ai(texto, 'gemini-2.0-flash', 'comprovante')
+            item.valor = float(dados_ai.get('valor') or 0)
+            item.codigo_barras = dados_ai.get('codigo_barras', '')
+            item.codigo_limpo = limpar_apenas_numeros(item.codigo_barras)
 
-        codigo_limpo = limpar_apenas_numeros(dados.get('codigo_barras'))
-        dados['codigo_limpo'] = codigo_limpo
-        
-        print(f"Comp {i+1}: Valor {dados.get('valor')} | Cod: {codigo_limpo[:10]}... ({len(codigo_limpo)} dig) [{origem_cod}]")
-        
-        # Prepara PDF unitário
-        writer_temp = PdfWriter()
-        writer_temp.add_page(page)
-        pdf_bytes = io.BytesIO()
-        writer_temp.write(pdf_bytes)
-        pdf_bytes.seek(0)
-        
-        comprovantes_map.append({
-            'page_obj': pdf_bytes, 
-            'dados': dados, 
-            'usado': False
-        })
-        time.sleep(1) # Evitar rate limit
+        tb_comprovantes.append(item)
 
-    # =================================================================
-    # B. LER BOLETOS
-    # =================================================================
-    yield send_event('log', '📂 Processando Boletos...')
-    output_zip_buffer = io.BytesIO()
+    # 1.2 Ingestão Boletos
+    for path in lista_caminhos_boletos:
+        nome = os.path.basename(path)
+        yield send('file_start', {'filename': nome})
+        
+        reader = PdfReader(path)
+        texto = ""
+        for p in reader.pages: texto += p.extract_text() + "\n"
+        total_paginas += len(reader.pages)
+        
+        # Lê o binário do arquivo original
+        with open(path, 'rb') as f:
+            pdf_bytes = io.BytesIO(f.read())
+
+        item = DocumentoItem(
+            id=str(uuid.uuid4()),
+            tipo='boleto',
+            origem=nome,
+            texto_bruto=texto,
+            pdf_bytes=pdf_bytes
+        )
+
+        cod_regex = extrair_regex_seguro(texto)
+        if cod_regex:
+            item.codigo_limpo = cod_regex
+            dados_ai = chamar_ai(texto, 'gemini-2.0-flash', 'boleto')
+            item.valor = float(dados_ai.get('valor') or 0)
+        else:
+            dados_ai = chamar_ai(texto, 'gemini-2.0-flash', 'boleto')
+            item.valor = float(dados_ai.get('valor') or 0)
+            item.codigo_barras = dados_ai.get('codigo_barras', '')
+            item.codigo_limpo = limpar_apenas_numeros(item.codigo_barras)
+            
+        tb_boletos.append(item)
+        yield send('file_done', {'filename': nome, 'status': 'info'})
+
+    # ====================================================
+    # FASE 2: MATCH PRIMÁRIO (CÓDIGO EXATO)
+    # ====================================================
+    yield send('log', '⚡ FASE 2: Cruzamento Rápido...')
     
-    with zipfile.ZipFile(output_zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-        for boleto_path in lista_caminhos_boletos:
-            nome_arquivo = os.path.basename(boleto_path)
-            yield send_event('file_start', {'filename': nome_arquivo})
+    match_count = 0
+    for bol in tb_boletos:
+        if bol.resolvido or not bol.codigo_limpo: continue
+        
+        for comp in tb_comprovantes:
+            if comp.resolvido or not comp.codigo_limpo: continue
             
-            temp_reader = PdfReader(boleto_path)
-            total_paginas_contadas += len(temp_reader.pages)
-            
-            texto_boleto = extract_text_from_pdf(boleto_path)
-            
-            # Mesma lógica: Regex -> Flash -> Pro
-            codigo_regex_bol = tentar_extrair_via_regex(texto_boleto)
-            
-            if codigo_regex_bol:
-                dados_boleto = chamar_gemini_com_fallback(texto_boleto, "boleto bancário")
-                dados_boleto['codigo_barras'] = codigo_regex_bol
-                origem_bol = "REGEX"
-            else:
-                dados_boleto = chamar_gemini_com_fallback(texto_boleto, "boleto bancário")
-                origem_bol = "IA"
-            
-            cod_boleto_limpo = limpar_apenas_numeros(dados_boleto.get('codigo_barras'))
-            valor_boleto = float(dados_boleto.get('valor') or 0)
-            
-            print(f"Boleto {nome_arquivo}: Cod {cod_boleto_limpo[:10]}... [{origem_bol}]")
+            # Match exato ou parcial longo
+            if bol.codigo_limpo == comp.codigo_limpo or \
+               (len(bol.codigo_limpo) > 20 and bol.codigo_limpo.startswith(comp.codigo_limpo[:20])):
+                
+                bol.resolvido = True
+                bol.par_encontrado = comp
+                comp.resolvido = True
+                match_count += 1
+                break
+    
+    yield send('log', f'   > {match_count} pares encontrados na fase rápida.')
 
-            # --- MATCHING ---
-            comprovante_match = None
+    # ====================================================
+    # FASE 3: REPESCAGEM COM IA PRO (SÓ OS FALHOS)
+    # ====================================================
+    # Filtra quem sobrou
+    boletos_pendentes = [b for b in tb_boletos if not b.resolvido]
+    comps_pendentes = [c for c in tb_comprovantes if not c.resolvido]
+
+    if boletos_pendentes and comps_pendentes:
+        yield send('log', f'🧠 FASE 3: IA Avançada (Gemini Pro) em {len(boletos_pendentes)} boletos e {len(comps_pendentes)} comprovantes...')
+        
+        # Melhora dados dos Boletos Pendentes
+        for bol in boletos_pendentes:
+            yield send('log', f'   > Analisando profundamente: {bol.origem}')
+            dados_pro = chamar_ai(bol.texto_bruto, 'gemini-1.5-pro', 'boleto difícil')
             
-            # 1. Match Exato de Código
-            if len(cod_boleto_limpo) > 40:
-                for comp in comprovantes_map:
-                    if not comp['usado']:
-                        cod_comp = comp['dados']['codigo_limpo']
-                        # Verifica se um contém o outro (para resolver casos onde um tem checksum e o outro não)
-                        if cod_boleto_limpo == cod_comp:
-                            comprovante_match = comp
-                            break
-                        # Fallback: Às vezes o boleto tem 48 digitos e o comprovante 44 (sem digito verificador geral)
-                        # Vamos verificar se os primeiros 20 digitos batem, já é um match fortissimo
-                        elif len(cod_comp) > 20 and cod_boleto_limpo.startswith(cod_comp[:20]):
-                             comprovante_match = comp
-                             break
+            novo_cod = limpar_apenas_numeros(dados_pro.get('codigo_barras'))
+            if len(novo_cod) > len(bol.codigo_limpo): # Se achou um código melhor
+                bol.codigo_limpo = novo_cod
+            if dados_pro.get('valor'):
+                bol.valor = float(dados_pro.get('valor'))
+            time.sleep(2) # Respeita cota
+
+        # Melhora dados dos Comprovantes Pendentes
+        for comp in comps_pendentes:
+            yield send('log', f'   > Analisando profundamente: {comp.origem}')
+            dados_pro = chamar_ai(comp.texto_bruto, 'gemini-1.5-pro', 'comprovante difícil')
             
-            # 2. Match por Valor (Plano B)
-            if not comprovante_match and valor_boleto > 0:
-                for comp in comprovantes_map:
-                    if not comp['usado']:
-                        v_comp = float(comp['dados'].get('valor') or 0)
-                        if abs(valor_boleto - v_comp) < 0.05:
-                            comprovante_match = comp
-                            yield send_event('log', f'⚠️ Match por VALOR em {nome_arquivo}')
-                            break
+            novo_cod = limpar_apenas_numeros(dados_pro.get('codigo_barras'))
+            if len(novo_cod) > len(comp.codigo_limpo):
+                comp.codigo_limpo = novo_cod
+            if dados_pro.get('valor'):
+                comp.valor = float(dados_pro.get('valor'))
+            time.sleep(2)
+
+    # ====================================================
+    # FASE 4: MATCH FINAL (CÓDIGO + VALOR)
+    # ====================================================
+    yield send('log', '🔍 FASE 4: Cruzamento Final...')
+    
+    for bol in tb_boletos:
+        if bol.resolvido: continue
+        
+        # Tenta match com os comprovantes que ainda estão livres
+        for comp in tb_comprovantes:
+            if comp.resolvido: continue
             
-            # Salva resultado
-            status = 'warning'
+            match_found = False
+             motivo = ""
+            
+            # 1. Tenta Código de novo (agora com dados da IA Pro)
+            if bol.codigo_limpo and comp.codigo_limpo:
+                 if bol.codigo_limpo == comp.codigo_limpo or \
+                   (len(bol.codigo_limpo) > 20 and bol.codigo_limpo.startswith(comp.codigo_limpo[:20])):
+                    match_found = True
+                    motivo = "Código (Pro)"
+
+            # 2. Tenta Valor (Último recurso)
+            if not match_found and bol.valor > 0 and comp.valor > 0:
+                if abs(bol.valor - comp.valor) < 0.05: # 5 centavos
+                    match_found = True
+                    motivo = "Valor"
+            
+            if match_found:
+                bol.resolvido = True
+                bol.par_encontrado = comp
+                comp.resolvido = True
+                yield send('log', f'   ✅ Match recuperado ({motivo}): {bol.origem}')
+                break
+        
+        if not bol.resolvido:
+            yield send('log', f'   ❌ Não foi possível conciliar: {bol.origem}')
+
+    # ====================================================
+    # FASE 5: GERAÇÃO DO ZIP FINAL
+    # ====================================================
+    yield send('log', '💾 FASE 5: Gerando arquivos...')
+    
+    output_zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(output_zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for bol in tb_boletos:
             writer_final = PdfWriter()
             
-            # Páginas do Boleto
-            reader_bol = PdfReader(boleto_path)
-            for p in reader_bol.pages:
-                writer_final.add_page(p)
-                
-            if comprovante_match:
-                status = 'success'
-                comprovante_match['usado'] = True
-                # Página do Comprovante
-                reader_match = PdfReader(comprovante_match['page_obj'])
-                writer_final.add_page(reader_match.pages[0])
+            # Adiciona boleto
+            bol.pdf_bytes.seek(0)
+            reader_bol = PdfReader(bol.pdf_bytes)
+            for p in reader_bol.pages: writer_final.add_page(p)
             
-            yield send_event('file_done', {'filename': nome_arquivo, 'status': status})
+            # Adiciona comprovante (se houver)
+            status_final = 'warning'
+            if bol.par_encontrado:
+                status_final = 'success'
+                bol.par_encontrado.pdf_bytes.seek(0)
+                reader_comp = PdfReader(bol.par_encontrado.pdf_bytes)
+                writer_final.add_page(reader_comp.pages[0])
             
+            # Salva
             pdf_out = io.BytesIO()
             writer_final.write(pdf_out)
-            zip_file.writestr(nome_arquivo, pdf_out.getvalue())
+            zip_file.writestr(bol.origem, pdf_out.getvalue())
+            
+            # Atualiza UI final
+            yield send('file_done', {'filename': bol.origem, 'status': status_final})
 
-    # C. Finaliza
-    yield send_event('log', '💾 Compactando arquivos...')
+    # Finaliza processo
     pasta_downloads = os.path.join(settings.MEDIA_ROOT, 'downloads')
     os.makedirs(pasta_downloads, exist_ok=True)
+    nome_zip = f"Conciliacao_Pro_{uuid.uuid4().hex[:8]}.zip"
     
-    nome_zip = f"Conciliacao_{uuid.uuid4().hex[:8]}.zip"
-    caminho_zip = os.path.join(pasta_downloads, nome_zip)
-    
-    with open(caminho_zip, "wb") as f:
+    with open(os.path.join(pasta_downloads, nome_zip), "wb") as f:
         f.write(output_zip_buffer.getvalue())
-        
+
     if hasattr(user, 'paginas_processadas'):
-        user.paginas_processadas += total_paginas_contadas
+        user.paginas_processadas += total_paginas
         user.save()
-        
-    yield send_event('finish', {'url': f"{settings.MEDIA_URL}downloads/{nome_zip}", 'total': total_paginas_contadas})
+
+    yield send('finish', {
+        'url': f"{settings.MEDIA_URL}downloads/{nome_zip}", 
+        'total': total_paginas
+    })

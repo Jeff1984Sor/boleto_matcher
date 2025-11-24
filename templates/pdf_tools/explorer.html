@@ -4,42 +4,74 @@
 
 {% block content %}
 <style>
+    /* Estilos Gerais */
     .drop-zone { border: 2px dashed #ccc; border-radius: 10px; padding: 20px; text-align: center; background: #f9f9f9; cursor: pointer; transition: all 0.3s; }
     .drop-zone:hover { border-color: #007bff; background: #e9ecef; }
+    
     .file-list { max-height: 300px; overflow-y: auto; margin-top: 15px; border: 1px solid #ddd; border-radius: 5px; }
-    .file-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; background: #fff; }
+    .file-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; background: #fff; transition: background-color 0.3s; }
     .file-item:last-child { border-bottom: none; }
-    .status-icon { margin-right: 10px; font-size: 1.2rem; }
-    .status-waiting { color: #ccc; }
-    .status-processing { animation: spin 1s linear infinite; }
+    
+    .status-icon { margin-right: 10px; font-size: 1.2rem; width: 25px; text-align: center; display: inline-block; }
+    
+    /* Terminal Style */
+    #execution-panel { display: none; margin-top: 20px; }
+    #terminal-log {
+        background-color: #1a1a1a;
+        color: #00ff41;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 0.85rem;
+        padding: 15px;
+        border-radius: 5px;
+        height: 250px;
+        overflow-y: auto;
+        border: 1px solid #333;
+        box-shadow: inset 0 0 10px #000;
+    }
+    #terminal-log::-webkit-scrollbar { width: 8px; }
+    #terminal-log::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+
+    /* Animações */
+    .spin-icon { animation: spin 1s linear infinite; display: inline-block; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
+    
+    .pulse-btn { animation: pulse 2s infinite; }
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+    }
 </style>
 
-<div class="container-fluid">
-    <h2 class="mb-4">📂 Gerenciador de Conciliação</h2>
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0"><i class="fas fa-robot"></i> Conciliação Inteligente (IA)</h2>
+        <button class="btn btn-outline-danger" onclick="limparTudo()">
+            <i class="fas fa-trash-alt"></i> Limpar Tudo
+        </button>
+    </div>
     
     <div class="row">
         <!-- LADO ESQUERDO: BOLETOS -->
         <div class="col-md-6">
-            <div class="card">
-                <!-- ATUALIZADO: Cabeçalho com Contador -->
+            <div class="card shadow-sm h-100">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <span>1. Boletos (PDFs Separados)</span>
+                    <span class="fw-bold"><i class="fas fa-file-invoice-dollar"></i> 1. Boletos</span>
                     <span id="count-boletos" class="badge bg-white text-primary rounded-pill">{{ arquivos.boletos|length }}</span>
                 </div>
                 
                 <div class="card-body">
                     <div class="drop-zone" id="drop-boletos" onclick="document.getElementById('input-boletos').click()">
-                        <p class="mb-0">Arraste os boletos aqui ou clique para selecionar</p>
+                        <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                        <p class="mb-0 text-muted">Clique ou arraste os PDFs dos boletos</p>
                         <input type="file" id="input-boletos" multiple accept=".pdf" hidden onchange="handleUpload(this.files, 'boletos')">
                     </div>
                     
                     <div class="file-list" id="list-boletos">
-                        <!-- Lista preenchida via JS -->
                         {% for f in arquivos.boletos %}
                         <div class="file-item" id="file-row-{{ f }}">
-                            <div><span class="status-icon status-waiting">📄</span> {{ f }}</div>
-                            <button class="btn btn-sm btn-danger" onclick="deleteFile('boletos', '{{ f }}')">×</button>
+                            <div><span class="status-icon">📄</span> <span class="filename">{{ f }}</span></div>
+                            <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteFile('boletos', '{{ f }}')"><i class="fas fa-times"></i></button>
                         </div>
                         {% endfor %}
                     </div>
@@ -49,24 +81,24 @@
 
         <!-- LADO DIREITO: COMPROVANTES -->
         <div class="col-md-6">
-            <div class="card">
-                <!-- ATUALIZADO: Cabeçalho com Contador -->
+            <div class="card shadow-sm h-100">
                 <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                    <span>2. Arquivo de Comprovantes</span>
+                    <span class="fw-bold"><i class="fas fa-receipt"></i> 2. Comprovantes</span>
                     <span id="count-comprovantes" class="badge bg-white text-success rounded-pill">{{ arquivos.comprovantes|length }}</span>
                 </div>
 
                 <div class="card-body">
                     <div class="drop-zone" id="drop-comprovantes" onclick="document.getElementById('input-comprovantes').click()">
-                        <p class="mb-0">Arraste o arquivão aqui</p>
+                        <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                        <p class="mb-0 text-muted">Clique ou arraste o arquivo único de comprovantes</p>
                         <input type="file" id="input-comprovantes" accept=".pdf" hidden onchange="handleUpload(this.files, 'comprovantes')">
                     </div>
                     
                     <div class="file-list" id="list-comprovantes">
                         {% for f in arquivos.comprovantes %}
                         <div class="file-item" id="file-row-{{ f }}">
-                            <div><span class="status-icon status-waiting">🗂️</span> {{ f }}</div>
-                            <button class="btn btn-sm btn-danger" onclick="deleteFile('comprovantes', '{{ f }}')">×</button>
+                            <div><span class="status-icon">🗂️</span> {{ f }}</div>
+                            <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteFile('comprovantes', '{{ f }}')"><i class="fas fa-times"></i></button>
                         </div>
                         {% endfor %}
                     </div>
@@ -75,30 +107,48 @@
         </div>
     </div>
 
-    <!-- RODAPÉ: AÇÕES -->
-    <div class="card mt-4 shadow">
-        <div class="card-body d-flex justify-content-between align-items-center">
-            
-            <!-- Status no canto esquerdo -->
-            <div id="status-bar" class="text-muted fw-bold">Aguardando arquivos...</div>
-            
-            <!-- Botões no canto direito -->
-            <div class="d-flex gap-2">
-                <!-- NOVO BOTÃO LIMPAR -->
-                <button class="btn btn-outline-danger btn-lg" onclick="limparTudo()">
-                    🗑️ Limpar Tudo
-                </button>
-
-                <button id="btn-processar" class="btn btn-dark btn-lg" onclick="startProcessing()">
-                    ⚡ Iniciar Conciliação
-                </button>
-            </div>
-
+    <!-- BOTÃO DE AÇÃO -->
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <button id="btn-processar" class="btn btn-dark btn-lg px-5 shadow" onclick="startProcessing()">
+                <i class="fas fa-bolt"></i> INICIAR PROCESSAMENTO
+            </button>
         </div>
     </div>
 
+    <!-- PAINEL DE EXECUÇÃO (Escondido inicialmente) -->
+    <div id="execution-panel" class="card border-dark shadow-lg">
+        <div class="card-header bg-dark text-white">
+            <i class="fas fa-terminal"></i> Log de Execução da IA
+        </div>
+        <div class="card-body bg-light">
+            
+            <!-- Barra de Progresso -->
+            <div class="mb-3">
+                <label class="form-label fw-bold text-muted" id="progress-label">Aguardando início...</label>
+                <div class="progress" style="height: 25px;">
+                    <div id="main-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Terminal -->
+            <div id="terminal-log">
+                <div>_ Sistema pronto.</div>
+            </div>
+
+            <!-- Área de Download -->
+            <div id="download-area" class="text-center mt-4" style="display: none;">
+                <h4 class="text-success fw-bold">Processo Finalizado!</h4>
+                <a id="download-link" href="#" class="btn btn-success btn-lg pulse-btn mt-2">
+                    <i class="fas fa-download"></i> BAIXAR ARQUIVO FINAL (.ZIP)
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-    // --- FUNÇÃO AUXILIAR: ATUALIZAR CONTADOR ---
+    // --- FUNÇÕES DE UI ---
     function updateCounter(tipo, delta) {
         const badgeId = (tipo === 'boletos') ? 'count-boletos' : 'count-comprovantes';
         const badge = document.getElementById(badgeId);
@@ -110,19 +160,26 @@
         }
     }
 
+    function logToTerminal(msg, color='#00ff41') {
+        const term = document.getElementById('terminal-log');
+        const time = new Date().toLocaleTimeString();
+        term.innerHTML += `<div style="color:${color}"><span style="opacity:0.6">[${time}]</span> ${msg}</div>`;
+        term.scrollTop = term.scrollHeight; // Auto-scroll
+    }
+
     // --- 1. UPLOAD ---
     async function handleUpload(files, tipo) {
         const listId = `list-${tipo}`;
         const container = document.getElementById(listId);
         
         for (let file of files) {
-            // Cria UI temporária
+            const tempId = 'temp-' + Date.now();
             const div = document.createElement('div');
             div.className = 'file-item';
-            div.innerHTML = `<div><span class="spinner-border spinner-border-sm"></span> ${file.name}</div>`;
+            div.id = tempId;
+            div.innerHTML = `<div><i class="fas fa-spinner fa-spin text-primary"></i> ${file.name}</div>`;
             container.appendChild(div);
 
-            // Envia pro servidor
             const formData = new FormData();
             formData.append('file', file);
             formData.append('tipo', tipo);
@@ -130,130 +187,156 @@
             try {
                 const res = await fetch("{% url 'api_upload' %}", { method: 'POST', body: formData });
                 const data = await res.json();
+                
                 if(data.status === 'ok') {
-                    // Atualiza UI para sucesso
-                    div.id = `file-row-${data.filename}`;
-                    div.innerHTML = `
-                        <div><span class="status-icon status-waiting">📄</span> ${data.filename}</div>
-                        <button class="btn btn-sm btn-danger" onclick="deleteFile('${tipo}', '${data.filename}')">×</button>
+                    // Substitui ID temporário pelo ID real baseado no nome
+                    const finalDiv = document.getElementById(tempId);
+                    finalDiv.id = `file-row-${data.filename}`; // ID importante para o match visual depois
+                    finalDiv.innerHTML = `
+                        <div><span class="status-icon">${tipo === 'boletos' ? '📄' : '🗂️'}</span> <span class="filename">${data.filename}</span></div>
+                        <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteFile('${tipo}', '${data.filename}')"><i class="fas fa-times"></i></button>
                     `;
-                    // ATUALIZA O CONTADOR (+1)
                     updateCounter(tipo, 1);
                 }
             } catch(e) {
-                div.innerHTML = `<span class="text-danger">Erro ao subir ${file.name}</span>`;
+                document.getElementById(tempId).innerHTML = `<span class="text-danger">Erro ao enviar.</span>`;
             }
         }
     }
 
-    // --- 2. DELETAR ---
+    // --- 2. DELETE ---
     async function deleteFile(tipo, filename) {
-        if(!confirm('Remover arquivo?')) return;
-        
+        if(!confirm('Remover este arquivo?')) return;
         try {
             await fetch("{% url 'api_delete' %}", {
                 method: 'POST',
                 body: JSON.stringify({ tipo, filename }),
                 headers: { 'Content-Type': 'application/json' }
             });
-            document.getElementById(`file-row-${filename}`).remove();
-            
-            // ATUALIZA O CONTADOR (-1)
+            const row = document.getElementById(`file-row-${filename}`);
+            if(row) row.remove();
             updateCounter(tipo, -1);
-
         } catch(e) { alert('Erro ao deletar'); }
     }
 
-    // --- 3. PROCESSAMENTO (STREAM) ---
+    async function limparTudo() {
+        if (!confirm("Isso apagará TODOS os arquivos da fila. Confirmar?")) return;
+        try {
+            await fetch("{% url 'api_limpar' %}", { method: 'POST' });
+            document.getElementById('list-boletos').innerHTML = '';
+            document.getElementById('list-comprovantes').innerHTML = '';
+            document.getElementById('count-boletos').innerText = '0';
+            document.getElementById('count-comprovantes').innerText = '0';
+            
+            // Reset UI de processamento
+            document.getElementById('execution-panel').style.display = 'none';
+            document.getElementById('btn-processar').disabled = false;
+            document.getElementById('btn-processar').innerHTML = '<i class="fas fa-bolt"></i> INICIAR PROCESSAMENTO';
+        } catch(e) { alert("Erro ao limpar."); }
+    }
+
+    // --- 3. PROCESSAMENTO INTELIGENTE ---
     async function startProcessing() {
         const btn = document.getElementById('btn-processar');
-        const status = document.getElementById('status-bar');
+        const panel = document.getElementById('execution-panel');
+        const term = document.getElementById('terminal-log');
+        const pBar = document.getElementById('main-progress-bar');
+        const pLabel = document.getElementById('progress-label');
         
+        // Reset Visual
+        panel.style.display = 'block';
+        panel.scrollIntoView({ behavior: 'smooth' });
         btn.disabled = true;
-        btn.innerText = "Processando...";
-        status.innerText = "Iniciando conexão com IA...";
+        btn.innerHTML = '<i class="fas fa-cog fa-spin"></i> Processando...';
+        term.innerHTML = '<div>_ Iniciando conexão com o servidor...</div>';
+        pBar.style.width = '5%';
+        document.getElementById('download-area').style.display = 'none';
 
-        const response = await fetch("{% url 'api_processar' %}");
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
+        try {
+            const response = await fetch("{% url 'api_processar' %}"); // Verifique se o nome da URL no urls.py é 'api_processar' ou 'api_iniciar_processamento'
+            
+            if (!response.ok) throw new Error("Erro ao conectar com API");
 
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            
-            const chunk = decoder.decode(value);
-            const lines = chunk.split('\n');
-            
-            for (let line of lines) {
-                if (!line.trim()) continue;
-                try {
-                    const event = JSON.parse(line);
-                    handleEvent(event);
-                } catch(e) {}
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop(); // Guarda o resto
+
+                for (let line of lines) {
+                    if (!line.trim()) continue;
+                    try {
+                        const event = JSON.parse(line);
+                        handleServerEvent(event);
+                    } catch(e) { console.error(e); }
+                }
             }
+        } catch (error) {
+            logToTerminal("❌ ERRO FATAL: " + error.message, 'red');
+            btn.disabled = false;
+            btn.innerText = "Tentar Novamente";
         }
     }
 
-    function handleEvent(ev) {
-        const status = document.getElementById('status-bar');
-        
-        if(ev.type === 'log') {
-            status.innerText = ev.data;
+    function handleServerEvent(ev) {
+        const pBar = document.getElementById('main-progress-bar');
+        const pLabel = document.getElementById('progress-label');
+
+        if (ev.type === 'log') {
+            logToTerminal(ev.data);
         }
-        else if(ev.type === 'file_start') {
-            // Marca o ícone como "girando"
+        else if (ev.type === 'comp_status') {
+            // Atualiza barra durante leitura de comprovantes
+            pBar.style.width = '30%'; 
+            pLabel.innerText = `Lendo Comprovantes: ${ev.data.msg}`;
+        }
+        else if (ev.type === 'file_start') {
+            // Marca arquivo na lista como processando
+            pLabel.innerText = `Analisando: ${ev.data.filename}`;
             const row = document.getElementById(`file-row-${ev.data.filename}`);
-            if(row) row.querySelector('.status-icon').innerText = '⏳';
+            if(row) {
+                const icon = row.querySelector('.status-icon');
+                icon.innerHTML = '<i class="fas fa-spinner fa-spin text-primary"></i>';
+                row.style.backgroundColor = '#f8f9fa';
+            }
         }
-        else if(ev.type === 'file_done') {
-            // Marca check verde ou alerta
+        else if (ev.type === 'file_done') {
+            // Marca sucesso ou erro visualmente na lista
             const row = document.getElementById(`file-row-${ev.data.filename}`);
             if(row) {
                 const icon = row.querySelector('.status-icon');
                 if(ev.data.status === 'success') {
-                    icon.innerText = '✅';
-                    row.style.backgroundColor = '#d4edda'; // Verde claro
+                    icon.innerHTML = '✅'; // Check verde
+                    row.style.backgroundColor = '#d1e7dd'; // Verde claro bootstrap
                 } else {
-                    icon.innerText = '⚠️';
-                    row.style.backgroundColor = '#fff3cd'; // Amarelo
+                    icon.innerHTML = '⚠️'; // Warning amarelo
+                    row.style.backgroundColor = '#fff3cd'; // Amarelo bootstrap
                 }
             }
         }
-        else if(ev.type === 'finish') {
-            status.innerHTML = `<a href="${ev.data.url}" class="btn btn-success fw-bold">⬇️ DOWNLOAD ZIP COMPLETO</a>`;
-            document.getElementById('btn-processar').innerText = "Concluído";
-        }
-    }
-
-    async function limparTudo() {
-        if (!confirm("Tem certeza que deseja apagar TODOS os arquivos da lista?")) {
-            return;
-        }
-
-        try {
-            // Chama o backend para apagar os arquivos fisicamente
-            const res = await fetch("{% url 'api_limpar' %}", { method: 'POST' });
-            const data = await res.json();
-
-            if (data.status === 'ok') {
-                // Limpa a tela visualmente
-                document.getElementById('list-boletos').innerHTML = '';
-                document.getElementById('list-comprovantes').innerHTML = '';
-                document.getElementById('status-bar').innerText = "Arquivos removidos com sucesso.";
-                
-                // Reseta cores e ícones se tiver sobrado algo
-                document.getElementById('btn-processar').disabled = false;
-                document.getElementById('btn-processar').innerText = "⚡ Iniciar Conciliação";
-
-                // ZERA OS CONTADORES VISUALMENTE
-                document.getElementById('count-boletos').innerText = "0";
-                document.getElementById('count-comprovantes').innerText = "0";
-
-            } else {
-                alert("Erro ao limpar: " + data.error);
-            }
-        } catch(e) {
-            alert("Erro de conexão ao tentar limpar.");
+        else if (ev.type === 'finish') {
+            pBar.style.width = '100%';
+            pBar.classList.remove('bg-info');
+            pBar.classList.add('bg-success');
+            pLabel.innerText = "Processo Concluído!";
+            logToTerminal("🏁 DOWNLOAD GERADO COM SUCESSO.", "#00ff41");
+            
+            // Mostra botão de download
+            const dlArea = document.getElementById('download-area');
+            const dlLink = document.getElementById('download-link');
+            dlLink.href = ev.data.url;
+            dlArea.style.display = 'block';
+            
+            // Reabilita botão principal
+            const btn = document.getElementById('btn-processar');
+            btn.innerHTML = '<i class="fas fa-redo"></i> Iniciar Novo';
+            btn.disabled = false;
         }
     }
 </script>
