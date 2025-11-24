@@ -35,6 +35,13 @@ BATCH_SIZE = 10
 CACHE_TTL = 3600 * 24  # 24 horas
 TOLERANCIA_VALOR_PERCENT = 0.02  # 2%
 
+import shutil
+if shutil.which('tesseract'):
+    pytesseract.pytesseract.tesseract_cmd = shutil.which('tesseract')
+else:
+    # Fallback comum no linux
+    pytesseract.pytesseract.tesseract_cmd = r'/usr/bin/tesseract'
+
 # Configuração do Tesseract (ajustar se necessário)
 # pytesseract.pytesseract.tesseract_cmd = r'/usr/bin/tesseract'  # Ubuntu/Linux
 
