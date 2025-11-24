@@ -19,42 +19,71 @@ from pypdf import PdfReader, PdfWriter
 from django.conf import settings
 
 # ============================================================
-# 1. EXTRAÇÃO DE DADOS
+# 1. EXTRAÇÃO DE DADOS (MELHORADA)
 # ============================================================
 
 def extrair_codigo_barras(texto):
     """
     Extrai código de barras de um texto.
-    Procura por sequência de números com 47-50 dígitos (padrão de boleto).
+    Tenta vários padrões de busca para aumentar taxa de sucesso.
     """
-    # Remove quebras de linha e espaços
+    if not texto:
+        return None
+    
+    # Remove quebras de linha e espaços extras
     texto_limpo = texto.replace('\n', ' ').replace('\r', ' ')
     
-    # Busca códigos de barras: sequência longa de números
-    matches = re.findall(r'\b\d{40,55}\b', texto_limpo)
-    
+    # Padrão 1: Código de barras completo (45-55 dígitos)
+    matches = re.findall(r'\b\d{45,55}\b', texto_limpo)
     if matches:
-        # Retorna o primeiro (normalmente o mais longo)
-        return matches[0]
+        # Retorna o mais longo (normalmente o correto)
+        return max(matches, key=len)
+    
+    # Padrão 2: Sequência longa de números (40+ dígitos)
+    matches = re.findall(r'\d{40,60}', texto_limpo)
+    if matches:
+        return max(matches, key=len)
+    
+    # Padrão 3: Procura por "Código de barras:" ou similar
+    match = re.search(r'(?:Código|código|CODE|code)[:\s]+(\d{40,60})', texto_limpo)
+    if match:
+        return match.group(1)
     
     return None
 
 def extrair_valor(texto):
     """
     Extrai valor em formato R$ XXX,XX ou XXX.XXX,XX
+    Tenta vários padrões para aumentar a taxa de sucesso.
     """
-    # Padrão: R$ 1.234,56 ou R$ 1234,56
-    matches = re.findall(r'R\$\s*[\d.]*\d+,\d{2}', texto)
+    if not texto:
+        return 0.0
+    
+    # Padrão 1: R$ 1.234,56 (com pontos de milhar)
+    matches = re.findall(r'R\$\s*([\d.]+,\d{2})', texto)
+    
+    if not matches:
+        # Padrão 2: R$ 1234,56 (sem pontos de milhar)
+        matches = re.findall(r'R\$\s*(\d+,\d{2})', texto)
+    
+    if not matches:
+        # Padrão 3: Apenas números com vírgula (sem R$)
+        matches = re.findall(r'\b(\d{1,3}(?:\.\d{3})*,\d{2})\b', texto)
+    
+    if not matches:
+        # Padrão 4: Procura por "Valor:" ou similar
+        match = re.search(r'(?:Valor|valor|VALOR)[:\s]+R?\$?\s*([\d.]+,\d{2})', texto)
+        if match:
+            matches = [match.group(1)]
     
     if matches:
-        valor_str = matches[0]
-        # Remove 'R$' e espaços, depois converte
-        valor_str = valor_str.replace('R$', '').strip()
-        valor_str = valor_str.replace('.', '').replace(',', '.')
-        try:
-            return float(valor_str)
-        except:
-            return 0.0
+        # Converte o primeiro match que conseguir
+        for valor_str in matches:
+            try:
+                valor_convertido = valor_str.replace('.', '').replace(',', '.')
+                return float(valor_convertido)
+            except:
+                continue
     
     return 0.0
 
@@ -63,15 +92,17 @@ def extrair_empresa(texto):
     Tenta extrair nome da empresa/cedente do texto.
     Procura por padrões como "Nome:" ou "Cedente:"
     """
-    # Procura por linhas com "Nome:" ou "Cedente:"
+    if not texto:
+        return "N/A"
+    
     linhas = texto.split('\n')
     
-    for i, linha in enumerate(linhas):
-        if 'Nome:' in linha or 'NOME:' in linha:
+    for linha in linhas:
+        if 'Nome:' in linha or 'NOME:' in linha or 'Cedente:' in linha:
             partes = linha.split(':', 1)
             if len(partes) > 1:
-                empresa = partes[1].strip()[:50]  # Pega até 50 caracteres
-                if empresa:
+                empresa = partes[1].strip()[:50]
+                if empresa and empresa != "":
                     return empresa
     
     return "N/A"
@@ -100,7 +131,6 @@ class TabelaComprovantes:
             'pdf_bytes': pdf_bytes,
         }
         self.comprovantes.append(item)
-        
         return item
     
     def buscar_por_codigo(self, codigo):
@@ -116,10 +146,9 @@ class TabelaComprovantes:
                 continue
             
             # Comparação: se um contém o outro ou são iguais
-            if comp['codigo'] and codigo in comp['codigo']:
-                return comp
-            if comp['codigo'] and comp['codigo'] in codigo:
-                return comp
+            if comp['codigo']:
+                if codigo in comp['codigo'] or comp['codigo'] in codigo:
+                    return comp
         
         return None
     
