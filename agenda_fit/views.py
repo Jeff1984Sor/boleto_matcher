@@ -63,13 +63,12 @@ def calendario_semanal(request):
 @login_required
 def lista_aulas_aluno(request, aluno_id):
     aluno = get_object_or_404(Aluno, pk=aluno_id)
-    
-    # Busca todas as aulas que o aluno está vinculado (Ordenadas da mais recente para a antiga)
     presencas = Presenca.objects.filter(aluno=aluno).select_related('aula', 'aula__profissional').order_by('-aula__data_hora_inicio')
     
     return render(request, 'agenda_fit/aluno_aulas_list.html', {
         'aluno': aluno,
-        'presencas': presencas
+        'presencas': presencas,
+        'agora': timezone.now() # <--- ADICIONE ISSO
     })
 
 @login_required

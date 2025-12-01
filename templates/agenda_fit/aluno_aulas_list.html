@@ -46,15 +46,24 @@
                                 <span class="badge bg-danger">Cancelada</span>
                             {% endif %}
                         </td>
-                        <td>
-                            {% if p.status == 'PRESENTE' %}
-                                <i class="fas fa-check-circle text-success me-1"></i> Presente
-                            {% elif p.status == 'FALTA' %}
-                                <i class="fas fa-times-circle text-danger me-1"></i> Falta
-                            {% elif p.status == 'FALTA_JUSTIFICADA' %}
-                                <i class="fas fa-exclamation-circle text-warning me-1"></i> Justificada
+                       <td>
+                            <!-- LÓGICA DE PRESENÇA CORRIGIDA -->
+                            {% if p.aula.data_hora_inicio > agora %}
+                                <!-- Aula no FUTURO -->
+                                <span class="text-muted small"><i class="far fa-clock"></i> Aguardando</span>
+                            
                             {% else %}
-                                <i class="far fa-circle text-muted me-1"></i> -
+                                <!-- Aula no PASSADO (ou acontecendo agora) -->
+                                {% if p.status == 'PRESENTE' %}
+                                    <span class="badge bg-success text-white"><i class="fas fa-check"></i> Presente</span>
+                                {% elif p.status == 'FALTA' %}
+                                    <span class="badge bg-danger text-white"><i class="fas fa-times"></i> Falta</span>
+                                {% elif p.status == 'FALTA_JUSTIFICADA' %}
+                                    <span class="badge bg-warning text-dark"><i class="fas fa-exclamation"></i> Justificada</span>
+                                {% else %}
+                                    <!-- Se for passado e não tiver status (ainda está como padrão mas não foi confirmado) -->
+                                    <span class="text-secondary small fst-italic">Não registrado</span>
+                                {% endif %}
                             {% endif %}
                         </td>
                     </tr>
