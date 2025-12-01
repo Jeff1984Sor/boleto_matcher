@@ -26,7 +26,7 @@ def calendario_semanal(request):
     aulas = Aula.objects.filter(
         data_hora_inicio__date__gte=inicio_semana,
         data_hora_inicio__date__lte=fim_semana
-    ).select_related('profissional', 'unidade', 'organizacao').order_by('data_hora_inicio')
+    ).select_related('profissional', 'unidade').order_by('data_hora_inicio')
 
     # 4. Organiza os dados para o Template (Dicionário: {0: [aulas_seg], 1: [aulas_ter]...})
     # Criamos também uma lista de cabeçalhos com as datas dos dias
