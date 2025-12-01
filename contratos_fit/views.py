@@ -14,6 +14,17 @@ from django.template import Template, Context
 from django.http import HttpResponse
 from .models import Contrato, TemplateContrato 
 
+from django.utils import timezone
+
+from django.urls import reverse_lazy
+from .models import Plano
+from .forms import PlanoForm
+
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.contrib.auth.mixins import LoginRequiredMixin
+
+import datetime 
+
 @login_required
 def novo_contrato(request, aluno_id):
     # Busca o aluno ou retorna 404 se não existir
@@ -104,3 +115,33 @@ def imprimir_contrato(request, pk):
         'conteudo': conteudo_final,
         'titulo': f"Contrato - {contrato.aluno.nome}"
     })
+
+# --- PLANOS ---
+
+class PlanoListView(LoginRequiredMixin, ListView):
+    model = Plano
+    template_name = 'contratos_fit/plano_list.html'
+    context_object_name = 'planos'
+
+class PlanoCreateView(LoginRequiredMixin, CreateView):
+    model = Plano
+    form_class = PlanoForm
+    template_name = 'contratos_fit/plano_form.html'
+    success_url = reverse_lazy('plano_list')
+
+    # Se você removeu o campo organizacao do Model, pode apagar este método.
+    # Se o campo ainda existe no banco/model, mantenha isso para evitar erro:
+    # def form_valid(self, form):
+    #     form.instance.organizacao = self.request.tenant
+    #     return super().form_valid(form)
+
+class PlanoUpdateView(LoginRequiredMixin, UpdateView):
+    model = Plano
+    form_class = PlanoForm
+    template_name = 'contratos_fit/plano_form.html'
+    success_url = reverse_lazy('plano_list')
+
+class PlanoDeleteView(LoginRequiredMixin, DeleteView):
+    model = Plano
+    template_name = 'contratos_fit/plano_confirm_delete.html'
+    success_url = reverse_lazy('plano_list')

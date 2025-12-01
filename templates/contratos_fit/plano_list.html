@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Planos de Venda{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold text-dark"><i class="fas fa-tags me-2"></i>Planos & Preços</h3>
+        <a href="{% url 'plano_create' %}" class="btn btn-primary fw-bold">
+            <i class="fas fa-plus"></i> Novo Plano
+        </a>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nome do Plano</th>
+                        <th>Duração</th>
+                        <th>Frequência</th>
+                        <th>Valor Mensal</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for plano in planos %}
+                    <tr>
+                        <td class="fw-bold text-primary">{{ plano.nome }}</td>
+                        <td>{{ plano.duracao_meses }} Meses</td>
+                        <td>{{ plano.frequencia_semanal }}x por Semana</td>
+                        <td class="fw-bold text-success">R$ {{ plano.valor_mensal }}</td>
+                        <td class="text-end">
+                            <a href="{% url 'plano_update' plano.pk %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-pen"></i></a>
+                            <a href="{% url 'plano_delete' plano.pk %}" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            Nenhum plano cadastrado ainda.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

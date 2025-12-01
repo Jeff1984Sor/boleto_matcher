@@ -2,7 +2,7 @@ from django import forms
 from django.forms import inlineformset_factory
 from django.core.exceptions import ValidationError
 from django.forms.models import BaseInlineFormSet
-from .models import Contrato, HorarioFixo
+from .models import Contrato, HorarioFixo, Plano
 
 # 1. Classe de Validação Customizada (Sua lógica entra aqui)
 class BaseHorarioFixoFormSet(BaseInlineFormSet):
@@ -70,3 +70,16 @@ HorarioFixoFormSet = inlineformset_factory(
         'profissional': forms.Select(attrs={'class': 'form-select'}),
     }
 )
+
+class PlanoForm(forms.ModelForm):
+    class Meta:
+        model = Plano
+        # Se você ainda tiver 'organizacao' no model, exclua aqui
+        exclude = ['organizacao', 'ativo'] 
+        
+        widgets = {
+            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Pilates 2x - Trimestral'}),
+            'valor_mensal': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00'}),
+            'frequencia_semanal': forms.NumberInput(attrs={'class': 'form-control'}),
+            'duracao_meses': forms.Select(attrs={'class': 'form-select'}),
+        }
