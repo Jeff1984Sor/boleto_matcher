@@ -13,7 +13,7 @@ urlpatterns = [
     path('debug-login/', debug_auth),
     path('agenda/', include('agenda_fit.urls')),
     path('financeiro/', include('financeiro_fit.urls')),
-    path('contratos/', include('contratos_fit.urls')),
+    path('contratos/', include('contratos_fit.urls')), #feito
 ]
 
 if settings.DEBUG:
