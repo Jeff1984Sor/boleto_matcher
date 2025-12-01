@@ -132,3 +132,14 @@ class PlanoDeleteView(LoginRequiredMixin, DeleteView):
     model = Plano
     template_name = 'contratos_fit/plano_confirm_delete.html'
     success_url = reverse_lazy('plano_list')
+
+@login_required
+def lista_contratos_aluno(request, aluno_id):
+    aluno = get_object_or_404(Aluno, pk=aluno_id)
+    contratos = aluno.contratos.all().order_by('-data_inicio')
+    
+    return render(request, 'contratos_fit/aluno_contratos_list.html', {
+        'aluno': aluno,
+        'contratos': contratos,
+        'hoje': timezone.now().date()
+    })

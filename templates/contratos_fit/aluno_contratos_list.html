@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Contratos de {{ aluno.nome }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-0 text-primary"><i class="fas fa-file-contract me-2"></i>Contratos do Aluno</h4>
+            <p class="text-muted mb-0">Histórico de planos contratados por <strong>{{ aluno.nome }}</strong></p>
+        </div>
+        <div>
+            <a href="{% url 'novo_contrato' aluno.id %}" class="btn btn-success fw-bold me-2">
+                <i class="fas fa-plus"></i> Novo Contrato
+            </a>
+            <a href="{% url 'aluno_detail' aluno.id %}" class="btn btn-outline-secondary">
+                Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Plano</th>
+                        <th>Vigência</th>
+                        <th>Valor Total</th>
+                        <th>Status</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in contratos %}
+                    <tr>
+                        <td>
+                            <span class="fw-bold text-dark">{{ c.plano.nome }}</span>
+                            <br>
+                            <span class="small text-muted">{{ c.qtde_parcelas }}x parcelas</span>
+                        </td>
+                        <td>
+                            {{ c.data_inicio|date:"d/m/Y" }} até 
+                            {% if c.data_fim %}
+                                {{ c.data_fim|date:"d/m/Y" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold text-success">
+                            R$ {{ c.valor_total }}
+                        </td>
+                        <td>
+                            {% if c.status == 'ATIVO' %}
+                                <span class="badge bg-success">Ativo</span>
+                            {% elif c.status == 'CANCELADO' %}
+                                <span class="badge bg-danger">Cancelado</span>
+                            {% elif c.status == 'ENCERRADO' %}
+                                <span class="badge bg-secondary">Encerrado</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Pendente</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'imprimir_contrato' c.id %}" target="_blank" class="btn btn-sm btn-outline-dark" title="Imprimir PDF">
+                                <i class="fas fa-print"></i> Imprimir
+                            </a>
+                            <!-- Aqui poderia ter um botão de Cancelar Contrato futuramente -->
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            Nenhum contrato encontrado.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
