@@ -179,7 +179,7 @@
         </a>
         
         <!-- LINK CORRIGIDO: Financeiro (Filtra por este aluno na URL se você implementar filtro na view, senão vai pra lista geral) -->
-        <a href="{% url 'financeiro_lista' %}?aluno={{ aluno.nome }}" class="app-nav-item">
+        <a href="{% url 'financeiro_lista' %}?aluno_id={{ aluno.id }}" class="app-nav-item">
             <i class="fas fa-dollar-sign fs-5"></i> Financeiro
         </a>
         

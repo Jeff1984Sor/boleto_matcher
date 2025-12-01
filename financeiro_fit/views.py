@@ -19,16 +19,20 @@ class LancamentoListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         queryset = super().get_queryset()
         
-        # Filtros da URL (status, data, aluno)
+        # Filtros da URL
         status = self.request.GET.get('status')
         inicio = self.request.GET.get('inicio')
         fim = self.request.GET.get('fim')
+        aluno_id = self.request.GET.get('aluno_id')  # <--- NOVO
         
         if status:
             queryset = queryset.filter(status=status)
         
         if inicio and fim:
             queryset = queryset.filter(data_vencimento__range=[inicio, fim])
+            
+        if aluno_id:  # <--- LÓGICA NOVA
+            queryset = queryset.filter(aluno__id=aluno_id)
             
         return queryset.order_by('data_vencimento')
 
