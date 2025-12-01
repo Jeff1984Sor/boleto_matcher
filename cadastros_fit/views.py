@@ -25,9 +25,16 @@ class AlunoCreateView(LoginRequiredMixin, CreateView):
     success_url = reverse_lazy('aluno_list')
 
     def form_valid(self, form):
-        # Garanta que esta linha tem 4 espaços a mais que o "def"
-        form.instance.organizacao = self.request.tenant
-        return super().form_valid(form)
+        # Cria o objeto na memória (não salva no banco ainda)
+        aluno = form.save(commit=False)
+        
+        # Força a gravação da Organização
+        aluno.organizacao = self.request.tenant
+        
+        # Agora salva de verdade
+        aluno.save()
+        
+        return redirect(self.success_url)
 
 class AlunoUpdateView(LoginRequiredMixin, UpdateView):
     model = Aluno
