@@ -97,12 +97,20 @@ def api_ler_documento(request):
 class AlunoDetailView(LoginRequiredMixin, DetailView):
     model = Aluno
     template_name = 'cadastros_fit/aluno_detail.html'
-    context_object_name = 'aluno'
+    context_object_name = 'aluno' # No HTML vamos usar {{ aluno.nome }}
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Pega os documentos extras vinculados a este aluno
+        
+        # 1. Documentos (que você já tinha)
         context['documentos_extras'] = self.object.documentos.all()
+        
+        # 2. Dados Fictícios para o Dashboard (Futuramente você importa dos apps financeiro_fit/agenda_fit)
+        # Exemplo: context['total_servicos_ativos'] = ServicoRecorrente.objects.filter(aluno=self.object, ativo=True).count()
+        context['qtd_recorrentes'] = 1 
+        context['qtd_pacotes_fixos'] = 0
+        context['qtd_pacotes_personal'] = 0
+        
         return context
     
 def upload_documento_extra(request, pk):

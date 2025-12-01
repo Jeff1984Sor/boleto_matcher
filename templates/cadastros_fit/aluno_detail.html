@@ -1,278 +1,230 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestão de Cliente - {{ aluno.nome }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+
+<!-- CSS ESPECÍFICO DESTA TELA -->
+<style>
+    /* Estilos Visuais da Imagem */
+    .text-purple { color: #6f42c1; }
+    .bg-light-purple { background-color: #E0CFFC; }
     
-    <!-- CABEÇALHO DO ALUNO -->
-    <div class="card shadow-sm mb-4 border-0">
-        <div class="card-body d-flex align-items-center">
-            <!-- FOTO -->
-            <div class="me-4 text-center">
-                {% if aluno.foto_rosto %}
-                    <img src="{{ aluno.foto_rosto.url }}" class="rounded-circle shadow" width="100" height="100" style="object-fit: cover; border: 4px solid #fff;">
-                {% else %}
-                    <div class="rounded-circle bg-secondary text-white d-flex justify-content-center align-items-center shadow" style="width: 100px; height: 100px; font-size: 2rem; border: 4px solid #fff;">
-                        {{ aluno.nome|first }}
-                    </div>
-                {% endif %}
-                <div class="mt-2">
-                    {% if aluno.ativo %}
-                        <span class="badge bg-success">Ativo</span>
-                    {% else %}
-                        <span class="badge bg-danger">Inativo</span>
-                    {% endif %}
-                </div>
-            </div>
+    /* Avatar */
+    .client-avatar {
+        width: 80px; height: 80px;
+        background-color: #ddd;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 40px; color: white;
+        position: relative;
+    }
+    .client-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 
-            <!-- DADOS PRINCIPAIS -->
-            <div class="flex-grow-1">
-                <h2 class="fw-bold text-dark mb-0">{{ aluno.nome }}</h2>
-                <p class="text-muted mb-1"><i class="fas fa-id-card"></i> CPF: {{ aluno.cpf|default:"Não informado" }}</p>
-                <p class="text-muted mb-0"><i class="fas fa-phone"></i> {{ aluno.telefone }} | <i class="fas fa-envelope"></i> {{ aluno.email }}</p>
-            </div>
+    /* Navegação de Abas (Apps) */
+    .app-nav-container {
+        background: #f8f9fa; border-radius: 8px; padding: 10px; margin-bottom: 30px;
+        display: flex; flex-wrap: wrap; gap: 10px;
+    }
+    .app-nav-item {
+        display: flex; align-items: center; gap: 8px;
+        padding: 8px 15px; border-radius: 6px;
+        text-decoration: none; color: #555; font-weight: 500;
+        transition: 0.2s;
+    }
+    .app-nav-item:hover { background: #e2e6ea; }
+    .app-nav-item.active { background: #ffe0cc; color: #e65100; } /* Laranja */
 
-            <!-- BOTÕES DE AÇÃO -->
-            <div class="d-flex flex-column gap-2">
-                <a href="{% url 'aluno_update' aluno.pk %}" class="btn btn-outline-primary">
-                    <i class="fas fa-edit"></i> Editar Dados
-                </a>
-                <a href="{% url 'aluno_delete' aluno.pk %}" class="btn btn-outline-danger">
-                    <i class="fas fa-trash"></i> Excluir
-                </a>
-            </div>
+    /* Cards de Seleção */
+    .option-card {
+        background: white; border: 1px solid #dee2e6; border-radius: 10px;
+        padding: 20px; height: 100%; cursor: pointer; transition: 0.3s;
+    }
+    .option-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+    .card-recorrente { background-color: #EADCF8; border-color: #D6BCF0; } /* Roxo */
+    
+    .icon-circle {
+        width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        color: white; font-size: 1.2rem; margin-bottom: 15px;
+    }
+    /* Utilitários de cor para icones */
+    .bg-i-purple { background-color: #563d7c; }
+    .bg-i-green { background-color: #28a745; }
+    .bg-i-orange { background-color: #fd7e14; }
+    .bg-i-cyan { background-color: #17a2b8; }
+</style>
+
+<div class="container-fluid p-0">
+
+    <!-- 1. TOPO: Título e Botões -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <small class="text-muted">Você está em: <strong>Gestão de Cliente (Cadastro Fit)</strong></small>
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary btn-sm"><i class="fas fa-star"></i> Tutoriais</button>
+            <button class="btn btn-outline-danger btn-sm"><i class="fas fa-exclamation-circle"></i> SOS</button>
         </div>
     </div>
 
-    <!-- ABAS DE NAVEGAÇÃO -->
-    <ul class="nav nav-tabs mb-4" id="alunoTabs" role="tablist">
-        <li class="nav-item">
-            <button class="nav-link active fw-bold" id="geral-tab" data-bs-toggle="tab" data-bs-target="#geral" type="button">
-                👤 Cadastro Geral & Endereço
-            </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link fw-bold" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs" type="button">
-                📂 Documentos
-            </button>
-        </li>
-        <!-- FUTURAS ABAS -->
-        <li class="nav-item">
-            <button class="nav-link text-muted" id="contratos-tab" data-bs-toggle="tab" data-bs-target="#contratos" type="button">
-                📝 Contratos & Planos
-            </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link text-muted" id="financeiro-tab" data-bs-toggle="tab" data-bs-target="#financeiro" type="button">
-                💰 Financeiro
-            </button>
-        </li>
-    </ul>
-
-    <!-- CONTEÚDO DAS ABAS -->
-    <div class="tab-content" id="alunoTabsContent">
-        
-        <!-- ABA 1: GERAL & ENDEREÇO -->
-        <div class="tab-pane fade show active" id="geral" role="tabpanel">
-            <div class="row">
-                <!-- DADOS PESSOAIS -->
-                <div class="col-md-6">
-                    <div class="card h-100">
-                        <div class="card-header bg-light fw-bold">Dados Pessoais</div>
-                        <div class="card-body">
-                            <ul class="list-group list-group-flush">
-                                <li class="list-group-item"><strong>Nascimento:</strong> {{ aluno.data_nascimento|date:"d/m/Y" }}</li>
-                                <li class="list-group-item"><strong>Email:</strong> {{ aluno.email }}</li>
-                                <li class="list-group-item"><strong>Telefone:</strong> {{ aluno.telefone }}</li>
-                                <li class="list-group-item"><strong>Biometria:</strong> {% if aluno.biometria_template %}✅ Cadastrada{% else %}❌ Pendente{% endif %}</li>
-                                <li class="list-group-item"><strong>Catraca:</strong> {% if aluno.bloqueado_catraca %}<span class="text-danger">BLOQUEADO</span>{% else %}<span class="text-success">LIBERADO</span>{% endif %}</li>
-                            </ul>
-                        </div>
+    <!-- 2. CABEÇALHO DO ALUNO/CLIENTE -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <!-- Foto e Nome -->
+                <div class="col-md-5 d-flex align-items-center gap-3">
+                    <div class="client-avatar">
+                        {% if aluno.foto %}
+                            <img src="{{ aluno.foto.url }}" alt="Foto">
+                        {% else %}
+                            <i class="fas fa-user"></i>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <!-- NOME VINDO DO BANCO -->
+                        <h4 class="mb-0 fw-bold">{{ aluno.nome }}</h4> 
+                        <small class="text-muted d-block">ID/Matrícula: {{ aluno.id }}</small>
+                        <small class="text-muted">Unidade: {{ aluno.unidade|default:"Principal" }}</small>
                     </div>
                 </div>
 
-                <!-- ENDEREÇO -->
-                <div class="col-md-6">
-                    <div class="card h-100">
-                        <div class="card-header bg-light fw-bold">Endereço</div>
-                        <div class="card-body">
-                            {% if aluno.logradouro %}
-                                <p class="mb-1"><strong>{{ aluno.logradouro }}, {{ aluno.numero }}</strong></p>
-                                <p class="mb-1">{{ aluno.bairro }} - {{ aluno.cidade }}/{{ aluno.estado }}</p>
-                                <p class="mb-0">CEP: {{ aluno.cep }}</p>
-                                {% if aluno.complemento %}
-                                    <small class="text-muted">Compl: {{ aluno.complemento }}</small>
-                                {% endif %}
-                            {% else %}
-                                <div class="alert alert-warning">Endereço não cadastrado.</div>
-                            {% endif %}
-                            
-                            <div class="mt-3">
-                                <a href="https://maps.google.com/?q={{ aluno.logradouro }},{{ aluno.numero }},{{ aluno.cidade }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                                    <i class="fas fa-map-marker-alt"></i> Ver no Mapa
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ANAMNESE / SAÚDE -->
-            <div class="card mt-4">
-                <div class="card-header bg-danger text-white fw-bold">❤️ Ficha de Saúde (Anamnese)</div>
-                <div class="card-body">
-                    {% if aluno.anamnese %}
-                        <pre class="mb-0" style="white-space: pre-wrap; font-family: inherit;">{{ aluno.anamnese }}</pre>
-                    {% else %}
-                        <span class="text-muted">Nenhuma observação de saúde registrada.</span>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- ABA 2: DOCUMENTOS -->
-        <div class="tab-pane fade" id="docs" role="tabpanel">
-            <div class="row">
-                
-                <!-- 1. DOCUMENTOS DE IDENTIFICAÇÃO (DA IA) -->
-                <div class="col-md-8">
-                    <h5 class="fw-bold text-primary mb-3"><i class="fas fa-robot me-2"></i>Documentos Analisados</h5>
-                    
-                    <div class="row">
-                        <!-- RG / CNH -->
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100 border-primary">
-                                <div class="card-header bg-primary text-white fw-bold">
-                                    <i class="fas fa-id-card me-2"></i> Identidade (RG/CNH)
-                                </div>
-                                <div class="card-body text-center d-flex flex-column justify-content-center">
-                                    {% if aluno.doc_identidade_foto %}
-                                        <a href="{{ aluno.doc_identidade_foto.url }}" target="_blank">
-                                            <img src="{{ aluno.doc_identidade_foto.url }}" class="img-fluid rounded shadow-sm mb-3" style="max-height: 200px; border: 1px solid #ddd;">
-                                        </a>
-                                        <a href="{{ aluno.doc_identidade_foto.url }}" download class="btn btn-sm btn-outline-primary w-100">
-                                            <i class="fas fa-download"></i> Baixar Arquivo
-                                        </a>
-                                    {% else %}
-                                        <div class="text-muted py-4">
-                                            <i class="fas fa-file-image fa-3x mb-2 text-secondary"></i>
-                                            <p>Nenhum documento enviado.</p>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- COMPROVANTE DE RESIDÊNCIA -->
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100 border-success">
-                                <div class="card-header bg-success text-white fw-bold">
-                                    <i class="fas fa-map-marked-alt me-2"></i> Comprovante de Endereço
-                                </div>
-                                <div class="card-body text-center d-flex flex-column justify-content-center">
-                                    {% if aluno.comprovante_residencia_foto %}
-                                        <a href="{{ aluno.comprovante_residencia_foto.url }}" target="_blank">
-                                            <img src="{{ aluno.comprovante_residencia_foto.url }}" class="img-fluid rounded shadow-sm mb-3" style="max-height: 200px; border: 1px solid #ddd;">
-                                        </a>
-                                        <a href="{{ aluno.comprovante_residencia_foto.url }}" download class="btn btn-sm btn-outline-success w-100">
-                                            <i class="fas fa-download"></i> Baixar Arquivo
-                                        </a>
-                                    {% else %}
-                                        <div class="text-muted py-4">
-                                            <i class="fas fa-file-invoice fa-3x mb-2 text-secondary"></i>
-                                            <p>Nenhum comprovante enviado.</p>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 2. OUTROS ANEXOS (Lista + Botão +) -->
+                <!-- Selects Rápidos -->
                 <div class="col-md-4">
-                    <div class="card h-100 bg-light">
-                        <div class="card-header fw-bold d-flex justify-content-between align-items-center">
-                            <span><i class="fas fa-paperclip me-2"></i>Outros Anexos</span>
-                            <!-- BOTÃO QUE ABRE O MODAL -->
-                            <button class="btn btn-sm btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#modalDocumento" title="Adicionar Novo">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        <div class="card-body p-0">
-                            <ul class="list-group list-group-flush bg-transparent">
-                                {% for doc in documentos_extras %}
-                                    <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
-                                        <a href="{{ doc.arquivo.url }}" target="_blank" class="text-decoration-none text-dark text-truncate" style="max-width: 70%;">
-                                            <i class="fas fa-file-pdf me-2 text-danger"></i> {{ doc.titulo }}
-                                        </a>
-                                        <small class="text-muted">{{ doc.data_upload|date:"d/m/y" }}</small>
-                                    </li>
-                                {% empty %}
-                                    <li class="list-group-item bg-transparent text-center text-muted py-5 small">
-                                        Nenhum outro anexo.<br>
-                                        (Ex: atestado médico, contrato assinado)
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        </div>
+                    <div class="mb-2">
+                        <select class="form-select form-select-sm border-0 border-bottom rounded-0">
+                            <option selected>Nível: Padrão</option>
+                            <option value="vip">VIP</option>
+                        </select>
                     </div>
                 </div>
 
-            </div>
-        </div>
-
-        <!-- ABA 3: CONTRATOS (Placeholder) -->
-        <div class="tab-pane fade" id="contratos" role="tabpanel">
-            <div class="text-center py-5 text-muted">
-                <i class="fas fa-file-signature fa-3x mb-3"></i>
-                <h4>Módulo de Contratos em Desenvolvimento</h4>
-            </div>
-        </div>
-
-        <!-- ABA 4: FINANCEIRO (Placeholder) -->
-        <div class="tab-pane fade" id="financeiro" role="tabpanel">
-            <div class="text-center py-5 text-muted">
-                <i class="fas fa-money-check-alt fa-3x mb-3"></i>
-                <h4>Histórico Financeiro</h4>
-            </div>
-        </div>
-
-    </div>
-</div>
-
-<!-- ========================================== -->
-<!-- MODAL DE UPLOAD DE DOCUMENTO EXTRA         -->
-<!-- ========================================== -->
-<div class="modal fade" id="modalDocumento" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content shadow-lg">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title fw-bold"><i class="fas fa-paperclip me-2"></i> Anexar Novo Documento</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            
-            <form action="{% url 'upload_documento_extra' aluno.pk %}" method="post" enctype="multipart/form-data">
-                {% csrf_token %}
-                <div class="modal-body">
-                    
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Nome do Documento</label>
-                        <input type="text" name="titulo" class="form-control" placeholder="Ex: Atestado Médico, Contrato 2025..." required>
+                <!-- Ações Direita -->
+                <div class="col-md-3 text-end">
+                    <div class="mb-2"><a href="#" class="text-dark text-decoration-none small"><i class="fas fa-print"></i> Imprimir Ficha</a></div>
+                    <div>
+                        <!-- Link para Whatsapp usando o telefone do aluno -->
+                        <a href="https://wa.me/55{{ aluno.telefone|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-dark text-decoration-none small">
+                            <i class="fab fa-whatsapp text-success"></i> Dar boas vindas
+                        </a>
                     </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Selecione o Arquivo</label>
-                        <input type="file" name="arquivo" class="form-control" required>
-                        <div class="form-text">Aceita imagens e PDF.</div>
-                    </div>
-
                 </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success px-4">Salvar e Anexar</button>
-                </div>
-            </form>
+            </div>
+
+            <hr class="my-3 text-muted opacity-25">
+
+            <!-- Links de Ação Rápida -->
+            <div class="d-flex flex-wrap gap-3 align-items-center small text-muted">
+                <a href="{% url 'aluno_update' aluno.pk %}" class="text-dark text-decoration-none"><i class="fas fa-pen"></i> Ver/Editar cadastro</a>
+                <span class="border-start mx-1"></span>
+                <button type="button" class="btn btn-link p-0 text-muted text-decoration-none" data-bs-toggle="modal" data-bs-target="#modalDocumento">
+                    <i class="fas fa-file-upload"></i> Docs Extras
+                </button>
+                <span class="border-start mx-1"></span>
+                <a href="{% url 'aluno_delete' aluno.pk %}" class="text-danger text-decoration-none"><i class="fas fa-trash"></i> Excluir</a>
+            </div>
         </div>
     </div>
+
+    <!-- 3. MENU DE NAVEGAÇÃO ENTRE APPS -->
+    <div class="app-nav-container shadow-sm">
+        <!-- O link ativo é o "Central" pois estamos no Cadastro_fit -->
+        <a href="#" class="app-nav-item active">
+            <i class="fas fa-user-circle fs-5"></i> 
+            <div class="lh-1">Central<br><small>Cadastro</small></div>
+        </a>
+        
+        <!-- Links para OUTROS APPS (Ajuste as URLs conforme seu urls.py) -->
+        <a href="#" class="app-nav-item"> <!-- Ex: {% url 'financeiro_fit:dashboard' aluno.id %} -->
+            <i class="fas fa-dollar-sign fs-5"></i> Financeiro
+        </a>
+        
+        <a href="#" class="app-nav-item"> <!-- Ex: {% url 'agenda_fit:calendario' aluno.id %} -->
+            <i class="fas fa-calendar-alt fs-5"></i> Agenda
+        </a>
+        
+        <a href="#" class="app-nav-item">
+            <i class="fas fa-file-medical fs-5"></i> Prontuário
+        </a>
+        
+        <a href="#" class="app-nav-item">
+            <i class="fas fa-clipboard-list fs-5"></i> Avaliações
+        </a>
+    </div>
+
+    <!-- 4. DASHBOARD - CARDS DE OPÇÕES -->
+    <div class="text-center mb-4">
+        <h3 class="fw-bold text-dark">Escolha uma das opções abaixo:</h3>
+    </div>
+
+    <div class="row g-4">
+        <!-- Card 1: Serviços Recorrentes -->
+        <div class="col-md-3">
+            <div class="option-card card-recorrente text-start">
+                <div class="d-flex justify-content-between">
+                    <div class="icon-circle bg-i-purple"><i class="fas fa-sync-alt"></i></div>
+                    <i class="fas fa-file-invoice-dollar text-danger fs-4"></i>
+                </div>
+                <h5 class="fw-bold">Serviços<br>recorrentes</h5>
+                <p class="text-muted small mb-3">Recomendados para clientes mensais.</p>
+                <div class="fw-bold small">Ativos: {{ qtd_recorrentes|default:"0" }}</div>
+            </div>
+        </div>
+
+        <!-- Card 2: Pacotes Fixos -->
+        <div class="col-md-3">
+            <div class="option-card text-start">
+                <div class="icon-circle bg-i-green"><i class="fas fa-star"></i></div>
+                <h5 class="fw-bold">Pacotes<br>Fixos</h5>
+                <p class="text-muted small mb-3">Planos longos ou parcelados.</p>
+                <div class="fw-bold small">Ativos: {{ qtd_pacotes_fixos|default:"0" }}</div>
+            </div>
+        </div>
+
+        <!-- Card 3: Pacotes Personalizados -->
+        <div class="col-md-3">
+            <div class="option-card text-start">
+                <div class="icon-circle bg-i-orange"><i class="fas fa-user"></i></div>
+                <h5 class="fw-bold">Pacotes<br>personalizados</h5>
+                <p class="text-muted small mb-3">Sessões de fisioterapia/estética.</p>
+                <div class="fw-bold small">Ativos: {{ qtd_pacotes_personal|default:"0" }}</div>
+            </div>
+        </div>
+
+        <!-- Card 4: Avulso -->
+        <div class="col-md-3">
+            <div class="option-card text-start">
+                <div class="icon-circle bg-i-cyan"><i class="fas fa-check-double"></i></div>
+                <h5 class="fw-bold">Atendimento<br>avulso</h5>
+                <p class="text-muted small mb-3">Atendimentos unitários ou experimentais.</p>
+            </div>
+        </div>
+    </div>
+
 </div>
+
+<!-- Modal de Upload de Docs Extras (Já integrado com sua View) -->
+<div class="modal fade" id="modalDocumento" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Adicionar Documento Extra</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form action="{% url 'upload_documento_extra' aluno.pk %}" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label">Arquivo</label>
+                <input type="file" name="arquivo" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Descrição</label>
+                <input type="text" name="descricao" class="form-control" placeholder="Ex: Laudo Médico">
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Enviar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
