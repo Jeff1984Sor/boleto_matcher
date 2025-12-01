@@ -6,7 +6,6 @@ from contratos_fit.models import Contrato
 class CategoriaFinanceira(models.Model):
     TIPO_CHOICES = [('RECEITA', 'Receita'), ('DESPESA', 'Despesa')]
     
-    organizacao = models.ForeignKey(Organizacao, on_delete=models.CASCADE)
     nome = models.CharField(max_length=100, help_text="Ex: Mensalidades, Aluguel, Luz")
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
     
@@ -14,7 +13,6 @@ class CategoriaFinanceira(models.Model):
         return f"{self.nome} ({self.get_tipo_display()})"
 
 class ContaBancaria(models.Model):
-    organizacao = models.ForeignKey(Organizacao, on_delete=models.CASCADE)
     nome = models.CharField(max_length=100, help_text="Ex: Cofre, Nubank, Itaú")
     saldo_atual = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     
@@ -25,7 +23,6 @@ class Lancamento(models.Model):
     STATUS_CHOICES = [('PENDENTE', 'Pendente'), ('PAGO', 'Pago'), ('CANCELADO', 'Cancelado')]
     FORMA_PGTO = [('PIX', 'Pix'), ('DINHEIRO', 'Dinheiro'), ('CARTAO', 'Cartão'), ('BOLETO', 'Boleto')]
 
-    organizacao = models.ForeignKey(Organizacao, on_delete=models.CASCADE)
     descricao = models.CharField(max_length=200)
     
     # Vínculos (Opcionais, pois pode ser uma despesa de luz sem aluno)

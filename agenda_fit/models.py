@@ -13,7 +13,6 @@ class Aula(models.Model):
         ('CANCELADA', 'Cancelada'),
     ]
     
-    organizacao = models.ForeignKey(Organizacao, on_delete=models.CASCADE)
     unidade = models.ForeignKey(Unidade, on_delete=models.CASCADE)
     profissional = models.ForeignKey(Profissional, on_delete=models.SET_NULL, null=True)
     
