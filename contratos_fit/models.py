@@ -13,21 +13,30 @@ class TemplateContrato(models.Model):
         return self.nome
 
 class Plano(models.Model):
-    organizacao = models.ForeignKey(Organizacao, on_delete=models.CASCADE)
+    # Definição das opções para o dropdown funcionar
+    DURACAO_CHOICES = [
+        (1, 'Mensal (1 Mês)'),
+        (3, 'Trimestral (3 Meses)'),
+        (6, 'Semestral (6 Meses)'),
+        (12, 'Anual (12 Meses)'),
+    ]
+    
+    # Se ainda tiver organizacao aqui, pode remover se quiser seguir o padrão novo
+    # organizacao = models.ForeignKey(Organizacao, on_delete=models.CASCADE) 
+    
     nome = models.CharField(max_length=100, help_text="Ex: Pilates Solo 2x - Trimestral")
     
-    # Valores de Referência
     valor_mensal = models.DecimalField(max_digits=10, decimal_places=2, help_text="Valor base mensal (sem descontos)")
     
-    # Regras do Plano
     frequencia_semanal = models.PositiveIntegerField(default=2, help_text="Quantas vezes por semana?")
-    duracao_meses = models.PositiveIntegerField(default=12, help_text="1=Mensal, 3=Trimestral, 6=Semestral, 12=Anual")
+    
+    # Aqui ligamos as opções ao campo
+    duracao_meses = models.IntegerField(choices=DURACAO_CHOICES, help_text="1=Mensal, 3=Trimestral, etc")
     
     ativo = models.BooleanField(default=True)
 
     @property
     def valor_total_sugerido(self):
-        """Calcula quanto seria o total do plano (Ex: 100 * 12 meses = 1200)"""
         return self.valor_mensal * self.duracao_meses
 
     def __str__(self):
