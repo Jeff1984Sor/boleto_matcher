@@ -36,7 +36,7 @@ class AlunoForm(forms.ModelForm):
             'comprovante_residencia_foto': forms.FileInput(attrs={'class': 'form-control'}),
             
             # Áreas de Texto
-            'anamnese': forms.JSONInput(), # Caso use JSON, ou Textarea se mudou para TextField
+            'anamnese': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}), # Caso use JSON, ou Textarea se mudou para TextField
             # Se for JSONField no model, o Django admin usa um widget específico, mas no front podemos usar Textarea se for simples
         }
     
