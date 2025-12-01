@@ -44,8 +44,8 @@ class ContratoAdmin(admin.ModelAdmin):
 
 @admin.register(Plano)
 class PlanoAdmin(admin.ModelAdmin):
-    list_display = ['nome', 'valor_mensal', 'frequencia_semanal', 'duracao_meses', 'organizacao']
-    list_filter = ['organizacao']
+    list_display = ['nome', 'valor_mensal', 'frequencia_semanal', 'duracao_meses']
+    
 
 @admin.register(TemplateContrato)
 class TemplateAdmin(admin.ModelAdmin):
