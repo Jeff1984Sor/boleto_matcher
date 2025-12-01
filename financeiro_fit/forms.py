@@ -4,16 +4,19 @@ from .models import CategoriaFinanceira, ContaBancaria, Lancamento # <--- Import
 class CategoriaForm(forms.ModelForm):
     class Meta:
         model = CategoriaFinanceira
-        exclude = ['organizacao']
+        # ADICIONE ESTA LINHA:
+        fields = ['nome', 'tipo', 'categoria_pai']
+        
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'categoria_pai': forms.Select(attrs={'class': 'form-select'}),
         }
 
 class ContaBancariaForm(forms.ModelForm):
     class Meta:
         model = ContaBancaria
-        exclude = ['organizacao']
+        fields = ['nome', 'saldo_atual'] # <--- Defina os campos aqui
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'saldo_atual': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),

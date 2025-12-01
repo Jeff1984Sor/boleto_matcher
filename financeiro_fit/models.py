@@ -6,11 +6,24 @@ from contratos_fit.models import Contrato
 class CategoriaFinanceira(models.Model):
     TIPO_CHOICES = [('RECEITA', 'Receita'), ('DESPESA', 'Despesa')]
     
-    nome = models.CharField(max_length=100, help_text="Ex: Mensalidades, Aluguel, Luz")
+    # Se ainda tiver organizacao, mantenha. Se tirou, ok.
+    # organizacao = ... 
+    
+    nome = models.CharField(max_length=100)
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
     
+    # NOVO CAMPO: Subcategoria
+    categoria_pai = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subcategorias', verbose_name="Categoria Pai")
+    
     def __str__(self):
+        if self.categoria_pai:
+            return f"{self.categoria_pai.nome} > {self.nome}"
         return f"{self.nome} ({self.get_tipo_display()})"
+    
+    class Meta:
+        verbose_name = "Categoria Financeira"
+        verbose_name_plural = "Categorias Financeiras"
+        ordering = ['tipo', 'categoria_pai__nome', 'nome']
 
 class ContaBancaria(models.Model):
     nome = models.CharField(max_length=100, help_text="Ex: Cofre, Nubank, Itaú")
