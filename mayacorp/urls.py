@@ -11,6 +11,9 @@ urlpatterns = [
     path('app/', include('portal_aluno.urls')), # O aluno acessa /app/
     path('cadastros/', include('cadastros_fit.urls')), 
     path('debug-login/', debug_auth),
+    path('agenda/', include('agenda_fit.urls')),
+    path('financeiro/', include('financeiro_fit.urls')),
+    path('contratos/', include('contratos_fit.urls')),
 ]
 
 if settings.DEBUG:
