@@ -7,7 +7,7 @@ from django.db import models
 class Unidade(models.Model):
     # REMOVIDO: organizacao = ForeignKey... (O schema já define a organização)
     nome = models.CharField(max_length=100)
-    endereco = models.CharField(max_length=255, blank=True)
+    endereco = models.CharField(max_length=255, blank=True, null=True)
     telefone = models.CharField(max_length=20, blank=True)
     
     def __str__(self):
