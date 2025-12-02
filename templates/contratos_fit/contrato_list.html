@@ -5,35 +5,76 @@
 {% block content %}
 <div class="container-fluid py-4">
     
-    <!-- Título e Botão de Novo -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h3 class="fw-bold text-dark"><i class="fas fa-file-contract me-2"></i>Contratos</h3>
-        
-        <!-- Botão que abre o Modal -->
         <button type="button" class="btn btn-primary fw-bold" data-bs-toggle="modal" data-bs-target="#modalNovoContrato">
             <i class="fas fa-plus"></i> Novo Contrato
         </button>
     </div>
 
-    <!-- Tabela -->
+    <!-- BARRA DE FILTROS -->
+    <div class="card shadow-sm mb-4 border-0 bg-light">
+        <div class="card-body py-3">
+            <form method="get" class="row g-2 align-items-end">
+                
+                <div class="col-md-3">
+                    <label class="small fw-bold text-muted">Aluno</label>
+                    <input type="text" name="aluno" class="form-control form-control-sm" placeholder="Nome do aluno..." value="{{ request.GET.aluno }}">
+                </div>
+
+                <div class="col-md-2">
+                    <label class="small fw-bold text-muted">Plano</label>
+                    <select name="plano" class="form-select form-select-sm">
+                        <option value="">Todos</option>
+                        {% for p in planos %}
+                            <option value="{{ p.id }}" {% if request.GET.plano == p.id|stringformat:"s" %}selected{% endif %}>{{ p.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="small fw-bold text-muted">Status</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">Todos</option>
+                        <option value="ATIVO" {% if request.GET.status == 'ATIVO' %}selected{% endif %}>Ativo</option>
+                        <option value="CANCELADO" {% if request.GET.status == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
+                        <option value="PENDENTE" {% if request.GET.status == 'PENDENTE' %}selected{% endif %}>Pendente</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="small fw-bold text-muted">Vencimento (De - Até)</label>
+                    <div class="input-group input-group-sm">
+                        <input type="date" name="inicio" class="form-control" value="{{ request.GET.inicio }}">
+                        <input type="date" name="fim" class="form-control" value="{{ request.GET.fim }}">
+                    </div>
+                </div>
+
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold"><i class="fas fa-filter"></i> Filtrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TABELA -->
     <div class="card shadow-sm border-0">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>Nº</th>
+                        <th>#</th>
                         <th>Aluno</th>
                         <th>Plano</th>
                         <th>Status</th>
                         <th>Vencimento</th>
-                        <th>Valor Total</th>
                         <th class="text-end">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for contrato in contratos %}
                     <tr>
-                        <td>#{{ contrato.id }}</td>
+                        <td>{{ contrato.id }}</td>
                         <td>
                             <a href="{% url 'aluno_detail' contrato.aluno.id %}" class="fw-bold text-decoration-none text-dark">
                                 {{ contrato.aluno.nome }}
@@ -50,54 +91,41 @@
                             {% endif %}
                         </td>
                         <td>{{ contrato.data_fim|date:"d/m/Y" }}</td>
-                        <td class="fw-bold">R$ {{ contrato.valor_total }}</td>
                         <td class="text-end">
-                            <a href="{% url 'imprimir_contrato' contrato.id %}" target="_blank" class="btn btn-sm btn-outline-dark" title="Imprimir PDF">
+                            <a href="{% url 'imprimir_contrato' contrato.id %}" target="_blank" class="btn btn-sm btn-outline-dark" title="Imprimir">
                                 <i class="fas fa-print"></i>
                             </a>
-                            <!-- Botão Editar (se tiver a view) -->
-                            <!-- <a href="#" class="btn btn-sm btn-outline-primary"><i class="fas fa-pen"></i></a> -->
+                            <a href="{% url 'contrato_update' contrato.id %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                <i class="fas fa-pen"></i>
+                            </a>
+                            <a href="{% url 'contrato_delete' contrato.id %}" class="btn btn-sm btn-outline-danger" title="Excluir">
+                                <i class="fas fa-trash"></i>
+                            </a>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">Nenhum contrato encontrado.</td>
+                        <td colspan="6" class="text-center py-5 text-muted">Nenhum contrato encontrado.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
-</div>
-
-<!-- MODAL PARA SELECIONAR ALUNO (Intermediário) -->
-<div class="modal fade" id="modalNovoContrato" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">Iniciar Nova Venda</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Selecione o aluno para criar o contrato:</p>
-                
-                <!-- Select com busca nativa do navegador (datalist) -->
-                <label class="form-label fw-bold">Buscar Aluno:</label>
-                <input class="form-control" list="datalistOptions" id="alunoSearch" placeholder="Digite o nome...">
-                <datalist id="datalistOptions">
-                    {% for aluno in alunos_para_venda %}
-                        <!-- O value é o nome, mas guardamos o ID no data-value via JS depois, ou usamos lógica simples -->
-                        <option data-id="{{ aluno.id }}" value="{{ aluno.nome }}">
-                    {% endfor %}
-                </datalist>
-
-                <div class="d-grid mt-4">
-                    <button type="button" class="btn btn-success fw-bold" onclick="irParaVenda()">
-                        Continuar <i class="fas fa-arrow-right"></i>
-                    </button>
-                </div>
-            </div>
+        
+        <!-- Paginação (Opcional) -->
+        {% if is_paginated %}
+        <div class="card-footer bg-white">
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a></li>
+                {% endif %}
+                <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Próximo</a></li>
+                {% endif %}
+            </ul>
         </div>
+        {% endif %}
     </div>
 </div>
 

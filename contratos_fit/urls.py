@@ -13,4 +13,7 @@ urlpatterns = [
 
     path('aluno/<int:aluno_id>/', views.lista_contratos_aluno, name='lista_contratos_aluno'),
     path('lista/', views.ContratoListView.as_view(), name='contrato_list'),
+
+    path('editar/<int:pk>/', views.ContratoUpdateView.as_view(), name='contrato_update'),
+    path('excluir/<int:pk>/', views.ContratoDeleteView.as_view(), name='contrato_delete'),
 ]

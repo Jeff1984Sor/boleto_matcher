@@ -9,6 +9,7 @@ from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 import json
+from django.db.models import Q
 
 # Imports Locais
 from cadastros_fit.models import Aluno
@@ -144,14 +145,56 @@ def lista_contratos_aluno(request, aluno_id):
         'hoje': timezone.now().date()
     })
 
+# 1. LISTAGEM COM FILTROS
 class ContratoListView(LoginRequiredMixin, ListView):
     model = Contrato
     template_name = 'contratos_fit/contrato_list.html'
     context_object_name = 'contratos'
     ordering = ['-criado_em']
+    paginate_by = 20
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        
+        # Filtros
+        aluno = self.request.GET.get('aluno')
+        status = self.request.GET.get('status')
+        plano = self.request.GET.get('plano')
+        inicio = self.request.GET.get('inicio') # Vencimento Inicial
+        fim = self.request.GET.get('fim')       # Vencimento Final
+
+        if aluno:
+            qs = qs.filter(aluno__nome__icontains=aluno)
+        
+        if status:
+            qs = qs.filter(status=status)
+            
+        if plano:
+            qs = qs.filter(plano_id=plano)
+            
+        if inicio and fim:
+            qs = qs.filter(data_fim__range=[inicio, fim])
+            
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Mandamos a lista de alunos para o Modal de "Novo Contrato"
+        # Dados para preencher os selects do filtro e do modal
         context['alunos_para_venda'] = Aluno.objects.filter(ativo=True).order_by('nome')
+        context['planos'] = Plano.objects.filter(ativo=True)
         return context
+    
+# 2. EDITAR CONTRATO
+class ContratoUpdateView(LoginRequiredMixin, UpdateView):
+    model = Contrato
+    form_class = ContratoForm
+    template_name = 'contratos_fit/novo_contrato.html' # Reutilizamos o template de form
+    
+    def get_success_url(self):
+        return reverse_lazy('contrato_list')
+
+# 3. EXCLUIR CONTRATO
+class ContratoDeleteView(LoginRequiredMixin, DeleteView):
+    model = Contrato
+    template_name = 'contratos_fit/contrato_confirm_delete.html'
+    success_url = reverse_lazy('contrato_list')
