@@ -285,3 +285,8 @@ class TemplateCreateView(LoginRequiredMixin, CreateView):
             {'codigo': '{{ hoje }}', 'desc': 'Data de Hoje (Extenso)'},
         ]
         return context
+    
+def lista_contratos_aluno(request, aluno_id):
+    # Pode redirecionar para o admin ou uma lista simples
+    # Por enquanto, redireciona de volta para o aluno
+    return redirect('aluno_detail', pk=aluno_id)

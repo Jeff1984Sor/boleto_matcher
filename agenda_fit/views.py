@@ -188,3 +188,7 @@ def checkin_totalpass(request):
             return JsonResponse({'status': 'error', 'msg': resultado['mensagem']}, status=400)
 
     return JsonResponse({'status': 'error', 'msg': 'Método inválido'}, status=405)
+
+def lista_aulas_aluno(request, aluno_id):
+    # Simples redirect para o calendário por enquanto, ou cria uma lista
+    return redirect('calendario_semanal')
