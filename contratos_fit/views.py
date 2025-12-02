@@ -241,14 +241,37 @@ class TemplateCreateView(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
     
     def get_context_data(self, **kwargs):
-        # Mesma lista de variáveis para a criação
         context = super().get_context_data(**kwargs)
+        
+        # Lista Completa de Variáveis
         context['variaveis'] = [
+            # DADOS DO ALUNO
             {'codigo': '{{ aluno.nome }}', 'desc': 'Nome do Aluno'},
             {'codigo': '{{ aluno.cpf }}', 'desc': 'CPF do Aluno'},
-            # ... (Copie a lista da UpdateView ou crie um mixin para não repetir)
-             {'codigo': '{{ aluno.endereco_completo }}', 'desc': 'Endereço'},
-             {'codigo': '{{ contrato.valor_total }}', 'desc': 'Valor'},
-             {'codigo': '{{ plano.nome }}', 'desc': 'Plano'},
+            {'codigo': '{{ aluno.rg }}', 'desc': 'RG do Aluno (se houver)'},
+            {'codigo': '{{ aluno.data_nascimento }}', 'desc': 'Data de Nascimento'},
+            {'codigo': '{{ aluno.telefone }}', 'desc': 'Telefone / WhatsApp'},
+            {'codigo': '{{ aluno.email }}', 'desc': 'E-mail'},
+            {'codigo': '{{ aluno.endereco_completo }}', 'desc': 'Endereço Completo'},
+            {'codigo': '{{ aluno.cep }}', 'desc': 'CEP'},
+            
+            # DADOS DO CONTRATO
+            {'codigo': '{{ contrato.data_inicio }}', 'desc': 'Data de Início'},
+            {'codigo': '{{ contrato.data_fim }}', 'desc': 'Data de Término'},
+            {'codigo': '{{ contrato.valor_total }}', 'desc': 'Valor Total (R$)'},
+            {'codigo': '{{ contrato.qtde_parcelas }}', 'desc': 'Nº de Parcelas'},
+            {'codigo': '{{ contrato.dia_vencimento }}', 'desc': 'Dia do Vencimento'},
+            
+            # DADOS DO PLANO / SERVIÇO
+            {'codigo': '{{ plano.nome }}', 'desc': 'Nome do Plano'},
+            {'codigo': '{{ plano.frequencia_semanal }}', 'desc': 'Frequência Semanal'},
+            
+            # DADOS DA EMPRESA / UNIDADE
+            {'codigo': '{{ unidade.nome }}', 'desc': 'Nome da Unidade'},
+            {'codigo': '{{ unidade.endereco }}', 'desc': 'Endereço da Unidade'},
+            {'codigo': '{{ empresa_nome }}', 'desc': 'Nome da Sua Empresa'},
+            
+            # EXTRAS
+            {'codigo': '{{ hoje }}', 'desc': 'Data de Hoje (Extenso)'},
         ]
         return context
