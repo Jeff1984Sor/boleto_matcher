@@ -22,16 +22,34 @@ class Unidade(models.Model):
         return self.nome
 
 class Profissional(models.Model):
-    nome = models.CharField(max_length=100)
-    cpf = models.CharField(max_length=14, unique=True)
+    # --- DADOS PESSOAIS ---
+    nome = models.CharField("Nome Completo", max_length=100)
+    cpf = models.CharField("CPF", max_length=14, unique=True)
+    data_nascimento = models.DateField("Data de Nascimento", blank=True, null=True)
+    email = models.EmailField("E-mail", max_length=255, blank=True, null=True)
+    telefone = models.CharField("Celular/WhatsApp", max_length=20, blank=True, null=True)
+    
+    # --- DADOS PROFISSIONAIS ---
     crefito = models.CharField(max_length=20, blank=True, verbose_name="Registro Profissional")
     cor_agenda = models.CharField(max_length=7, default="#007bff", help_text="Cor Hexadecimal para a agenda")
     valor_hora_aula = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Valor por Aula Dada")
+    
+    # --- ENDEREÇO ---
+    cep = models.CharField("CEP", max_length=9, blank=True, null=True)
+    logradouro = models.CharField("Endereço", max_length=150, blank=True, null=True)
+    numero = models.CharField("Número", max_length=20, blank=True, null=True)
+    bairro = models.CharField("Bairro", max_length=100, blank=True, null=True)
+    cidade = models.CharField("Cidade", max_length=100, blank=True, null=True)
+    estado = models.CharField("UF", max_length=2, blank=True, null=True)
+
     ativo = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs):
-        if self.nome:
-            self.nome = formatar_nome(self.nome)
+        if self.nome: self.nome = formatar_nome(self.nome)
+        if self.logradouro: self.logradouro = formatar_nome(self.logradouro)
+        if self.bairro: self.bairro = formatar_nome(self.bairro)
+        if self.cidade: self.cidade = formatar_nome(self.cidade)
+        if self.estado: self.estado = self.estado.upper()
         super().save(*args, **kwargs)
 
     def __str__(self):

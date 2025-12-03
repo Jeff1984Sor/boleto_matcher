@@ -56,13 +56,27 @@ class AlunoForm(forms.ModelForm):
 class ProfissionalForm(forms.ModelForm):
     class Meta:
         model = Profissional
-        exclude = ['organizacao']
+        # Remova 'organizacao' se ainda tiver no model, senão deixe vazio
+        exclude = [] 
+        
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
-            'cpf': forms.TextInput(attrs={'class': 'form-control'}),
+            'cpf': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '000.000.000-00'}),
+            
+            # NOVOS
+            'data_nascimento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'telefone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 90000-0000'}),
+            
+            'cep': forms.TextInput(attrs={'class': 'form-control', 'onblur': 'buscarCep(this.value)'}),
+            'logradouro': forms.TextInput(attrs={'class': 'form-control'}),
+            'numero': forms.TextInput(attrs={'class': 'form-control'}),
+            'bairro': forms.TextInput(attrs={'class': 'form-control'}),
+            'cidade': forms.TextInput(attrs={'class': 'form-control'}),
+            'estado': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2'}),
+
             'crefito': forms.TextInput(attrs={'class': 'form-control'}),
-            # Input de cor nativo do HTML5
-            'cor_agenda': forms.TextInput(attrs={'type': 'color', 'class': 'form-control form-control-color', 'title': 'Escolha a cor da agenda'}),
+            'cor_agenda': forms.TextInput(attrs={'type': 'color', 'class': 'form-control form-control-color'}),
             'valor_hora_aula': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
         }
 

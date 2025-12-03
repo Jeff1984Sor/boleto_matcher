@@ -1,40 +1,81 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
 
+{% block title %}Cadastro de Profissional{% endblock %}
+
 {% block content %}
-<div class="container" style="max-width: 700px;">
-    <div class="card shadow-sm">
-        <div class="card-header bg-white">
-            <h4>Cadastro de Profissional</h4>
+<div class="container py-4" style="max-width: 800px;">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3">
+            <h4 class="mb-0 fw-bold text-primary">
+                {% if form.instance.pk %}✏️ Editar Profissional{% else %}✨ Novo Profissional{% endif %}
+            </h4>
         </div>
-        <div class="card-body">
+        <div class="card-body p-4">
             <form method="post">
                 {% csrf_token %}
-                <div class="row">
-                    <div class="col-md-8">{{ form.nome|as_crispy_field }}</div>
-                    <div class="col-md-4">{{ form.cpf|as_crispy_field }}</div>
+
+                <h6 class="text-muted fw-bold mb-3 border-bottom pb-2">Dados Pessoais</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">{{ form.nome|as_crispy_field }}</div>
+                    <div class="col-md-3">{{ form.cpf|as_crispy_field }}</div>
+                    <div class="col-md-3">{{ form.data_nascimento|as_crispy_field }}</div>
                 </div>
-                <div class="row">
-                    <div class="col-md-6">{{ form.crefito|as_crispy_field }}</div>
-                    <div class="col-md-6">{{ form.valor_hora_aula|as_crispy_field }}</div>
-                </div>
-                
-                <div class="row mt-2">
-                    <div class="col-md-6">
-                        {{ form.cor_agenda|as_crispy_field }}
-                        <small class="text-muted">Essa cor será usada no calendário de agendamentos.</small>
-                    </div>
-                    <div class="col-md-6 pt-4">
-                        {{ form.ativo|as_crispy_field }}
-                    </div>
+                <div class="row g-3">
+                    <div class="col-md-6">{{ form.email|as_crispy_field }}</div>
+                    <div class="col-md-6">{{ form.telefone|as_crispy_field }}</div>
                 </div>
 
-                <div class="mt-4 d-grid gap-2">
-                    <button type="submit" class="btn btn-primary">Salvar Profissional</button>
-                    <a href="{% url 'profissional_list' %}" class="btn btn-light">Cancelar</a>
+                <h6 class="text-muted fw-bold mt-4 mb-3 border-bottom pb-2">Endereço</h6>
+                <div class="row g-3">
+                    <div class="col-md-3">{{ form.cep|as_crispy_field }}</div>
+                    <div class="col-md-7">{{ form.logradouro|as_crispy_field }}</div>
+                    <div class="col-md-2">{{ form.numero|as_crispy_field }}</div>
+                </div>
+                <div class="row g-3 mt-1">
+                    <div class="col-md-5">{{ form.bairro|as_crispy_field }}</div>
+                    <div class="col-md-5">{{ form.cidade|as_crispy_field }}</div>
+                    <div class="col-md-2">{{ form.estado|as_crispy_field }}</div>
+                </div>
+
+                <h6 class="text-muted fw-bold mt-4 mb-3 border-bottom pb-2">Dados Profissionais</h6>
+                <div class="row g-3">
+                    <div class="col-md-4">{{ form.crefito|as_crispy_field }}</div>
+                    <div class="col-md-4">{{ form.valor_hora_aula|as_crispy_field }}</div>
+                    <div class="col-md-4">{{ form.cor_agenda|as_crispy_field }}</div>
+                </div>
+                
+                <div class="form-check mt-3">
+                    {{ form.ativo }}
+                    <label class="form-check-label" for="id_ativo">Profissional Ativo</label>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4 border-top pt-3">
+                    <a href="{% url 'profissional_list' %}" class="btn btn-light border">Cancelar</a>
+                    <button type="submit" class="btn btn-primary px-4 fw-bold">Salvar</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<!-- Script para buscar CEP (Se tiver a função global 'buscarCep' no base.html, ótimo. Se não, adicione aqui) -->
+<script>
+    function buscarCep(cep) {
+        cep = cep.replace(/\D/g, '');
+        if (cep.length === 8) {
+            fetch(`https://viacep.com.br/ws/${cep}/json/`)
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.erro) {
+                        document.getElementById('id_logradouro').value = data.logradouro;
+                        document.getElementById('id_bairro').value = data.bairro;
+                        document.getElementById('id_cidade').value = data.localidade;
+                        document.getElementById('id_estado').value = data.uf;
+                        document.getElementById('id_numero').focus();
+                    }
+                });
+        }
+    }
+</script>
 {% endblock %}
