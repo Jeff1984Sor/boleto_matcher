@@ -9,6 +9,7 @@ from django.http import HttpResponseRedirect
 import uuid
 from dateutil.relativedelta import relativedelta
 from django.views.generic import DetailView
+from django.contrib.auth.decorators import login_required
 
 # Imports Locais
 from .models import Lancamento, CategoriaFinanceira, ContaBancaria, Fornecedor
