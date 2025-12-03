@@ -11,6 +11,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 import json
 import locale
 from datetime import datetime
+from financeiro_fit.models import Lancamento
+from agenda_fit.models import Presenca
 
 # Imports Locais
 from cadastros_fit.models import Aluno
@@ -214,7 +216,43 @@ class ContratoUpdateView(LoginRequiredMixin, UpdateView):
 class ContratoDeleteView(LoginRequiredMixin, DeleteView):
     model = Contrato
     template_name = 'contratos_fit/contrato_confirm_delete.html'
-    success_url = reverse_lazy('contrato_list')
+    
+    def get_success_url(self):
+        # Redireciona para o aluno dono do contrato
+        return reverse_lazy('aluno_detail', kwargs={'pk': self.object.aluno.pk})
+
+    def form_valid(self, form):
+        contrato = self.get_object()
+        
+        # LOGICA SEGURA: Excluir parcelas EM ABERTO deste contrato
+        parcelas_pendentes = Lancamento.objects.filter(contrato=contrato, status='PENDENTE')
+        qtd_financeiro = parcelas_pendentes.count()
+        parcelas_pendentes.delete()
+        
+        # Opcional: Limpar aulas futuras agendadas (Descomente se quiser)
+        # Presenca.objects.filter(aluno=contrato.aluno, aula__data_hora_inicio__gte=timezone.now(), status='AGENDADA').delete()
+
+        messages.warning(self.request, f"Contrato excluído! {qtd_financeiro} parcelas em aberto foram removidas.")
+        return super().form_valid(form)
+
+@login_required
+def encerrar_contrato(request, pk):
+    contrato = get_object_or_404(Contrato, pk=pk)
+    
+    if request.method == 'POST':
+        # Marca como cancelado/encerrado
+        contrato.status = 'CANCELADO'
+        contrato.save()
+        
+        # Remove cobranças futuras que ainda não foram pagas
+        parcelas = Lancamento.objects.filter(contrato=contrato, status='PENDENTE')
+        parcelas.delete()
+        
+        messages.success(request, "Contrato encerrado e cobranças futuras canceladas.")
+        return redirect('aluno_detail', pk=contrato.aluno.pk)
+    
+    # Se tentar acessar via GET, manda para uma tela de confirmação ou volta
+    return redirect('aluno_detail', pk=contrato.aluno.pk)
 
 # ==============================================================================
 # 3. PLANOS

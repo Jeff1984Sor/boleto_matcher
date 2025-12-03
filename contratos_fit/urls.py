@@ -16,6 +16,7 @@ urlpatterns = [
 
     path('editar/<int:pk>/', views.ContratoUpdateView.as_view(), name='contrato_update'),
     path('excluir/<int:pk>/', views.ContratoDeleteView.as_view(), name='contrato_delete'),
+    path('encerrar/<int:pk>/', views.encerrar_contrato, name='contrato_encerrar'),
 
     path('templates/', views.TemplateListView.as_view(), name='template_list'),
     path('templates/novo/', views.TemplateCreateView.as_view(), name='template_create'),

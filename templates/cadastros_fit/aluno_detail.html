@@ -283,8 +283,50 @@
                     <div class="list-group list-group-flush">
                         {% for c in contratos_completo %}
                             <div class="list-group-item d-flex justify-content-between align-items-center p-3">
-                                <div><h5 class="mb-1">{{ c.plano.nome }}</h5><p class="mb-0 small text-muted">{{ c.data_inicio|date:"d/m/Y" }} - {{ c.data_fim|date:"d/m/Y" }}</p></div>
-                                <a href="{% url 'imprimir_contrato' c.id %}" target="_blank" class="btn btn-sm btn-dark"><i class="fas fa-print me-1"></i> Imprimir</a>
+                                
+                                <!-- Info do Contrato -->
+                                <div>
+                                    <h5 class="mb-1 d-flex align-items-center gap-2">
+                                        {{ c.plano.nome }}
+                                        {% if c.status == 'ATIVO' %}
+                                            <span class="badge bg-success" style="font-size: 0.6rem;">Ativo</span>
+                                        {% elif c.status == 'CANCELADO' %}
+                                            <span class="badge bg-danger" style="font-size: 0.6rem;">Cancelado</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary" style="font-size: 0.6rem;">{{ c.get_status_display }}</span>
+                                        {% endif %}
+                                    </h5>
+                                    <p class="mb-0 small text-muted">
+                                        {{ c.data_inicio|date:"d/m/Y" }} a {{ c.data_fim|date:"d/m/Y" }} 
+                                        &bull; R$ {{ c.valor_total }}
+                                    </p>
+                                </div>
+
+                                <!-- Botões de Ação -->
+                                <div class="btn-group">
+                                    <a href="{% url 'imprimir_contrato' c.id %}" target="_blank" class="btn btn-sm btn-outline-dark" title="Imprimir">
+                                        <i class="fas fa-print"></i>
+                                    </a>
+                                    
+                                    {% if c.status == 'ATIVO' or c.status == 'PENDENTE' %}
+                                        <a href="{% url 'contrato_update' c.id %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                            <i class="fas fa-pen"></i>
+                                        </a>
+                                        
+                                        <!-- Botão Encerrar (Com confirmação simples) -->
+                                        <form action="{% url 'contrato_encerrar' c.id %}" method="post" class="d-inline" onsubmit="return confirm('Tem certeza que deseja ENCERRAR este contrato? As cobranças em aberto serão apagadas.');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-outline-warning text-dark" title="Encerrar Contrato">
+                                                <i class="fas fa-ban"></i>
+                                            </button>
+                                        </form>
+                                    {% endif %}
+
+                                    <a href="{% url 'contrato_delete' c.id %}" class="btn btn-sm btn-outline-danger" title="Excluir Definitivamente">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+
                             </div>
                         {% empty %}
                             <div class="p-5 text-center text-muted">Nenhum contrato.</div>
