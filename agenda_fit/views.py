@@ -27,6 +27,7 @@ from django.db.models.functions import ExtractMonth
 from django.utils import timezone
 import calendar
 from .models import Aula, Presenca
+from django.views.decorators.csrf import csrf_exempt
 # Se você tiver o serviço TotalPass, mantenha. Se não, comente para evitar erro.
 # from .services_totalpass import TotalPassService
 
