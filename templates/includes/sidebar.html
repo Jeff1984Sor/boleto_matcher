@@ -80,6 +80,21 @@
                         </ul>
                     </div>
                 </li>
+
+                <!-- DASHBOARDS -->
+                <li class="mb-1">
+                    <a class="nav-link text-white d-flex justify-content-between align-items-center collapsed" 
+                       data-bs-toggle="collapse" href="#menuDash" role="button" aria-expanded="false">
+                        <span><i class="fas fa-chart-pie fa-fw me-3 text-primary"></i> Dashboards</span>
+                        <i class="fas fa-chevron-down small transition-icon"></i>
+                    </a>
+                    <div class="collapse" id="menuDash">
+                        <ul class="nav flex-column ms-3 ps-2 mt-1 border-start border-secondary">
+                            <li><a href="{% url 'dashboard_aulas' %}" class="nav-link text-white-50 py-1 hover-light">Operacional (Aulas)</a></li>
+                            <li><a href="{% url 'dashboard_financeiro' %}" class="nav-link text-white-50 py-1 hover-light">Financeiro</a></li>
+                        </ul>
+                    </div>
+                </li>
             {% endif %}
 
             <!-- FERRAMENTAS -->

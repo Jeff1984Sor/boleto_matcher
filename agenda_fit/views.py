@@ -9,6 +9,10 @@ from django.http import JsonResponse
 from django.contrib import messages
 from django.utils.dateparse import parse_datetime
 from cadastros_fit.models import Profissional
+from django.db.models import Count, Q
+from django.db.models.functions import TruncMonth
+import calendar
+from django.views.generic import TemplateView
 
 # Imports Locais
 from cadastros_fit.models import Aluno
@@ -243,3 +247,58 @@ def checkin_totalpass(request):
         return JsonResponse({'status': 'ok', 'msg': 'Simulação OK'})
         # Implementar lógica real quando tiver as credenciais
     return JsonResponse({'status': 'error', 'msg': 'Método inválido'}, status=405)
+
+class DashboardAulasView(LoginRequiredMixin, TemplateView):
+    template_name = 'agenda_fit/dashboard_aulas.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Filtros de Data (Padrão: Mês Atual)
+        hoje = timezone.now()
+        ano = int(self.request.GET.get('ano', hoje.year))
+        mes = int(self.request.GET.get('mes', hoje.month))
+        
+        _, last_day = calendar.monthrange(ano, mes)
+        inicio_mes = timezone.datetime(ano, mes, 1).date()
+        fim_mes = timezone.datetime(ano, mes, last_day).date()
+        
+        context['ano_atual'] = ano
+        context['mes_atual'] = mes
+        context['anos_select'] = range(hoje.year - 2, hoje.year + 3)
+
+        # 1. Aulas por Profissional (Conta Aulas únicas, não presenças)
+        aulas_prof = Aula.objects.filter(
+            data_hora_inicio__date__range=[inicio_mes, fim_mes],
+            status='REALIZADA' # Ou contar agendadas também? Vou contar Realizadas
+        ).values('profissional__nome').annotate(total=Count('id')).order_by('-total')
+        
+        context['chart_prof_labels'] = [x['profissional__nome'] for x in aulas_prof]
+        context['chart_prof_data'] = [x['total'] for x in aulas_prof]
+
+        # 2. Aulas Restantes no Mês
+        context['aulas_restantes'] = Aula.objects.filter(
+            data_hora_inicio__date__range=[timezone.now().date(), fim_mes],
+            status='AGENDADA'
+        ).count()
+
+        # 3. Top 5 Assíduos (Quem mais veio)
+        assiduos = Presenca.objects.filter(
+            aula__data_hora_inicio__date__range=[inicio_mes, fim_mes],
+            status='PRESENTE'
+        ).values('aluno__nome').annotate(total=Count('id')).order_by('-total')[:5]
+        context['top_assiduos'] = assiduos
+
+        # 4. Top 5 Faltosos
+        faltosos = Presenca.objects.filter(
+            aula__data_hora_inicio__date__range=[inicio_mes, fim_mes],
+            status='FALTA'
+        ).values('aluno__nome').annotate(total=Count('id')).order_by('-total')[:5]
+        context['top_faltosos'] = faltosos
+        
+        # 5. Cancelamentos no Mês (Contratos cancelados neste mês)
+        # Precisaria de um campo 'data_cancelamento' no contrato, mas vamos usar updated_at aproximado
+        # ou assumir status CANCELADO
+        # Vou usar uma lógica simples baseada nos contratos que terminaram ou foram cancelados
+        
+        return context

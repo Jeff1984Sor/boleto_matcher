@@ -21,4 +21,5 @@ urlpatterns = [
     path('relatorios/frequencia/', views.RelatorioFrequenciaView.as_view(), name='relatorio_frequencia'),
     path('api/totalpass/checkin/', views.checkin_totalpass, name='api_totalpass_checkin'),
     path('configuracao/integracao/', views.ConfiguracaoIntegracaoView.as_view(), name='config_integracao'),
+    path('dashboard/', views.DashboardAulasView.as_view(), name='dashboard_aulas'),
 ]

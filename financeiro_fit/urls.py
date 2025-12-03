@@ -27,4 +27,6 @@ urlpatterns = [
     path('contas/<int:pk>/exportar/excel/', views.exportar_extrato_excel, name='exportar_extrato_excel'),
     path('contas/<int:pk>/exportar/pdf/', views.exportar_extrato_pdf, name='exportar_extrato_pdf'),
 
+    path('dashboard/', views.DashboardFinanceiroView.as_view(), name='dashboard_financeiro'),
+
 ]

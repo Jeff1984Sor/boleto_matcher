@@ -21,6 +21,9 @@ from .models import Lancamento, CategoriaFinanceira, ContaBancaria, Fornecedor
 from .forms import CategoriaForm, ContaBancariaForm, DespesaForm, FornecedorForm
 from cadastros_fit.models import Aluno
 
+from django.db.models.functions import ExtractMonth
+from contratos_fit.models import Contrato
+
 # ==============================================================================
 # 1. CONTAS A RECEBER (ANTIGO FLUXO DE CAIXA GERAL)
 # ==============================================================================
@@ -359,3 +362,59 @@ def exportar_extrato_pdf(request, pk):
     if pisa_status.err:
         return HttpResponse('Erro ao gerar PDF', status=500)
     return response
+
+
+class DashboardFinanceiroView(LoginRequiredMixin, TemplateView):
+    template_name = 'financeiro_fit/dashboard_financeiro.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        hoje = timezone.now()
+        ano = int(self.request.GET.get('ano', hoje.year))
+        mes = int(self.request.GET.get('mes', hoje.month))
+        
+        _, last_day = calendar.monthrange(ano, mes)
+        inicio_mes = timezone.datetime(ano, mes, 1).date()
+        fim_mes = timezone.datetime(ano, mes, last_day).date()
+
+        context['ano_atual'] = ano
+        context['mes_atual'] = mes
+        
+        # 1. Totais do Mês
+        lancamentos_mes = Lancamento.objects.filter(data_vencimento__range=[inicio_mes, fim_mes])
+        
+        receitas = lancamentos_mes.filter(categoria__tipo='RECEITA', status='PAGO').aggregate(Sum('valor'))['valor__sum'] or 0
+        despesas = lancamentos_mes.filter(categoria__tipo='DESPESA', status='PAGO').aggregate(Sum('valor'))['valor__sum'] or 0
+        context['receita_mes'] = receitas
+        context['despesa_mes'] = despesas
+        context['resultado_mes'] = receitas - despesas
+
+        # 2. Gráfico Mês a Mês (Ano Todo)
+        # Pega dados do ano inteiro agrupados por mês
+        dados_ano = Lancamento.objects.filter(data_vencimento__year=ano, status='PAGO') \
+            .annotate(mes=ExtractMonth('data_vencimento')) \
+            .values('mes', 'categoria__tipo') \
+            .annotate(total=Sum('valor'))
+            
+        # Prepara arrays para o Chart.js (12 posições zeradas)
+        receita_anual = [0] * 12
+        despesa_anual = [0] * 12
+        
+        for d in dados_ano:
+            idx = d['mes'] - 1
+            if d['categoria__tipo'] == 'RECEITA':
+                receita_anual[idx] = float(d['total'])
+            else:
+                despesa_anual[idx] = float(d['total'])
+                
+        context['chart_receita'] = receita_anual
+        context['chart_despesa'] = despesa_anual
+
+        # 3. Contratos Novos
+        context['contratos_novos'] = Contrato.objects.filter(data_inicio__range=[inicio_mes, fim_mes])
+
+        # 4. Contratos Vencendo
+        context['contratos_vencendo'] = Contrato.objects.filter(data_fim__range=[inicio_mes, fim_mes])
+
+        return context
