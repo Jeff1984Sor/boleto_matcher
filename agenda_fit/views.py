@@ -46,22 +46,20 @@ def calendario_semanal(request):
     inicio_semana = data_base - timedelta(days=data_base.weekday())
     fim_semana = inicio_semana + timedelta(days=6)
 
-    # 2. Busca Aulas (Base)
-    aulas = Aula.objects.filter(
-        data_hora_inicio__date__gte=inicio_semana,
-        data_hora_inicio__date__lte=fim_semana
-    ).select_related('profissional', 'unidade').order_by('data_hora_inicio')
+    # 2. Busca PRESENÇAS (Um card por aluno)
+    presencas = Presenca.objects.filter(
+        aula__data_hora_inicio__date__gte=inicio_semana,
+        aula__data_hora_inicio__date__lte=fim_semana
+    ).select_related('aula', 'aluno', 'aula__profissional').order_by('aula__data_hora_inicio')
 
-    # --- NOVO: FILTRO POR PROFISSIONAL ---
+    # Filtro por Profissional
     prof_id = request.GET.get('prof_id')
     if prof_id:
-        aulas = aulas.filter(profissional_id=prof_id)
+        presencas = presencas.filter(aula__profissional_id=prof_id)
     
-    # Pega lista para o dropdown
     lista_profissionais = Profissional.objects.filter(ativo=True)
-    # -------------------------------------
 
-    # 3. Organiza Grade
+    # 3. Organiza Grade por Dia
     dias_da_semana = []
     grade_semanal = {i: [] for i in range(7)}
     
@@ -69,13 +67,12 @@ def calendario_semanal(request):
         dia_atual = inicio_semana + timedelta(days=i)
         dias_da_semana.append({
             'data': dia_atual,
-            'nome': dia_atual.strftime('%A'),
             'hoje': dia_atual == timezone.now().date()
         })
 
-    for aula in aulas:
-        dia_index = aula.data_hora_inicio.weekday()
-        grade_semanal[dia_index].append(aula)
+    for p in presencas:
+        dia_index = p.aula.data_hora_inicio.weekday()
+        grade_semanal[dia_index].append(p)
 
     prox_semana = (inicio_semana + timedelta(days=7)).strftime('%Y-%m-%d')
     ant_semana = (inicio_semana - timedelta(days=7)).strftime('%Y-%m-%d')
@@ -87,7 +84,7 @@ def calendario_semanal(request):
         'fim_semana': fim_semana,
         'prox_semana': prox_semana,
         'ant_semana': ant_semana,
-        'lista_profissionais': lista_profissionais, # Envia para o template
+        'lista_profissionais': lista_profissionais,
         'prof_selecionado': int(prof_id) if prof_id else None
     }
 
