@@ -46,17 +46,17 @@
 
                 <!-- FINANCEIRO -->
                 <li class="mb-1">
-                    <a class="nav-link text-white d-flex justify-content-between align-items-center {% if 'financeiro' not in request.path %}collapsed{% endif %}" 
-                       data-bs-toggle="collapse" href="#menuFinanceiro" role="button" 
-                       aria-expanded="{% if 'financeiro' in request.path %}true{% else %}false{% endif %}">
+                    <a class="nav-link text-white d-flex justify-content-between align-items-center collapsed" 
+                    data-bs-toggle="collapse" href="#menuFinanceiro" role="button" aria-expanded="false">
                         <span><i class="fas fa-dollar-sign fa-fw me-3 text-success"></i> Financeiro</span>
                         <i class="fas fa-chevron-down small transition-icon"></i>
                     </a>
-                    <div class="collapse {% if 'financeiro' in request.path %}show{% endif %}" id="menuFinanceiro">
+                    <div class="collapse" id="menuFinanceiro">
                         <ul class="nav flex-column ms-3 ps-2 mt-1 border-start border-secondary">
-                            <li><a href="{% url 'financeiro_lista' %}" class="nav-link text-white-50 py-1 hover-light">Lançamentos</a></li>
-                            <li><a href="{% url 'categoria_list' %}" class="nav-link text-white-50 py-1 hover-light">Categorias</a></li>
-                            <li><a href="{% url 'conta_list' %}" class="nav-link text-white-50 py-1 hover-light">Contas Bancárias</a></li>
+                            <li><a href="{% url 'contas_receber' %}" class="nav-link text-white-50 py-1 hover-light">Contas a Receber</a></li>
+                            <li><a href="{% url 'contas_pagar' %}" class="nav-link text-white-50 py-1 hover-light">Contas a Pagar</a></li>
+                            <li><a href="{% url 'fornecedor_list' %}" class="nav-link text-white-50 py-1 hover-light">Fornecedores</a></li>
+                            <li><a href="{% url 'conta_list' %}" class="nav-link text-white-50 py-1 hover-light">Caixas e Bancos</a></li>
                         </ul>
                     </div>
                 </li>

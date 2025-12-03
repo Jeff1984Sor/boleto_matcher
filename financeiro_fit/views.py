@@ -5,106 +5,196 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils import timezone
 from django.contrib import messages
 from django.db.models import Sum
+from django.http import HttpResponseRedirect
+import uuid
+from dateutil.relativedelta import relativedelta
 
-# Imports dos Models e Forms
-from .models import Lancamento, CategoriaFinanceira, ContaBancaria
-from .forms import CategoriaForm, ContaBancariaForm, DespesaForm
+# Imports Locais
+from .models import Lancamento, CategoriaFinanceira, ContaBancaria, Fornecedor
+from .forms import CategoriaForm, ContaBancariaForm, DespesaForm, FornecedorForm
 from cadastros_fit.models import Aluno
 
 # ==============================================================================
-# 1. LANÇAMENTOS (EXTRATO)
+# 1. CONTAS A RECEBER (ANTIGO FLUXO DE CAIXA GERAL)
 # ==============================================================================
 
-class LancamentoListView(LoginRequiredMixin, ListView):
+class ContasReceberListView(LoginRequiredMixin, ListView):
     model = Lancamento
-    template_name = 'financeiro_fit/lancamento_list.html'
+    template_name = 'financeiro_fit/contas_receber.html'
     context_object_name = 'lancamentos'
     paginate_by = 50 
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        # Filtra apenas RECEITAS
+        qs = super().get_queryset().filter(categoria__tipo='RECEITA')
         
-        # Filtros da URL
         status = self.request.GET.get('status')
         inicio = self.request.GET.get('inicio')
         fim = self.request.GET.get('fim')
         aluno_id = self.request.GET.get('aluno_id')
         
-        if status:
-            queryset = queryset.filter(status=status)
-        
-        if inicio and fim:
-            queryset = queryset.filter(data_vencimento__range=[inicio, fim])
+        if status: qs = qs.filter(status=status)
+        if inicio and fim: qs = qs.filter(data_vencimento__range=[inicio, fim])
+        if aluno_id: qs = qs.filter(aluno__id=aluno_id)
             
-        if aluno_id:
-            queryset = queryset.filter(aluno__id=aluno_id)
-            
-        # Ordena: Pendentes primeiro, depois por data
-        return queryset.order_by('status', 'data_vencimento')
+        return qs.order_by('status', 'data_vencimento')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
         context['hoje'] = timezone.now().date()
         
-        # Título personalizado se filtrar por aluno
-        aluno_id = self.request.GET.get('aluno_id')
-        if aluno_id:
-            context['aluno_filtro'] = Aluno.objects.filter(pk=aluno_id).first()
-            
-        # Totais do Rodapé
+        # Totais
         qs = self.get_queryset()
-        context['total_receitas'] = qs.filter(categoria__tipo='RECEITA').aggregate(Sum('valor'))['valor__sum'] or 0
-        context['total_despesas'] = qs.filter(categoria__tipo='DESPESA').aggregate(Sum('valor'))['valor__sum'] or 0
+        context['total_recebido'] = qs.filter(status='PAGO').aggregate(Sum('valor'))['valor__sum'] or 0
+        context['total_pendente'] = qs.filter(status='PENDENTE').aggregate(Sum('valor'))['valor__sum'] or 0
         
+        # Filtro Aluno
+        if self.request.GET.get('aluno_id'):
+            context['aluno_filtro'] = Aluno.objects.filter(pk=self.request.GET.get('aluno_id')).first()
+            
         return context
 
-def baixar_lancamento(request, pk):
-    """Marca um lançamento como PAGO e atualiza o saldo"""
-    lancamento = get_object_or_404(Lancamento, pk=pk)
-    
-    if request.method == 'POST':
-        # 1. Atualiza Lançamento
-        lancamento.status = 'PAGO'
-        lancamento.data_pagamento = timezone.now().date()
-        lancamento.forma_pagamento = request.POST.get('forma_pagamento')
-        lancamento.save()
-        
-        # 2. Atualiza Saldo
-        conta = lancamento.conta
-        if lancamento.categoria.tipo == 'RECEITA':
-            conta.saldo_atual += lancamento.valor
-        else:
-            conta.saldo_atual -= lancamento.valor
-        conta.save()
-        
-        messages.success(request, "Baixa realizada com sucesso!")
-        
-    return redirect('financeiro_lista')
+# ==============================================================================
+# 2. CONTAS A PAGAR (NOVA TELA)
+# ==============================================================================
 
-# ==============================================================================
-# 2. DESPESAS (Contas a Pagar)
-# ==============================================================================
+class ContasPagarListView(LoginRequiredMixin, ListView):
+    model = Lancamento
+    template_name = 'financeiro_fit/contas_pagar.html'
+    context_object_name = 'lancamentos'
+    paginate_by = 50
+
+    def get_queryset(self):
+        # Filtra apenas DESPESAS
+        qs = super().get_queryset().filter(categoria__tipo='DESPESA')
+        
+        status = self.request.GET.get('status')
+        inicio = self.request.GET.get('inicio')
+        fim = self.request.GET.get('fim')
+        fornecedor = self.request.GET.get('fornecedor')
+        
+        if status: qs = qs.filter(status=status)
+        if inicio and fim: qs = qs.filter(data_vencimento__range=[inicio, fim])
+        if fornecedor: qs = qs.filter(fornecedor_id=fornecedor)
+            
+        return qs.order_by('status', 'data_vencimento')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['hoje'] = timezone.now().date()
+        
+        # Lista de Fornecedores para o Filtro
+        context['fornecedores'] = Fornecedor.objects.filter(ativo=True)
+        
+        # Totais
+        qs = self.get_queryset()
+        context['total_pago'] = qs.filter(status='PAGO').aggregate(Sum('valor'))['valor__sum'] or 0
+        context['total_pendente'] = qs.filter(status='PENDENTE').aggregate(Sum('valor'))['valor__sum'] or 0
+        
+        return context
 
 class DespesaCreateView(LoginRequiredMixin, CreateView):
     model = Lancamento
     form_class = DespesaForm
     template_name = 'financeiro_fit/despesa_form.html'
-    success_url = reverse_lazy('financeiro_lista')
+    success_url = reverse_lazy('contas_pagar')
 
     def form_valid(self, form):
-        # Garante que é uma despesa (caso o form não force)
-        # form.instance.tipo_lancamento = 'DESPESA' (Se tiver esse campo no model)
-        return super().form_valid(form)
+        # --- LÓGICA DE RECORRÊNCIA ---
+        dados = form.save(commit=False)
+        # Se você removeu 'organizacao' do model, apague esta linha:
+        # dados.organizacao = self.request.tenant 
+        
+        repetir = form.cleaned_data.get('repetir')
+        frequencia = form.cleaned_data.get('frequencia')
+        qtd = form.cleaned_data.get('qtd_repeticoes') or 1
+
+        if repetir and qtd > 1:
+            grupo_id = uuid.uuid4()
+            
+            for i in range(qtd):
+                nova_despesa = Lancamento(
+                    # Se removeu organizacao, apague aqui tb
+                    # organizacao=self.request.tenant, 
+                    descricao=f"{dados.descricao} ({i+1}/{qtd})",
+                    fornecedor=dados.fornecedor,
+                    profissional=dados.profissional,
+                    categoria=dados.categoria,
+                    conta=dados.conta,
+                    valor=dados.valor,
+                    arquivo_boleto=dados.arquivo_boleto,
+                    grupo_serie=grupo_id,
+                    status='PENDENTE'
+                )
+                
+                # Calcula Vencimento
+                base_date = dados.data_vencimento
+                if frequencia == 'MENSAL':
+                    nova_despesa.data_vencimento = base_date + relativedelta(months=i)
+                elif frequencia == 'SEMANAL':
+                    nova_despesa.data_vencimento = base_date + relativedelta(weeks=i)
+                elif frequencia == 'ANUAL':
+                    nova_despesa.data_vencimento = base_date + relativedelta(years=i)
+                else: 
+                    nova_despesa.data_vencimento = base_date # Caso não selecione, salva na mesma data (ou + dias)
+                
+                nova_despesa.save()
+            
+            messages.success(self.request, f"{qtd} despesas geradas com sucesso!")
+            return redirect(self.success_url)
+        
+        else:
+            # Salva normal (única)
+            return super().form_valid(form)
 
 # ==============================================================================
-# 3. CADASTROS BÁSICOS (CATEGORIAS E CONTAS)
+# 3. AÇÕES (BAIXA)
 # ==============================================================================
 
-# --- Categorias ---
+def baixar_lancamento(request, pk):
+    lancamento = get_object_or_404(Lancamento, pk=pk)
+    
+    if request.method == 'POST':
+        lancamento.status = 'PAGO'
+        lancamento.data_pagamento = timezone.now().date()
+        lancamento.forma_pagamento = request.POST.get('forma_pagamento')
+        lancamento.save()
+        
+        # Atualiza Saldo da Conta
+        if lancamento.conta:
+            if lancamento.categoria.tipo == 'RECEITA':
+                lancamento.conta.saldo_atual += lancamento.valor
+            else:
+                lancamento.conta.saldo_atual -= lancamento.valor
+            lancamento.conta.save()
+        
+        messages.success(request, "Baixa realizada!")
+        
+    # Volta pra onde estava (Receber ou Pagar)
+    next_url = request.META.get('HTTP_REFERER')
+    if next_url: return HttpResponseRedirect(next_url)
+    return redirect('contas_receber')
+
+# ==============================================================================
+# 4. CADASTROS AUXILIARES
+# ==============================================================================
+
+# Fornecedores
+class FornecedorListView(LoginRequiredMixin, ListView):
+    model = Fornecedor
+    template_name = 'financeiro_fit/fornecedor_list.html'
+    context_object_name = 'fornecedores'
+
+class FornecedorCreateView(LoginRequiredMixin, CreateView):
+    model = Fornecedor
+    form_class = FornecedorForm
+    template_name = 'financeiro_fit/form_generico.html'
+    success_url = reverse_lazy('fornecedor_list')
+
+# Categorias
 class CategoriaListView(LoginRequiredMixin, ListView):
     model = CategoriaFinanceira
-    template_name = 'financeiro_fit/categoria_list.html' # Ajustei para nome padrão
+    template_name = 'financeiro_fit/categoria_list.html'
     context_object_name = 'categorias'
 
 class CategoriaCreateView(LoginRequiredMixin, CreateView):
@@ -113,10 +203,10 @@ class CategoriaCreateView(LoginRequiredMixin, CreateView):
     template_name = 'financeiro_fit/form_generico.html'
     success_url = reverse_lazy('categoria_list')
 
-# --- Contas Bancárias ---
+# Contas Bancárias
 class ContaListView(LoginRequiredMixin, ListView):
     model = ContaBancaria
-    template_name = 'financeiro_fit/conta_list.html' # Ajustei para nome padrão
+    template_name = 'financeiro_fit/conta_list.html'
     context_object_name = 'contas'
 
 class ContaCreateView(LoginRequiredMixin, CreateView):
