@@ -1,0 +1,88 @@
+<div class="card shadow-sm border-0">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Vencimento</th>
+                    <th>Descrição</th>
+                    <th>Categoria / Aluno</th>
+                    <th>Valor</th>
+                    <th>Situação</th>
+                    <th class="text-end">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lanc in lancamentos %}
+                <tr>
+                    <td>
+                        <div class="fw-bold">{{ lanc.data_vencimento|date:"d/m/Y" }}</div>
+                        {% if lanc.status == 'PAGO' %}
+                            <small class="text-success"><i class="fas fa-check-circle"></i> Pago em {{ lanc.data_pagamento|date:"d/m" }}</small>
+                        {% elif lanc.data_vencimento < hoje and lanc.status == 'PENDENTE' %}
+                            <small class="text-danger fw-bold">Vencido!</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ lanc.descricao }}
+                        <br><small class="text-muted">{{ lanc.conta.nome }}</small>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border">{{ lanc.categoria.nome }}</span>
+                        {% if lanc.aluno %}
+                            <br><a href="{% url 'aluno_detail' lanc.aluno.id %}" class="text-decoration-none small fw-bold text-dark">{{ lanc.aluno.nome }}</a>
+                        {% endif %}
+                    </td>
+                    <td class="fw-bold {% if lanc.categoria.tipo == 'RECEITA' %}text-success{% else %}text-danger{% endif %}">
+                        R$ {{ lanc.valor }}
+                    </td>
+                    <td>
+                        {% if lanc.status == 'PAGO' %}
+                            <span class="badge bg-success w-100">PAGO</span>
+                        {% elif lanc.status == 'PENDENTE' %}
+                            <span class="badge bg-primary w-100">EM ABERTO</span>
+                        {% else %}
+                            <span class="badge bg-secondary w-100">CANCELADO</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        {% if lanc.status == 'PENDENTE' %}
+                            <form action="{% url 'baixar_lancamento' lanc.id %}" method="post" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="forma_pagamento" value="PIX"> 
+                                <!-- No futuro podemos abrir um modal para escolher a forma -->
+                                <button class="btn btn-sm btn-outline-success fw-bold" onclick="return confirm('Confirmar recebimento?')">
+                                    $ Receber
+                                </button>
+                            </form>
+                        {% else %}
+                            <i class="fas fa-check text-muted"></i>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        <i class="fas fa-search-dollar fa-2x mb-3"></i><br>
+                        Nenhum lançamento encontrado.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Paginação (Se tiver muitos registros) -->
+    {% if is_paginated %}
+    <div class="card-footer bg-white d-flex justify-content-center">
+        <ul class="pagination pagination-sm mb-0">
+            {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a></li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+            {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Próximo</a></li>
+            {% endif %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
