@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Extrato - {{ conta.nome }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold text-dark"><i class="fas fa-file-invoice me-2"></i>Extrato: {{ conta.nome }}</h3>
+            <span class="badge bg-primary fs-6">Saldo Atual: R$ {{ conta.saldo_atual }}</span>
+        </div>
+        <a href="{% url 'conta_list' %}" class="btn btn-outline-secondary">Voltar</a>
+    </div>
+
+    <!-- FILTRO DE DATA -->
+    <div class="card bg-light border-0 mb-4">
+        <div class="card-body py-2">
+            <form method="get" class="row g-2 align-items-center">
+                <div class="col-auto"><span class="fw-bold">Período:</span></div>
+                <div class="col-auto">
+                    <input type="date" name="inicio" class="form-control form-control-sm" value="{{ request.GET.inicio }}" required>
+                </div>
+                <div class="col-auto">até</div>
+                <div class="col-auto">
+                    <input type="date" name="fim" class="form-control form-control-sm" value="{{ request.GET.fim }}" required>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+                    <button type="button" class="btn btn-outline-dark btn-sm" onclick="window.print()"><i class="fas fa-print"></i> Imprimir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- RESUMO DO PERÍODO -->
+    <div class="row mb-4 text-center">
+        <div class="col-md-4">
+            <div class="p-3 bg-success bg-opacity-10 rounded border border-success">
+                <small class="text-success fw-bold text-uppercase">Entradas</small>
+                <h4 class="text-success mb-0">+ R$ {{ total_entradas }}</h4>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 bg-danger bg-opacity-10 rounded border border-danger">
+                <small class="text-danger fw-bold text-uppercase">Saídas</small>
+                <h4 class="text-danger mb-0">- R$ {{ total_saidas }}</h4>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 bg-white rounded border">
+                <small class="text-muted fw-bold text-uppercase">Resultado do Período</small>
+                <h4 class="{% if resultado_periodo < 0 %}text-danger{% else %}text-primary{% endif %} mb-0">
+                    R$ {{ resultado_periodo }}
+                </h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABELA DE MOVIMENTAÇÕES -->
+    <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Data</th>
+                        <th>Descrição</th>
+                        <th>Categoria</th>
+                        <th class="text-end">Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in lancamentos %}
+                    <tr>
+                        <td>{{ item.data_pagamento|date:"d/m/Y" }}</td>
+                        <td>
+                            {{ item.descricao }}
+                            {% if item.aluno %} <small class="text-muted d-block">{{ item.aluno.nome }}</small> {% endif %}
+                            {% if item.fornecedor %} <small class="text-muted d-block">{{ item.fornecedor.nome }}</small> {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {% if item.categoria.tipo == 'RECEITA' %}bg-success{% else %}bg-danger{% endif %} bg-opacity-75">
+                                {{ item.categoria.nome }}
+                            </span>
+                        </td>
+                        <td class="text-end fw-bold {% if item.categoria.tipo == 'RECEITA' %}text-success{% else %}text-danger{% endif %}">
+                            {% if item.categoria.tipo == 'DESPESA' %}-{% endif %} R$ {{ item.valor }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted">
+                            Nenhuma movimentação neste período.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

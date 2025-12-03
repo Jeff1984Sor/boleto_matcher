@@ -24,12 +24,17 @@
                 <tbody>
                     {% for conta in contas %}
                     <tr>
-                        <td class="fw-bold text-dark">{{ conta.nome }}</td>
+                        <td class="fw-bold">
+                            <!-- LINK PARA O EXTRATO -->
+                            <a href="{% url 'conta_extrato' conta.pk %}" class="text-decoration-none text-primary fs-5" title="Ver Extrato">
+                                <i class="fas fa-search-plus me-2 text-muted"></i> {{ conta.nome }}
+                            </a>
+                        </td>
                         <td class="fs-5 {% if conta.saldo_atual < 0 %}text-danger{% else %}text-success{% endif %} fw-bold">
                             R$ {{ conta.saldo_atual }}
                         </td>
                         <td class="text-end">
-                            <button class="btn btn-sm btn-outline-secondary"><i class="fas fa-pen"></i> Editar</button>
+                            <a href="#" class="btn btn-sm btn-outline-secondary"><i class="fas fa-pen"></i> Editar</a>
                         </td>
                     </tr>
                     {% empty %}

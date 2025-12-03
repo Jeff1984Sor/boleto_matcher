@@ -8,6 +8,7 @@ from django.db.models import Sum
 from django.http import HttpResponseRedirect
 import uuid
 from dateutil.relativedelta import relativedelta
+from django.views.generic import DetailView
 
 # Imports Locais
 from .models import Lancamento, CategoriaFinanceira, ContaBancaria, Fornecedor
@@ -214,3 +215,37 @@ class ContaCreateView(LoginRequiredMixin, CreateView):
     form_class = ContaBancariaForm
     template_name = 'financeiro_fit/form_generico.html'
     success_url = reverse_lazy('conta_list')
+
+
+class ContaExtratoView(LoginRequiredMixin, DetailView):
+    model = ContaBancaria
+    template_name = 'financeiro_fit/conta_extrato.html'
+    context_object_name = 'conta'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Filtros de Data (Padrão: Últimos 30 dias se não informado)
+        inicio = self.request.GET.get('inicio')
+        fim = self.request.GET.get('fim')
+        
+        # Pega lançamentos PAGOS desta conta
+        lancamentos = Lancamento.objects.filter(
+            conta=self.object, 
+            status='PAGO'
+        ).order_by('-data_pagamento') # Mais recentes primeiro
+        
+        if inicio and fim:
+            lancamentos = lancamentos.filter(data_pagamento__range=[inicio, fim])
+            
+        context['lancamentos'] = lancamentos
+        
+        # Resumo do Período
+        entradas = lancamentos.filter(categoria__tipo='RECEITA').aggregate(Sum('valor'))['valor__sum'] or 0
+        saidas = lancamentos.filter(categoria__tipo='DESPESA').aggregate(Sum('valor'))['valor__sum'] or 0
+        
+        context['total_entradas'] = entradas
+        context['total_saidas'] = saidas
+        context['resultado_periodo'] = entradas - saidas
+        
+        return context

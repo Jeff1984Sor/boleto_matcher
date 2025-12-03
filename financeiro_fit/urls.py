@@ -21,4 +21,7 @@ urlpatterns = [
     
     path('config/contas/', views.ContaListView.as_view(), name='conta_list'),
     path('config/contas/nova/', views.ContaCreateView.as_view(), name='conta_create'),
+
+    path('config/contas/<int:pk>/extrato/', views.ContaExtratoView.as_view(), name='conta_extrato'),
+
 ]
