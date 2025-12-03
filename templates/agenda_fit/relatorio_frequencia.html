@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}Relatório de Frequência{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold text-primary"><i class="fas fa-clipboard-check me-2"></i>Relatório de Frequência</h3>
+        <button class="btn btn-outline-dark" onclick="window.print()"><i class="fas fa-print"></i> Imprimir</button>
+    </div>
+
+    <!-- ÁREA DE FILTROS -->
+    <div class="card shadow-sm mb-4 bg-light border-0">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                
+                <!-- Filtro de Aluno -->
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Aluno</label>
+                    <select name="aluno" class="form-select">
+                        <option value="">Todos os Alunos</option>
+                        {% for a in alunos_list %}
+                            <option value="{{ a.id }}" {% if request.GET.aluno == a.id|stringformat:"s" %}selected{% endif %}>
+                                {{ a.nome }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Filtro de Data -->
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">De:</label>
+                    <input type="date" name="data_inicio" class="form-control" value="{{ request.GET.data_inicio }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">Até:</label>
+                    <input type="date" name="data_fim" class="form-control" value="{{ request.GET.data_fim }}">
+                </div>
+
+                <!-- Filtro de Status -->
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="PRESENTE" {% if request.GET.status == 'PRESENTE' %}selected{% endif %}>Presente</option>
+                        <option value="FALTA" {% if request.GET.status == 'FALTA' %}selected{% endif %}>Falta</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter"></i> Filtrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TABELA DE RESULTADOS -->
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Data / Hora</th>
+                        <th>Aluno</th>
+                        <th>Profissional</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in presencas %}
+                    <tr>
+                        <td>
+                            <div class="fw-bold">{{ p.aula.data_hora_inicio|date:"d/m/Y" }}</div>
+                            <small class="text-muted">{{ p.aula.data_hora_inicio|date:"H:i" }}</small>
+                        </td>
+                        <td>
+                            <a href="{% url 'aluno_detail' p.aluno.id %}" class="text-decoration-none fw-bold text-dark">
+                                {{ p.aluno.nome }}
+                            </a>
+                        </td>
+                        <td>{{ p.aula.profissional.nome }}</td>
+                        <td>
+                            {% if p.status == 'PRESENTE' %}
+                                <span class="badge bg-success"><i class="fas fa-check"></i> Presente</span>
+                            {% elif p.status == 'FALTA' %}
+                                <span class="badge bg-danger"><i class="fas fa-times"></i> Falta</span>
+                            {% elif p.status == 'FALTA_JUSTIFICADA' %}
+                                <span class="badge bg-warning text-dark">Justificada</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Agendado</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted">
+                            <i class="fas fa-search fa-2x mb-3"></i><br>
+                            Nenhum registro encontrado com esses filtros.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

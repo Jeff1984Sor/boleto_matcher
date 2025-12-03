@@ -13,4 +13,6 @@ urlpatterns = [
 
     path('api/totalpass/checkin/', views.checkin_totalpass, name='api_totalpass_checkin'),
     path('aulas/aluno/<int:aluno_id>/', views.lista_aulas_aluno, name='lista_aulas_aluno'),
+    path('relatorios/frequencia/', views.RelatorioFrequenciaView.as_view(), name='relatorio_frequencia'),
+    path('aluno/<int:aluno_id>/', views.lista_aulas_aluno, name='lista_aulas_aluno'),
 ]

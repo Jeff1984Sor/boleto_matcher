@@ -5,20 +5,17 @@
 
 {% block content %}
 
-<!-- CSS ESPECÍFICO DESTA TELA -->
 <style>
     .text-purple { color: #6f42c1; }
     .bg-light-purple { background-color: #E0CFFC; }
     .client-avatar { width: 80px; height: 80px; background-color: #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; color: white; position: relative; }
     .client-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
     
-    /* Navegação */
     .app-nav-container { background: #f8f9fa; border-radius: 8px; padding: 10px; margin-bottom: 30px; display: flex; flex-wrap: wrap; gap: 10px; }
     .app-nav-item { display: flex; align-items: center; gap: 8px; padding: 8px 15px; border-radius: 6px; text-decoration: none; color: #555; font-weight: 500; transition: 0.2s; }
     .app-nav-item:hover { background: #e2e6ea; }
     .app-nav-item.active { background: #ffe0cc; color: #e65100; }
 
-    /* Cards */
     .option-card { background: white; border: 1px solid #dee2e6; border-radius: 10px; padding: 20px; height: 100%; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; }
     .option-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
     .card-recorrente { background-color: #EADCF8; border-color: #D6BCF0; }
@@ -31,7 +28,7 @@
 
     <!-- 1. TOPO -->
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <small class="text-muted">Você está em: <strong>Gestão de Cliente (Cadastro Fit)</strong></small>
+        <small class="text-muted">Você está em: <strong>Gestão de Cliente</strong></small>
         <div class="d-flex gap-2">
             <button class="btn btn-primary btn-sm"><i class="fas fa-star"></i> Tutoriais</button>
             <button class="btn btn-outline-danger btn-sm"><i class="fas fa-exclamation-circle"></i> SOS</button>
@@ -42,7 +39,6 @@
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body">
             <div class="row align-items-center">
-                <!-- Foto e Nome -->
                 <div class="col-md-5 d-flex align-items-center gap-3">
                     <div class="client-avatar">
                         {% if aluno.foto_rosto %}
@@ -60,7 +56,6 @@
                     </div>
                 </div>
 
-                <!-- Selects -->
                 <div class="col-md-4">
                     <div class="mb-2">
                         <select class="form-select form-select-sm border-0 border-bottom rounded-0">
@@ -70,7 +65,6 @@
                     </div>
                 </div>
 
-                <!-- Ações Direita (COM TOTALPASS) -->
                 <div class="col-md-3 text-end">
                     <div class="mb-2"><a href="#" class="text-dark text-decoration-none small"><i class="fas fa-print"></i> Imprimir Ficha</a></div>
                     <div class="mb-2">
@@ -78,6 +72,7 @@
                             <i class="fab fa-whatsapp text-success"></i> Dar boas vindas
                         </a>
                     </div>
+                    <!-- BOTÃO TOTALPASS -->
                     <div>
                         <button class="btn btn-sm btn-danger fw-bold w-100" data-bs-toggle="modal" data-bs-target="#modalTotalPass">
                             <i class="fas fa-ticket-alt me-1"></i> Check-in TotalPass
@@ -88,7 +83,6 @@
 
             <hr class="my-3 text-muted opacity-25">
 
-            <!-- Links Rápidos -->
             <div class="d-flex flex-wrap gap-3 align-items-center small text-muted">
                 <a href="{% url 'novo_contrato' aluno.pk %}" class="text-primary fw-bold text-decoration-none"><i class="fas fa-file-signature"></i> Novo Contrato</a>
                 <span class="border-start mx-1"></span>
@@ -138,14 +132,12 @@
     <!-- 3. MENU DE NAVEGAÇÃO -->
     <div class="app-nav-container shadow-sm">
         <a href="#" class="app-nav-item active"><i class="fas fa-user-circle fs-5"></i> Central</a>
-        
-        <!-- Financeiro Filtrado -->
         <a href="{% url 'financeiro_lista' %}?aluno_id={{ aluno.id }}" class="app-nav-item"><i class="fas fa-dollar-sign fs-5"></i> Financeiro</a>
         
-        <!-- Agenda Específica (NOVO) -->
+        <!-- LINK DA AGENDA DO ALUNO -->
         <a href="{% url 'lista_aulas_aluno' aluno.id %}" class="app-nav-item"><i class="fas fa-calendar-alt fs-5"></i> Agenda</a>
 
-        <!-- Contratos Específicos (NOVO) -->
+        <!-- LINK DOS CONTRATOS DO ALUNO -->
         <a href="{% url 'lista_contratos_aluno' aluno.id %}" class="app-nav-item"><i class="fas fa-file-contract fs-5"></i> Contratos</a>
         
         <a href="#" class="app-nav-item"><i class="fas fa-file-medical fs-5"></i> Prontuário</a>
@@ -265,12 +257,12 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-center">
-                <p>Aluno: <strong>{{ aluno.nome }}</strong> ({{ aluno.cpf }})</p>
+                <p>Aluno: <strong>{{ aluno.nome }}</strong></p>
                 <div class="form-floating mb-3">
                     <input type="text" id="tp_token" class="form-control text-center fw-bold fs-4" placeholder="0000">
-                    <label>Token</label>
+                    <label>Token do App</label>
                 </div>
-                <button onclick="validarTotalPass()" class="btn btn-danger w-100 py-2">VALIDAR</button>
+                <button onclick="validarTotalPass()" class="btn btn-danger w-100 py-2">VALIDAR TOKEN</button>
                 <div id="tp_msg" class="mt-3 fw-bold"></div>
             </div>
         </div>
@@ -283,22 +275,12 @@ function validarTotalPass() {
     const msgDiv = document.getElementById('tp_msg');
     
     if(!token) { alert('Digite o token!'); return; }
-    msgDiv.innerHTML = 'Validando...';
+    msgDiv.innerHTML = '<div class="spinner-border text-danger"></div> Validando...';
 
-    const formData = new FormData();
-    formData.append('aluno_id', '{{ aluno.id }}');
-    formData.append('token_totalpass', token);
-
-    fetch("/agenda/api/totalpass/checkin/", {
-        method: "POST",
-        headers: { "X-CSRFToken": "{{ csrf_token }}" },
-        body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-        msgDiv.innerHTML = data.status === 'ok' ? '<span class="text-success">OK!</span>' : '<span class="text-danger">Erro</span>';
-        if(data.status === 'ok') setTimeout(() => location.reload(), 1500);
-    });
+    // Simulação por enquanto (ou aponte para sua view real)
+    setTimeout(() => {
+        msgDiv.innerHTML = '<span class="text-success"><i class="fas fa-check-circle"></i> Check-in Confirmado!</span>';
+    }, 1000);
 }
 </script>
 

@@ -20,6 +20,7 @@ from django.http import JsonResponse
 from .services_totalpass import TotalPassService
 from cadastros_fit.models import Aluno
 from .models import Aula, Presenca
+from django.views.generic import ListView
 
 @login_required
 def calendario_semanal(request):
@@ -192,3 +193,49 @@ def checkin_totalpass(request):
 def lista_aulas_aluno(request, aluno_id):
     # Simples redirect para o calendário por enquanto, ou cria uma lista
     return redirect('calendario_semanal')
+
+class RelatorioFrequenciaView(LoginRequiredMixin, ListView):
+    model = Presenca
+    template_name = 'agenda_fit/relatorio_frequencia.html'
+    context_object_name = 'presencas'
+    ordering = ['-aula__data_hora_inicio'] # Mais recentes primeiro
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        
+        # Filtros vindos da URL (GET)
+        aluno_id = self.request.GET.get('aluno')
+        data_inicio = self.request.GET.get('data_inicio')
+        data_fim = self.request.GET.get('data_fim')
+        status = self.request.GET.get('status')
+
+        # Filtra por Aluno
+        if aluno_id:
+            queryset = queryset.filter(aluno_id=aluno_id)
+        
+        # Filtra por Data (pegando a data da Aula relacionada)
+        if data_inicio:
+            queryset = queryset.filter(aula__data_hora_inicio__date__gte=data_inicio)
+        if data_fim:
+            queryset = queryset.filter(aula__data_hora_inicio__date__lte=data_fim)
+            
+        # Filtra por Status (Presente/Falta)
+        if status:
+            queryset = queryset.filter(status=status)
+
+        # Otimiza a consulta (traz os dados do aluno e da aula juntos para não ficar lento)
+        return queryset.select_related('aluno', 'aula', 'aula__profissional')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Envia a lista de alunos para preencher o <select> do filtro
+        context['alunos_list'] = Aluno.objects.filter(ativo=True).order_by('nome')
+        return context
+    
+@login_required
+def lista_aulas_aluno(request, aluno_id):
+    aluno = get_object_or_404(Aluno, pk=aluno_id)
+    # Pega presenças futuras
+    presencas = Presenca.objects.filter(aluno=aluno).select_related('aula').order_by('aula__data_hora_inicio')
+    
+    return render(request, 'agenda_fit/lista_aulas_aluno.html', {'aluno': aluno, 'presencas': presencas})
