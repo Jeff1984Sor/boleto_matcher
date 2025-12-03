@@ -2,17 +2,23 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # 1. Calendário Geral
     path('semanal/', views.calendario_semanal, name='calendario_semanal'),
+    
+    # 2. Agenda Específica do Aluno (Histórico)
+    path('aluno/<int:aluno_id>/', views.lista_aulas_aluno, name='lista_aulas_aluno'),
+
+    # 3. Gerenciamento da Aula (Professor)
     path('aula/<int:aula_id>/gerenciar/', views.gerenciar_aula, name='gerenciar_aula'),
-    path('aluno/<int:aluno_id>/', views.lista_aulas_aluno, name='lista_aulas_aluno'),
 
-    path('acao/presenca/<int:presenca_id>/', views.acao_marcar_presenca, name='acao_marcar_presenca'),
-    path('acao/realizada/<int:presenca_id>/', views.acao_marcar_realizada, name='acao_marcar_realizada'),
-    path('acao/deletar/<int:presenca_id>/', views.acao_deletar_agendamento, name='acao_deletar_agendamento'),
-    path('acao/remarcar/<int:presenca_id>/', views.acao_remarcar_aula, name='acao_remarcar_aula'),
+    # 4. Ações Rápidas (Botões do Template)
+    # Observe que os 'names' aqui devem ser iguais aos usados no {% url %} do HTML
+    path('presenca/<int:pk>/confirmar/', views.confirmar_presenca, name='confirmar_presenca'),
+    path('presenca/<int:pk>/cancelar/', views.cancelar_presenca, name='cancelar_presenca'),
+    path('presenca/<int:pk>/remarcar/', views.remarcar_aula, name='remarcar_aula'),
 
-    path('api/totalpass/checkin/', views.checkin_totalpass, name='api_totalpass_checkin'),
-    path('aulas/aluno/<int:aluno_id>/', views.lista_aulas_aluno, name='lista_aulas_aluno'),
+    # 5. Relatórios e APIs
     path('relatorios/frequencia/', views.RelatorioFrequenciaView.as_view(), name='relatorio_frequencia'),
-    path('aluno/<int:aluno_id>/', views.lista_aulas_aluno, name='lista_aulas_aluno'),
+    path('api/totalpass/checkin/', views.checkin_totalpass, name='api_totalpass_checkin'),
+    path('configuracao/integracao/', views.ConfiguracaoIntegracaoView.as_view(), name='config_integracao'),
 ]

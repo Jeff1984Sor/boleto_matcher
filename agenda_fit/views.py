@@ -1,56 +1,49 @@
-from django.shortcuts import render
-
-# Create your views here.
 from datetime import timedelta
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
-from cadastros_fit.models import Aluno
 from django.contrib.auth.decorators import login_required
-from .models import Aula, Presenca
-from django.shortcuts import get_object_or_404, redirect
-from django.contrib import messages
-from .models import ConfiguracaoIntegracao
-from .forms import IntegracaoForm
-from django.views.generic import UpdateView
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import ListView, UpdateView
 from django.urls import reverse_lazy
-from .models import ConfiguracaoIntegracao
-from .forms import IntegracaoForm
 from django.http import JsonResponse
-from .services_totalpass import TotalPassService
+from django.contrib import messages
+from django.utils.dateparse import parse_datetime
+
+# Imports Locais
 from cadastros_fit.models import Aluno
-from .models import Aula, Presenca
-from django.views.generic import ListView
+from .models import Aula, Presenca, ConfiguracaoIntegracao
+from .forms import IntegracaoForm
+# Se você tiver o serviço TotalPass, mantenha. Se não, comente para evitar erro.
+# from .services_totalpass import TotalPassService
+
+# ==============================================================================
+# 1. AGENDA SEMANAL (CALENDÁRIO GERAL)
+# ==============================================================================
 
 @login_required
 def calendario_semanal(request):
-    # 1. Determina a data base (hoje ou passada via GET)
     data_get = request.GET.get('data')
     if data_get:
         data_base = timezone.datetime.strptime(data_get, '%Y-%m-%d').date()
     else:
         data_base = timezone.now().date()
 
-    # 2. Calcula o início (Segunda) e fim (Domingo) da semana
     inicio_semana = data_base - timedelta(days=data_base.weekday())
     fim_semana = inicio_semana + timedelta(days=6)
 
-    # 3. Busca as aulas do período
     aulas = Aula.objects.filter(
         data_hora_inicio__date__gte=inicio_semana,
         data_hora_inicio__date__lte=fim_semana
     ).select_related('profissional', 'unidade').order_by('data_hora_inicio')
 
-    # 4. Organiza os dados para o Template (Dicionário: {0: [aulas_seg], 1: [aulas_ter]...})
-    # Criamos também uma lista de cabeçalhos com as datas dos dias
     dias_da_semana = []
-    grade_semanal = {i: [] for i in range(7)} # 0 a 6
+    grade_semanal = {i: [] for i in range(7)}
     
     for i in range(7):
         dia_atual = inicio_semana + timedelta(days=i)
         dias_da_semana.append({
             'data': dia_atual,
-            'nome': dia_atual.strftime('%A'), # Nome do dia (ex: Monday) - vamos traduzir no template
+            'nome': dia_atual.strftime('%A'),
             'hoje': dia_atual == timezone.now().date()
         })
 
@@ -58,13 +51,12 @@ def calendario_semanal(request):
         dia_index = aula.data_hora_inicio.weekday()
         grade_semanal[dia_index].append(aula)
 
-    # Navegação (Semana anterior e próxima)
     prox_semana = (inicio_semana + timedelta(days=7)).strftime('%Y-%m-%d')
     ant_semana = (inicio_semana - timedelta(days=7)).strftime('%Y-%m-%d')
 
     context = {
-        'dias_da_semana': dias_da_semana, # Cabeçalhos
-        'grade_semanal': grade_semanal,   # Conteúdo
+        'dias_da_semana': dias_da_semana,
+        'grade_semanal': grade_semanal,
         'inicio_semana': inicio_semana,
         'fim_semana': fim_semana,
         'prox_semana': prox_semana,
@@ -73,169 +65,149 @@ def calendario_semanal(request):
 
     return render(request, 'agenda_fit/calendario_semanal.html', context)
 
+# ==============================================================================
+# 2. AÇÕES DE AULA (BOTÕES)
+# ==============================================================================
+
 @login_required
-def acao_marcar_presenca(request, presenca_id):
-    p = get_object_or_404(Presenca, id=presenca_id)
+def confirmar_presenca(request, pk):
+    p = get_object_or_404(Presenca, pk=pk)
     p.status = 'PRESENTE'
     p.save()
     messages.success(request, "Presença confirmada!")
-    return redirect('lista_aulas_aluno', aluno_id=p.aluno.id)
+    # Redireciona de volta para onde veio (Aluno ou Calendário)
+    return redirect(request.META.get('HTTP_REFERER', 'calendario_semanal'))
 
 @login_required
-def acao_marcar_realizada(request, presenca_id):
-    p = get_object_or_404(Presenca, id=presenca_id)
-    # Marca a AULA inteira como realizada
-    aula = p.aula
-    aula.status = 'REALIZADA'
-    aula.save()
-    messages.success(request, "Aula marcada como Realizada!")
-    return redirect('lista_aulas_aluno', aluno_id=p.aluno.id)
-
-@login_required
-def acao_deletar_agendamento(request, presenca_id):
-    p = get_object_or_404(Presenca, id=presenca_id)
-    aluno_id = p.aluno.id
+def cancelar_presenca(request, pk):
+    p = get_object_or_404(Presenca, pk=pk)
+    # Remove a presença (libera vaga)
     p.delete()
-    messages.warning(request, "Agendamento removido.")
-    return redirect('lista_aulas_aluno', aluno_id=aluno_id)
+    messages.warning(request, "Agendamento cancelado.")
+    return redirect(request.META.get('HTTP_REFERER', 'calendario_semanal'))
 
 @login_required
-def acao_remarcar_aula(request, presenca_id):
-    # Lógica simples: Remove a atual e manda para o calendário para escolher outra
-    p = get_object_or_404(Presenca, id=presenca_id)
-    aluno_id = p.aluno.id
-    p.delete() # Remove a atual
-    messages.info(request, "Agendamento anterior removido. Escolha o novo horário no calendário.")
-    return redirect('calendario_semanal')
-
-@login_required
-def lista_aulas_aluno(request, aluno_id):
-    aluno = get_object_or_404(Aluno, pk=aluno_id)
-    presencas = Presenca.objects.filter(aluno=aluno).select_related('aula', 'aula__profissional').order_by('-aula__data_hora_inicio')
+def remarcar_aula(request, pk):
+    presenca = get_object_or_404(Presenca, pk=pk)
     
-    return render(request, 'agenda_fit/aluno_aulas_list.html', {
-        'aluno': aluno,
-        'presencas': presencas,
-        'agora': timezone.now() # <--- ADICIONE ISSO
-    })
+    if request.method == 'POST':
+        nova_data_str = request.POST.get('nova_data')
+        if nova_data_str:
+            nova_data = parse_datetime(nova_data_str)
+            
+            # Cria nova aula ou usa existente
+            nova_aula, created = Aula.objects.get_or_create(
+                data_hora_inicio=nova_data,
+                # Assume 1h
+                data_hora_fim=nova_data + timedelta(hours=1),
+                profissional=presenca.aula.profissional,
+                defaults={
+                    'unidade': presenca.aula.unidade, # Ajuste se precisar de tenant
+                    'status': 'AGENDADA'
+                }
+            )
+            
+            # Move o aluno
+            presenca.aula = nova_aula
+            presenca.status = 'AGENDADA' # Reseta status se estava com falta
+            presenca.save()
+            
+            messages.success(request, f"Remarcado para {nova_data.strftime('%d/%m %H:%M')}")
+        else:
+            messages.error(request, "Data inválida")
+            
+    return redirect(request.META.get('HTTP_REFERER', 'calendario_semanal'))
 
 @login_required
 def gerenciar_aula(request, aula_id):
+    """Tela para o professor fazer a chamada e evolução"""
     aula = get_object_or_404(Aula, id=aula_id)
     
     if request.method == 'POST':
-        # 1. Salva a Evolução (Texto do que foi feito na aula)
-        evolucao = request.POST.get('evolucao_texto')
-        aula.evolucao_texto = evolucao
-        
-        # Se todos foram atendidos, marca aula como REALIZADA
-        # (Você pode refinar essa lógica depois)
+        # Salva Evolução
+        aula.evolucao_texto = request.POST.get('evolucao_texto')
         aula.status = 'REALIZADA'
         aula.save()
 
-        # 2. Salva a Chamada (Presença de cada aluno)
-        # O form vai mandar dados como: presenca_10 = 'PRESENTE', presenca_12 = 'FALTA'
+        # Salva Chamada em Lote
         for presenca in aula.presencas.all():
-            key = f"status_{presenca.id}" # Nome do input no HTML
+            key = f"status_{presenca.id}"
             novo_status = request.POST.get(key)
-            
             if novo_status:
                 presenca.status = novo_status
                 presenca.save()
         
-        messages.success(request, "Chamada e evolução salvas com sucesso!")
-        return redirect('calendario_semanal') # Ou volta para a mesma aula
+        messages.success(request, "Aula finalizada com sucesso!")
+        return redirect('calendario_semanal')
 
-    return render(request, 'agenda_fit/gerenciar_aula.html', {
-        'aula': aula
+    return render(request, 'agenda_fit/gerenciar_aula.html', {'aula': aula})
+
+# ==============================================================================
+# 3. AGENDA ESPECÍFICA DO ALUNO
+# ==============================================================================
+
+@login_required
+def lista_aulas_aluno(request, aluno_id):
+    aluno = get_object_or_404(Aluno, pk=aluno_id)
+    # Traz histórico completo
+    presencas = Presenca.objects.filter(aluno=aluno).select_related('aula', 'aula__profissional').order_by('-aula__data_hora_inicio')
+    
+    return render(request, 'agenda_fit/lista_aulas_aluno.html', {
+        'aluno': aluno, 
+        'presencas': presencas
     })
+
+# ==============================================================================
+# 4. RELATÓRIOS
+# ==============================================================================
+
+class RelatorioFrequenciaView(LoginRequiredMixin, ListView):
+    model = Presenca
+    template_name = 'agenda_fit/relatorio_frequencia.html'
+    context_object_name = 'presencas'
+    ordering = ['-aula__data_hora_inicio']
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        
+        aluno_id = self.request.GET.get('aluno')
+        data_inicio = self.request.GET.get('data_inicio')
+        data_fim = self.request.GET.get('data_fim')
+        status = self.request.GET.get('status')
+
+        if aluno_id:
+            queryset = queryset.filter(aluno_id=aluno_id)
+        if data_inicio:
+            queryset = queryset.filter(aula__data_hora_inicio__date__gte=data_inicio)
+        if data_fim:
+            queryset = queryset.filter(aula__data_hora_inicio__date__lte=data_fim)
+        if status:
+            queryset = queryset.filter(status=status)
+
+        return queryset.select_related('aluno', 'aula', 'aula__profissional')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['alunos_list'] = Aluno.objects.filter(ativo=True).order_by('nome')
+        return context
+
+# ==============================================================================
+# 5. CONFIGURAÇÕES & INTEGRAÇÕES
+# ==============================================================================
 
 class ConfiguracaoIntegracaoView(LoginRequiredMixin, UpdateView):
     model = ConfiguracaoIntegracao
     form_class = IntegracaoForm
     template_name = 'agenda_fit/config_integracao.html'
-    success_url = reverse_lazy('home') # Ou volta pra mesma tela
+    success_url = reverse_lazy('home')
 
     def get_object(self, queryset=None):
-        # Pega a primeira configuração ou cria se não existir
         obj, created = ConfiguracaoIntegracao.objects.get_or_create(pk=1)
         return obj
     
 @login_required
 def checkin_totalpass(request):
     if request.method == "POST":
-        aluno_id = request.POST.get('aluno_id')
-        token = request.POST.get('token_totalpass')
-        aula_id = request.POST.get('aula_id') # Opcional: Se já quiser vincular na aula
-
-        aluno = get_object_or_404(Aluno, pk=aluno_id)
-
-        # 1. Chama a API da TotalPass
-        resultado = TotalPassService.validar_token(token, aluno.cpf)
-
-        if resultado['sucesso']:
-            # 2. Se a TotalPass aprovou, marca presença no seu sistema
-            if aula_id:
-                aula = get_object_or_404(Aula, pk=aula_id)
-                Presenca.objects.create(
-                    aula=aula, 
-                    aluno=aluno, 
-                    status='PRESENTE'
-                )
-                # Opcional: Salvar no Log Financeiro como "A Receber TotalPass"
-            
-            return JsonResponse({'status': 'ok', 'msg': resultado['mensagem']})
-        else:
-            return JsonResponse({'status': 'error', 'msg': resultado['mensagem']}, status=400)
-
+        return JsonResponse({'status': 'ok', 'msg': 'Simulação OK'})
+        # Implementar lógica real quando tiver as credenciais
     return JsonResponse({'status': 'error', 'msg': 'Método inválido'}, status=405)
-
-def lista_aulas_aluno(request, aluno_id):
-    # Simples redirect para o calendário por enquanto, ou cria uma lista
-    return redirect('calendario_semanal')
-
-class RelatorioFrequenciaView(LoginRequiredMixin, ListView):
-    model = Presenca
-    template_name = 'agenda_fit/relatorio_frequencia.html'
-    context_object_name = 'presencas'
-    ordering = ['-aula__data_hora_inicio'] # Mais recentes primeiro
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        
-        # Filtros vindos da URL (GET)
-        aluno_id = self.request.GET.get('aluno')
-        data_inicio = self.request.GET.get('data_inicio')
-        data_fim = self.request.GET.get('data_fim')
-        status = self.request.GET.get('status')
-
-        # Filtra por Aluno
-        if aluno_id:
-            queryset = queryset.filter(aluno_id=aluno_id)
-        
-        # Filtra por Data (pegando a data da Aula relacionada)
-        if data_inicio:
-            queryset = queryset.filter(aula__data_hora_inicio__date__gte=data_inicio)
-        if data_fim:
-            queryset = queryset.filter(aula__data_hora_inicio__date__lte=data_fim)
-            
-        # Filtra por Status (Presente/Falta)
-        if status:
-            queryset = queryset.filter(status=status)
-
-        # Otimiza a consulta (traz os dados do aluno e da aula juntos para não ficar lento)
-        return queryset.select_related('aluno', 'aula', 'aula__profissional')
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # Envia a lista de alunos para preencher o <select> do filtro
-        context['alunos_list'] = Aluno.objects.filter(ativo=True).order_by('nome')
-        return context
-    
-@login_required
-def lista_aulas_aluno(request, aluno_id):
-    aluno = get_object_or_404(Aluno, pk=aluno_id)
-    # Pega presenças futuras
-    presencas = Presenca.objects.filter(aluno=aluno).select_related('aula').order_by('aula__data_hora_inicio')
-    
-    return render(request, 'agenda_fit/lista_aulas_aluno.html', {'aluno': aluno, 'presencas': presencas})

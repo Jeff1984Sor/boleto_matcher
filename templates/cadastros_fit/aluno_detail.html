@@ -8,48 +8,59 @@
 <style>
     .avatar-circle { width: 90px; height: 90px; object-fit: cover; border: 4px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     .status-badge { position: absolute; bottom: 0; right: 0; width: 20px; height: 20px; background: #28a745; border: 3px solid #fff; border-radius: 50%; }
+    .action-btn { transition: 0.2s; border: 1px solid #dee2e6; }
+    .action-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); border-color: #0d6efd; color: #0d6efd; }
     
-    /* Abas Customizadas */
-    .nav-tabs { border-bottom: 1px solid #dee2e6; }
+    /* Estilo das Abas */
     .nav-tabs .nav-link { color: #6c757d; border: none; border-bottom: 3px solid transparent; padding: 1rem 1.5rem; font-weight: 500; transition: 0.2s; }
     .nav-tabs .nav-link:hover { color: #0d6efd; background: #f8f9fa; }
     .nav-tabs .nav-link.active { color: #0d6efd; border-bottom: 3px solid #0d6efd; background: transparent; font-weight: bold; }
     .nav-tabs .nav-link i { margin-right: 8px; }
-
-    .action-btn { transition: 0.2s; border: 1px solid #dee2e6; }
-    .action-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); border-color: #0d6efd; color: #0d6efd; }
 </style>
 
 <div class="container-fluid py-4">
 
-    <!-- CABEÇALHO -->
+    <!-- CABEÇALHO DO PERFIL -->
     <div class="card border-0 shadow-sm mb-4 overflow-hidden">
         <div class="card-body p-4 pb-0">
             <div class="d-flex align-items-center gap-4 mb-4">
+                
+                <!-- Avatar -->
                 <div class="position-relative">
                     {% if aluno.foto_rosto %}
                         <img src="{{ aluno.foto_rosto.url }}" class="avatar-circle rounded-circle">
                     {% elif aluno.doc_identidade_foto %}
                         <img src="{{ aluno.doc_identidade_foto.url }}" class="avatar-circle rounded-circle">
                     {% else %}
-                        <div class="avatar-circle rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white fs-1">{{ aluno.nome|first }}</div>
+                        <div class="avatar-circle rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white fs-1">
+                            {{ aluno.nome|first }}
+                        </div>
                     {% endif %}
                     <div class="status-badge" title="Ativo"></div>
                 </div>
 
+                <!-- Info Principal -->
                 <div class="flex-grow-1">
                     <h3 class="fw-bold mb-1">{{ aluno.nome }}</h3>
-                    <div class="text-muted small mb-2">ID: {{ aluno.id }} &bull; {{ aluno.data_nascimento|default:"--" }}</div>
+                    <div class="text-muted small mb-2">
+                        <i class="fas fa-id-badge me-1"></i> ID: {{ aluno.id }} &bull; 
+                        <i class="fas fa-birthday-cake ms-2 me-1"></i> {{ aluno.data_nascimento|default:"--" }}
+                    </div>
                     <div class="d-flex gap-2">
                         <span class="badge bg-light text-dark border">Padrão</span>
                         {% if aluno.telefone %}
-                            <a href="https://wa.me/55{{ aluno.telefone|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="badge bg-success text-decoration-none"><i class="fab fa-whatsapp me-1"></i> WhatsApp</a>
+                            <a href="https://wa.me/55{{ aluno.telefone|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="badge bg-success text-decoration-none">
+                                <i class="fab fa-whatsapp me-1"></i> WhatsApp
+                            </a>
                         {% endif %}
                     </div>
                 </div>
 
+                <!-- Botões Topo -->
                 <div class="d-flex flex-column gap-2 text-end">
-                    <a href="{% url 'novo_contrato' aluno.pk %}" class="btn btn-primary fw-bold shadow-sm"><i class="fas fa-plus-circle me-2"></i> Nova Venda</a>
+                    <a href="{% url 'novo_contrato' aluno.pk %}" class="btn btn-primary fw-bold shadow-sm">
+                        <i class="fas fa-plus-circle me-2"></i> Nova Venda
+                    </a>
                     <div class="btn-group">
                         <a href="{% url 'aluno_update' aluno.pk %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-pen"></i> Editar</a>
                         <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalTotalPass"><i class="fas fa-ticket-alt"></i> TotalPass</button>
@@ -57,7 +68,7 @@
                 </div>
             </div>
 
-            <!-- NAVEGAÇÃO POR ABAS -->
+            <!-- MENU DE ABAS -->
             <ul class="nav nav-tabs" id="alunoTab" role="tablist">
                 <li class="nav-item">
                     <button class="nav-link active" id="visao-tab" data-bs-toggle="tab" data-bs-target="#visao" type="button"><i class="fas fa-home"></i> Visão Geral</button>
@@ -111,6 +122,7 @@
                         </div>
                     </div>
 
+                    <!-- CONTRATOS RESUMO -->
                     <div class="card border-0 shadow-sm mb-4">
                         <div class="card-header bg-white py-3">
                             <h6 class="fw-bold mb-0"><i class="fas fa-file-signature me-2"></i>Contratos Ativos</h6>
@@ -135,14 +147,21 @@
                     </div>
                 </div>
 
+                <!-- AÇÕES RÁPIDAS -->
                 <div class="col-md-4">
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white py-3"><h6 class="fw-bold mb-0">Ações Rápidas</h6></div>
                         <div class="card-body p-2">
                             <div class="d-grid gap-2">
-                                <button class="btn btn-light text-start p-3 action-btn" data-bs-toggle="modal" data-bs-target="#modalDocumento"><i class="fas fa-cloud-upload-alt me-3 text-primary"></i> Anexar Documento</button>
-                                <a href="{% url 'novo_contrato' aluno.pk %}" class="btn btn-light text-start p-3 action-btn"><i class="fas fa-cart-plus me-3 text-success"></i> Vender Avulso/Pacote</a>
-                                <button class="btn btn-light text-start p-3 action-btn text-danger" onclick="if(confirm('Tem certeza?')) location.href='{% url 'aluno_delete' aluno.pk %}'"><i class="fas fa-user-times me-3"></i> Excluir Aluno</button>
+                                <button class="btn btn-light text-start p-3 action-btn" data-bs-toggle="modal" data-bs-target="#modalDocumento">
+                                    <i class="fas fa-cloud-upload-alt me-3 text-primary"></i> Anexar Documento
+                                </button>
+                                <a href="{% url 'novo_contrato' aluno.pk %}" class="btn btn-light text-start p-3 action-btn">
+                                    <i class="fas fa-cart-plus me-3 text-success"></i> Vender Avulso/Pacote
+                                </a>
+                                <button class="btn btn-light text-start p-3 action-btn text-danger" onclick="if(confirm('Tem certeza?')) location.href='{% url 'aluno_delete' aluno.pk %}'">
+                                    <i class="fas fa-user-times me-3"></i> Excluir Aluno
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -150,13 +169,13 @@
             </div>
         </div>
 
-        <!-- 2. ABA AGENDA -->
+        <!-- 2. ABA AGENDA (COMPLETA) -->
         <div class="tab-pane fade" id="agenda" role="tabpanel">
             <div class="card border-0 shadow-sm">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
-                            <tr><th>Data</th><th>Horário</th><th>Profissional</th><th>Status</th></tr>
+                            <tr><th>Data</th><th>Horário</th><th>Profissional</th><th>Status</th><th class="text-end">Ações</th></tr>
                         </thead>
                         <tbody>
                             {% for p in agenda_completa %}
@@ -164,10 +183,58 @@
                                 <td>{{ p.aula.data_hora_inicio|date:"d/m/Y" }}</td>
                                 <td>{{ p.aula.data_hora_inicio|date:"H:i" }}</td>
                                 <td>{{ p.aula.profissional.nome }}</td>
-                                <td>{% if p.status == 'PRESENTE' %}<span class="badge bg-success">Presente</span>{% else %}<span class="badge bg-secondary">{{ p.get_status_display }}</span>{% endif %}</td>
+                                <td>
+                                    {% if p.status == 'FALTA' %}
+                                        <span class="badge bg-danger">Falta</span>
+                                    {% elif p.status == 'CANCELADA' %}
+                                        <span class="badge bg-secondary text-decoration-line-through">Cancelada</span>
+                                    {% elif p.status == 'PRESENTE' %}
+                                        <span class="badge bg-success">Concluída</span>
+                                    {% elif p.aula.data_hora_inicio > agora %}
+                                        <span class="badge bg-info text-dark">Agendada</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Pendente</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-group">
+                                        <!-- Botão CHECK (Se for passado/hoje e não confirmado) -->
+                                        {% if p.aula.data_hora_inicio <= agora and p.status != 'PRESENTE' %}
+                                            <a href="{% url 'confirmar_presenca' p.id %}" class="btn btn-sm btn-outline-success" title="Confirmar"><i class="fas fa-check"></i></a>
+                                        {% endif %}
+                                        
+                                        <!-- Botão REMARCAR -->
+                                        <button class="btn btn-sm btn-outline-warning text-dark" data-bs-toggle="modal" data-bs-target="#modalRemarcar{{ p.id }}"><i class="fas fa-calendar-alt"></i></button>
+                                        
+                                        <!-- Botão CANCELAR -->
+                                        <a href="{% url 'cancelar_presenca' p.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Cancelar aula?')"><i class="fas fa-trash"></i></a>
+                                    </div>
+
+                                    <!-- MODAL REMARCAR (Um por linha) -->
+                                    <div class="modal fade" id="modalRemarcar{{ p.id }}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <form action="{% url 'remarcar_aula' p.id %}" method="post">
+                                                    {% csrf_token %}
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Remarcar Aula</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body text-start">
+                                                        <label class="form-label fw-bold">Nova Data e Horário</label>
+                                                        <input type="datetime-local" name="nova_data" class="form-control" required>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="submit" class="btn btn-warning fw-bold">Salvar</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
                             </tr>
                             {% empty %}
-                            <tr><td colspan="4" class="text-center py-4">Nenhuma aula.</td></tr>
+                            <tr><td colspan="5" class="text-center py-4">Nenhuma aula.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -195,7 +262,7 @@
                                     <form action="{% url 'baixar_lancamento' lanc.id %}" method="post" class="d-inline">
                                         {% csrf_token %}
                                         <input type="hidden" name="forma_pagamento" value="PIX"> 
-                                        <button class="btn btn-sm btn-outline-success" onclick="return confirm('Confirmar pagamento?')"><i class="fas fa-check"></i> Baixar</button>
+                                        <button class="btn btn-sm btn-outline-success" onclick="return confirm('Confirmar recebimento?')"><i class="fas fa-check"></i> Baixar</button>
                                     </form>
                                     {% endif %}
                                 </td>
@@ -230,7 +297,7 @@
     </div>
 </div>
 
-<!-- MANTENHA OS MODAIS IGUAIS -->
+<!-- MANTENHA OS MODAIS (TotalPass e Docs) -->
 <div class="modal fade" id="modalTotalPass" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -243,7 +310,7 @@
                     <input type="text" id="tp_token" class="form-control text-center fs-3 fw-bold" placeholder="Token">
                     <label>Token</label>
                 </div>
-                <button onclick="validarTotalPass()" class="btn btn-danger w-100 py-3 fw-bold">VALIDAR</button>
+                <button onclick="validarTotalPass()" class="btn btn-danger w-100 py-3 fw-bold">VALIDAR TOKEN</button>
                 <div id="tp_msg" class="mt-3"></div>
             </div>
         </div>
