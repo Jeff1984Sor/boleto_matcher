@@ -28,4 +28,5 @@ urlpatterns = [
 
     # --- API / AJAX ---
     path('api/ler-documento/', views.api_ler_documento, name='api_ler_documento'),
+    path('api/n8n/agenda-diaria/', views.api_agenda_amanha, name='api_agenda_amanha'),
 ]

@@ -13,6 +13,13 @@ from .forms import AlunoForm, ProfissionalForm, UnidadeForm, DocumentoExtraForm
 from .services import OCRService
 from agenda_fit.models import Presenca, Aula 
 
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
+from datetime import timedelta
+
+API_KEY_N8N = "segredo_mayacorp_n8n_123" 
+
 # --- ALUNOS ---
 class AlunoListView(LoginRequiredMixin, ListView):
     model = Aluno
@@ -143,3 +150,51 @@ def upload_documento_extra(request, pk):
             doc.save()
             
     return redirect('aluno_detail', pk=pk)
+
+@csrf_exempt
+def api_agenda_amanha(request):
+    # 1. Segurança Básica (Verifica Token no Header)
+    token = request.headers.get('X-API-KEY')
+    if token != API_KEY_N8N:
+        return JsonResponse({'erro': 'Acesso negado'}, status=403)
+
+    # 2. Calcula data de amanhã
+    amanha = timezone.now().date() + timedelta(days=1)
+    
+    # 3. Busca aulas de amanhã (que não foram canceladas)
+    aulas = Aula.objects.filter(
+        data_hora_inicio__date=amanha
+    ).exclude(status='CANCELADA').select_related('profissional').prefetch_related('presencas__aluno')
+
+    # 4. Agrupa por Profissional
+    dados_envio = {}
+
+    for aula in aulas:
+        prof = aula.profissional
+        
+        # Se o prof não tem email, pula
+        if not prof.email:
+            continue
+            
+        # Se é a primeira vez que vemos esse prof no loop, cria a estrutura
+        if prof.id not in dados_envio:
+            dados_envio[prof.id] = {
+                "profissional": prof.nome,
+                "email": prof.email,
+                "data": amanha.strftime('%d/%m/%Y'),
+                "aulas": []
+            }
+        
+        # Lista os alunos dessa aula
+        alunos_lista = [p.aluno.nome for p in aula.presencas.all()]
+        if not alunos_lista:
+            alunos_lista = ["Nenhum aluno agendado (Vaga livre)"]
+
+        # Adiciona a aula na lista do prof
+        dados_envio[prof.id]["aulas"].append({
+            "horario": aula.data_hora_inicio.strftime('%H:%M'),
+            "alunos": ", ".join(alunos_lista)
+        })
+
+    # 5. Retorna a lista pronta para o n8n (converte dict values para lista)
+    return JsonResponse(list(dados_envio.values()), safe=False)
