@@ -1,112 +1,135 @@
 {% load static %}
 {% load core_extras %}
 
-<div class="d-flex flex-column flex-shrink-0 p-3 bg-white border-end" style="width: 260px; height: 100%;">
+<div class="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark h-100" style="width: 260px; min-height: 100vh;">
     
     <!-- LOGO -->
-    <a href="/" class="d-flex align-items-center mb-3 mb-md-0 link-dark text-decoration-none">
-        <span class="fs-4 fw-bold text-primary px-2">MayaCorp</span>
+    <a href="/" class="d-flex align-items-center mb-4 mb-md-0 text-white text-decoration-none px-2">
+        <div class="bg-primary rounded p-2 me-2 d-flex align-items-center justify-content-center">
+            <i class="fas fa-dumbbell fa-lg"></i>
+        </div>
+        <span class="fs-4 fw-bold">MayaCorp</span>
     </a>
-    <hr>
-
-    <!-- USUÁRIO -->
-    <div class="mb-3 px-2">
-        {% if user.is_authenticated %}
-            <div class="p-2 bg-light rounded border d-flex align-items-center gap-2">
-                <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center" style="width: 35px; height: 35px; font-weight:bold;">
-                    {{ user.username|first|upper }}
-                </div>
-                <div class="d-flex flex-column" style="line-height: 1.2;">
-                    <span class="small fw-bold text-truncate" style="max-width: 120px;">{{ user.username }}</span>
-                    <form action="{% url 'logout' %}" method="post">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-link p-0 text-danger" style="text-decoration:none; font-size: 0.75rem;">Sair do Sistema</button>
-                    </form>
-                </div>
-            </div>
-        {% else %}
-            <a href="{% url 'login' %}" class="btn btn-primary w-100 fw-bold shadow-sm">
-                <i class="fas fa-sign-in-alt me-2"></i> ENTRAR
-            </a>
-        {% endif %}
-    </div>
+    
+    <hr class="border-secondary mb-4">
 
     <!-- MENUS -->
     <ul class="nav nav-pills flex-column mb-auto custom-scroll" style="overflow-y: auto;">
         
         {% if user.is_authenticated %}
             
-            <li class="nav-item">
-                <a href="{% url 'home' %}" class="nav-link link-dark">
-                    <i class="fas fa-tachometer-alt fa-fw me-2"></i> Início
+            <li class="nav-item mb-1">
+                <a href="{% url 'home' %}" class="nav-link text-white {% if request.path == '/' %}active bg-primary{% endif %}">
+                    <i class="fas fa-tachometer-alt fa-fw me-3"></i> Início
                 </a>
             </li>
 
             <!-- GESTÃO FIT -->
             {% if 'suite_pilates' in perms_produtos or user.is_superuser %}
-                <li class="nav-header text-uppercase text-muted mt-3 mb-2 small fw-bold ps-3">Gestão Fit</li>
+                <div class="text-uppercase text-secondary small fw-bold mt-4 mb-2 ps-3">Gestão Fit</div>
                 
-                <!-- AGENDA (Agora com Dropdown) -->
-                <li>
-                    <a class="nav-link link-dark d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#menuAgenda" role="button" aria-expanded="false">
-                        <span><i class="fas fa-calendar-alt fa-fw me-2 text-warning"></i> Agenda</span>
-                        <i class="fas fa-chevron-down small"></i>
+                <!-- AGENDA -->
+                <li class="mb-1">
+                    {% with 'agenda' in request.path %}
+                    <a class="nav-link text-white d-flex justify-content-between align-items-center {% if not with %}collapsed{% endif %}" 
+                       data-bs-toggle="collapse" href="#menuAgenda" role="button" aria-expanded="{{ with|yesno:'true,false' }}">
+                        <span><i class="fas fa-calendar-alt fa-fw me-3 text-warning"></i> Agenda</span>
+                        <i class="fas fa-chevron-down small transition-icon"></i>
                     </a>
-                    <div class="collapse" id="menuAgenda">
-                        <ul class="nav flex-column ms-3 border-start border-secondary ps-2 mt-1">
-                            <li><a href="{% url 'calendario_semanal' %}" class="nav-link link-secondary py-1 small">Calendário</a></li>
-                            <!-- LINK NOVO AQUI -->
-                            <li><a href="{% url 'relatorio_frequencia' %}" class="nav-link link-secondary py-1 small">Relatório Frequência</a></li>
+                    <div class="collapse {% if with %}show{% endif %}" id="menuAgenda">
+                        <ul class="nav flex-column ms-3 ps-2 mt-1 border-start border-secondary">
+                            <li><a href="{% url 'calendario_semanal' %}" class="nav-link text-white-50 py-1 hover-light">Calendário</a></li>
+                            <li><a href="{% url 'relatorio_frequencia' %}" class="nav-link text-white-50 py-1 hover-light">Frequência</a></li>
                         </ul>
                     </div>
+                    {% endwith %}
                 </li>
 
                 <!-- FINANCEIRO -->
-                <li>
-                    <a class="nav-link link-dark d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#menuFinanceiro" role="button" aria-expanded="false">
-                        <span><i class="fas fa-dollar-sign fa-fw me-2 text-success"></i> Financeiro</span>
-                        <i class="fas fa-chevron-down small"></i>
+                <li class="mb-1">
+                    {% with 'financeiro' in request.path %}
+                    <a class="nav-link text-white d-flex justify-content-between align-items-center {% if not with %}collapsed{% endif %}" 
+                       data-bs-toggle="collapse" href="#menuFinanceiro" role="button" aria-expanded="{{ with|yesno:'true,false' }}">
+                        <span><i class="fas fa-dollar-sign fa-fw me-3 text-success"></i> Financeiro</span>
+                        <i class="fas fa-chevron-down small transition-icon"></i>
                     </a>
-                    <div class="collapse" id="menuFinanceiro">
-                        <ul class="nav flex-column ms-3 border-start border-secondary ps-2 mt-1">
-                            <li><a href="{% url 'financeiro_lista' %}" class="nav-link link-secondary py-1 small">Lançamentos</a></li>
-                            <!-- Adicionei links futuros aqui se quiser criar as telas depois -->
-                            <li><a href="#" class="nav-link link-secondary py-1 small text-muted">Contratos (Em breve)</a></li>
-                            <li><a href="#" class="nav-link link-secondary py-1 small text-muted">Categorias (Em breve)</a></li>
+                    <div class="collapse {% if with %}show{% endif %}" id="menuFinanceiro">
+                        <ul class="nav flex-column ms-3 ps-2 mt-1 border-start border-secondary">
+                            <li><a href="{% url 'financeiro_lista' %}" class="nav-link text-white-50 py-1 hover-light">Lançamentos</a></li>
+                            <li><a href="{% url 'categoria_list' %}" class="nav-link text-white-50 py-1 hover-light">Categorias</a></li>
+                            <li><a href="{% url 'conta_list' %}" class="nav-link text-white-50 py-1 hover-light">Contas Bancárias</a></li>
                         </ul>
                     </div>
+                    {% endwith %}
                 </li>
                 
                 <!-- CADASTROS -->
-                <li>
-                    <a class="nav-link link-dark d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#menuCadastros" role="button" aria-expanded="false">
-                        <span><i class="fas fa-folder fa-fw me-2 text-info"></i> Cadastros</span>
-                        <i class="fas fa-chevron-down small"></i>
+                <li class="mb-1">
+                    {% with 'cadastros' in request.path or 'contratos' in request.path %}
+                    <a class="nav-link text-white d-flex justify-content-between align-items-center {% if not with %}collapsed{% endif %}" 
+                       data-bs-toggle="collapse" href="#menuCadastros" role="button" aria-expanded="{{ with|yesno:'true,false' }}">
+                        <span><i class="fas fa-folder fa-fw me-3 text-info"></i> Cadastros</span>
+                        <i class="fas fa-chevron-down small transition-icon"></i>
                     </a>
-                    <div class="collapse" id="menuCadastros">
-                        <ul class="nav flex-column ms-3 border-start border-secondary ps-2 mt-1">
-                            <li><a href="{% url 'aluno_list' %}" class="nav-link link-secondary py-1 small">Alunos</a></li>
-                            <li><a href="{% url 'profissional_list' %}" class="nav-link link-secondary py-1 small">Profissionais</a></li>
-                            <li><a href="{% url 'plano_list' %}" class="nav-link link-secondary py-1 small">Planos e Preços</a></li>
-                            <li><a href="{% url 'unidade_list' %}" class="nav-link link-secondary py-1 small">Unidades</a></li>
+                    <div class="collapse {% if with %}show{% endif %}" id="menuCadastros">
+                        <ul class="nav flex-column ms-3 ps-2 mt-1 border-start border-secondary">
+                            <li><a href="{% url 'aluno_list' %}" class="nav-link text-white-50 py-1 hover-light">Alunos</a></li>
+                            <li><a href="{% url 'profissional_list' %}" class="nav-link text-white-50 py-1 hover-light">Profissionais</a></li>
+                            <li><a href="{% url 'plano_list' %}" class="nav-link text-white-50 py-1 hover-light">Planos e Preços</a></li>
+                            <li><a href="{% url 'unidade_list' %}" class="nav-link text-white-50 py-1 hover-light">Unidades</a></li>
                         </ul>
                     </div>
+                    {% endwith %}
                 </li>
             {% endif %}
 
             <!-- FERRAMENTAS -->
             {% if user|tem_acesso:"gerador-pdf" %}
-                <li class="nav-header text-uppercase text-muted mt-3 mb-2 small fw-bold ps-3">Ferramentas</li>
-                <li><a href="{% url 'pdf_home' %}" class="nav-link link-dark"><i class="fas fa-file-pdf fa-fw me-2 text-danger"></i> Conciliador PDF</a></li>
+                <div class="text-uppercase text-secondary small fw-bold mt-4 mb-2 ps-3">Ferramentas</div>
+                <li><a href="{% url 'pdf_home' %}" class="nav-link text-white"><i class="fas fa-file-pdf fa-fw me-3 text-danger"></i> Conciliador PDF</a></li>
             {% endif %}
 
         {% else %}
-            <div class="alert alert-info mt-3 small">
-                <i class="fas fa-info-circle"></i> Faça login.
+            <div class="alert alert-dark mt-3 small border-secondary text-center">
+                <i class="fas fa-lock mb-2"></i><br>Faça login
             </div>
         {% endif %}
     </ul>
     
-    <hr>
-    <div class="text-center text-muted small">v1.0.0</div>
+    <!-- USUÁRIO (Rodapé) -->
+    <div class="mt-auto pt-3 border-top border-secondary">
+        {% if user.is_authenticated %}
+            <div class="dropdown">
+                <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle p-2 rounded hover-dark" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
+                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center fw-bold me-2" style="width: 32px; height: 32px;">
+                        {{ user.username|slice:":1"|upper }}
+                    </div>
+                    <span class="small fw-bold">{{ user.username }}</span>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
+                    <li><a class="dropdown-item" href="#">Configurações</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form action="{% url 'logout' %}" method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="dropdown-item text-danger">Sair</button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        {% endif %}
+        <div class="text-center text-secondary small mt-2" style="font-size: 0.7rem;">v1.2.0</div>
+    </div>
 </div>
+
+<style>
+    /* Estilos Extras para Sidebar */
+    .nav-link { border-radius: 8px; }
+    .nav-link:hover { background-color: rgba(255,255,255,0.1); }
+    .hover-light:hover { color: #fff !important; padding-left: 5px; transition: 0.2s; }
+    .hover-dark:hover { background-color: rgba(255,255,255,0.05); }
+    
+    /* Animação da setinha do dropdown */
+    .transition-icon { transition: transform 0.3s; }
+    a[aria-expanded="true"] .transition-icon { transform: rotate(180deg); }
+</style>

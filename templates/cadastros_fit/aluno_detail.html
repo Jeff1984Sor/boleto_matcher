@@ -1,254 +1,176 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Gestão de Cliente - {{ aluno.nome }}{% endblock %}
+{% block title %}{{ aluno.nome }} | Gestão{% endblock %}
 
 {% block content %}
 
 <style>
-    .text-purple { color: #6f42c1; }
-    .bg-light-purple { background-color: #E0CFFC; }
-    .client-avatar { width: 80px; height: 80px; background-color: #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; color: white; position: relative; }
-    .client-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-    
-    .app-nav-container { background: #f8f9fa; border-radius: 8px; padding: 10px; margin-bottom: 30px; display: flex; flex-wrap: wrap; gap: 10px; }
-    .app-nav-item { display: flex; align-items: center; gap: 8px; padding: 8px 15px; border-radius: 6px; text-decoration: none; color: #555; font-weight: 500; transition: 0.2s; }
-    .app-nav-item:hover { background: #e2e6ea; }
-    .app-nav-item.active { background: #ffe0cc; color: #e65100; }
-
-    .option-card { background: white; border: 1px solid #dee2e6; border-radius: 10px; padding: 20px; height: 100%; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; }
-    .option-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-    .card-recorrente { background-color: #EADCF8; border-color: #D6BCF0; }
-    
-    .icon-circle { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem; margin-bottom: 15px; }
-    .bg-i-purple { background-color: #563d7c; } .bg-i-green { background-color: #28a745; } .bg-i-orange { background-color: #fd7e14; } .bg-i-cyan { background-color: #17a2b8; }
+    .avatar-circle { width: 90px; height: 90px; object-fit: cover; border: 4px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    .status-badge { position: absolute; bottom: 0; right: 0; width: 20px; height: 20px; background: #28a745; border: 3px solid #fff; border-radius: 50%; }
+    .action-btn { transition: 0.2s; border: 1px solid #dee2e6; }
+    .action-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); border-color: #0d6efd; color: #0d6efd; }
+    .nav-tabs .nav-link.active { border-bottom: 3px solid #0d6efd; color: #0d6efd; font-weight: bold; background: none; border-top: none; border-left: none; border-right: none; }
+    .nav-tabs .nav-link { color: #666; border: none; }
 </style>
 
-<div class="container-fluid p-0">
+<div class="container-fluid py-4">
 
-    <!-- 1. TOPO -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <small class="text-muted">Você está em: <strong>Gestão de Cliente</strong></small>
-        <div class="d-flex gap-2">
-            <button class="btn btn-primary btn-sm"><i class="fas fa-star"></i> Tutoriais</button>
-            <button class="btn btn-outline-danger btn-sm"><i class="fas fa-exclamation-circle"></i> SOS</button>
-        </div>
-    </div>
+    <!-- CABEÇALHO DO PERFIL -->
+    <div class="card border-0 shadow-sm mb-4 overflow-hidden">
+        <div class="card-body p-4">
+            <div class="d-flex align-items-center gap-4">
+                
+                <!-- Avatar -->
+                <div class="position-relative">
+                    {% if aluno.foto_rosto %}
+                        <img src="{{ aluno.foto_rosto.url }}" class="avatar-circle rounded-circle">
+                    {% elif aluno.doc_identidade_foto %}
+                        <img src="{{ aluno.doc_identidade_foto.url }}" class="avatar-circle rounded-circle">
+                    {% else %}
+                        <div class="avatar-circle rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white fs-1">
+                            {{ aluno.nome|first }}
+                        </div>
+                    {% endif %}
+                    <div class="status-badge" title="Ativo"></div>
+                </div>
 
-    <!-- 2. CABEÇALHO -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body">
-            <div class="row align-items-center">
-                <div class="col-md-5 d-flex align-items-center gap-3">
-                    <div class="client-avatar">
-                        {% if aluno.foto_rosto %}
-                            <img src="{{ aluno.foto_rosto.url }}">
-                        {% elif aluno.doc_identidade_foto %}
-                             <img src="{{ aluno.doc_identidade_foto.url }}">
-                        {% else %}
-                            <i class="fas fa-user"></i>
+                <!-- Info Principal -->
+                <div class="flex-grow-1">
+                    <h3 class="fw-bold mb-1">{{ aluno.nome }}</h3>
+                    <div class="text-muted small mb-2">
+                        <i class="fas fa-id-badge me-1"></i> ID: {{ aluno.id }} &bull; 
+                        <i class="fas fa-birthday-cake ms-2 me-1"></i> {{ aluno.data_nascimento|default:"--" }}
+                    </div>
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-light text-dark border">Padrão</span>
+                        {% if aluno.telefone %}
+                            <a href="https://wa.me/55{{ aluno.telefone|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="badge bg-success text-decoration-none">
+                                <i class="fab fa-whatsapp me-1"></i> WhatsApp
+                            </a>
                         {% endif %}
                     </div>
-                    <div>
-                        <h4 class="mb-0 fw-bold">{{ aluno.nome }}</h4> 
-                        <small class="text-muted d-block">ID: {{ aluno.id }}</small>
-                        <small class="text-muted">Unidade: Principal</small>
-                    </div>
                 </div>
 
-                <div class="col-md-4">
-                    <div class="mb-2">
-                        <select class="form-select form-select-sm border-0 border-bottom rounded-0">
-                            <option selected>Nível: Padrão</option>
-                            <option value="vip">VIP</option>
-                        </select>
+                <!-- Botões de Ação Rápida (Topo Direita) -->
+                <div class="d-flex flex-column gap-2 text-end">
+                    <a href="{% url 'novo_contrato' aluno.pk %}" class="btn btn-primary fw-bold shadow-sm">
+                        <i class="fas fa-plus-circle me-2"></i> Nova Venda
+                    </a>
+                    <div class="btn-group">
+                        <a href="{% url 'aluno_update' aluno.pk %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-pen"></i> Editar</a>
+                        <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalTotalPass"><i class="fas fa-ticket-alt"></i> TotalPass</button>
                     </div>
-                </div>
-
-                <div class="col-md-3 text-end">
-                    <div class="mb-2"><a href="#" class="text-dark text-decoration-none small"><i class="fas fa-print"></i> Imprimir Ficha</a></div>
-                    <div class="mb-2">
-                        <a href="https://wa.me/55{{ aluno.telefone|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-dark text-decoration-none small">
-                            <i class="fab fa-whatsapp text-success"></i> Dar boas vindas
-                        </a>
-                    </div>
-                    <!-- BOTÃO TOTALPASS -->
-                    <div>
-                        <button class="btn btn-sm btn-danger fw-bold w-100" data-bs-toggle="modal" data-bs-target="#modalTotalPass">
-                            <i class="fas fa-ticket-alt me-1"></i> Check-in TotalPass
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <hr class="my-3 text-muted opacity-25">
-
-            <div class="d-flex flex-wrap gap-3 align-items-center small text-muted">
-                <a href="{% url 'novo_contrato' aluno.pk %}" class="text-primary fw-bold text-decoration-none"><i class="fas fa-file-signature"></i> Novo Contrato</a>
-                <span class="border-start mx-1"></span>
-                <a href="{% url 'aluno_update' aluno.pk %}" class="text-dark text-decoration-none"><i class="fas fa-pen"></i> Ver/Editar cadastro</a>
-                <span class="border-start mx-1"></span>
-                <button type="button" class="btn btn-link p-0 text-muted text-decoration-none" data-bs-toggle="modal" data-bs-target="#modalDocumento">
-                    <i class="fas fa-file-upload"></i> Docs Extras
-                </button>
-                <span class="border-start mx-1"></span>
-                <a href="{% url 'aluno_delete' aluno.pk %}" class="text-danger text-decoration-none"><i class="fas fa-trash"></i> Excluir</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- 2.5. INTEGRAÇÃO AGENDA -->
-    <div class="row mb-4 g-3">
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm h-100" style="background-color: #f0f7ff; border-left: 4px solid #0d6efd !important;">
-                <div class="card-body">
-                    <h6 class="text-primary fw-bold mb-2"><i class="fas fa-calendar-alt me-2"></i> Próxima Aula</h6>
-                    {% if proxima_aula %}
-                        <h5 class="fw-bold mb-1">{{ proxima_aula.data_hora_inicio|date:"d/m - H:i" }}</h5>
-                        <p class="text-muted small mb-0">Prof. {{ proxima_aula.profissional.nome }}</p>
-                    {% else %}
-                        <p class="text-muted small mb-0">Nenhuma aula futura agendada.</p>
-                    {% endif %}
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm h-100" style="background-color: #fff4e5; border-left: 4px solid #ff9800 !important;">
-                <div class="card-body">
-                    <h6 class="text-warning fw-bold mb-2" style="color: #e65100 !important;">
-                        <i class="fas fa-file-medical me-2"></i> Última Evolução
-                    </h6>
-                    {% if ultima_evolucao %}
-                        <small class="text-muted d-block fw-bold">{{ ultima_evolucao.data_hora_inicio|date:"d/m/Y" }}</small>
-                        <p class="small mb-0 text-dark fst-italic">"{{ ultima_evolucao.evolucao_texto|truncatechars:80 }}"</p>
-                    {% else %}
-                        <p class="text-muted small mb-0">Nenhuma evolução registrada.</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 3. MENU DE NAVEGAÇÃO -->
-    <div class="app-nav-container shadow-sm">
-        <a href="#" class="app-nav-item active"><i class="fas fa-user-circle fs-5"></i> Central</a>
-        <a href="{% url 'financeiro_lista' %}?aluno_id={{ aluno.id }}" class="app-nav-item"><i class="fas fa-dollar-sign fs-5"></i> Financeiro</a>
         
-        <!-- LINK DA AGENDA DO ALUNO -->
-        <a href="{% url 'lista_aulas_aluno' aluno.id %}" class="app-nav-item"><i class="fas fa-calendar-alt fs-5"></i> Agenda</a>
-
-        <!-- LINK DOS CONTRATOS DO ALUNO -->
-        <a href="{% url 'lista_contratos_aluno' aluno.id %}" class="app-nav-item"><i class="fas fa-file-contract fs-5"></i> Contratos</a>
-        
-        <a href="#" class="app-nav-item"><i class="fas fa-file-medical fs-5"></i> Prontuário</a>
+        <!-- Navegação Interna (Tabs Visuais) -->
+        <div class="card-footer bg-white p-0 px-4">
+            <ul class="nav nav-tabs" style="margin-bottom: -1px;">
+                <li class="nav-item"><a class="nav-link active" href="#"><i class="fas fa-home me-2"></i>Visão Geral</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'lista_aulas_aluno' aluno.id %}"><i class="fas fa-calendar-alt me-2"></i>Agenda</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'financeiro_lista' %}?aluno_id={{ aluno.id }}"><i class="fas fa-dollar-sign me-2"></i>Financeiro</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'lista_contratos_aluno' aluno.id %}"><i class="fas fa-file-contract me-2"></i>Contratos</a></li>
+            </ul>
+        </div>
     </div>
 
-    <!-- 4. DASHBOARD - CARDS DE OPÇÕES -->
-    <div class="text-center mb-4">
-        <h3 class="fw-bold text-dark">Escolha uma das opções abaixo:</h3>
-    </div>
-
+    <!-- CONTEÚDO PRINCIPAL (DASHBOARD DO ALUNO) -->
     <div class="row g-4">
-        <!-- Card 1 -->
-        <div class="col-md-3">
-            <div class="option-card card-recorrente text-start h-100 d-flex flex-column">
-                <div class="mb-auto">
-                    <div class="d-flex justify-content-between">
-                        <div class="icon-circle bg-i-purple"><i class="fas fa-sync-alt"></i></div>
-                        <i class="fas fa-file-invoice-dollar text-danger fs-4"></i>
+        
+        <!-- COLUNA ESQUERDA: ALERTAS -->
+        <div class="col-md-8">
+            <div class="row g-3 mb-4">
+                <!-- Próxima Aula -->
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
+                        <div class="card-body">
+                            <h6 class="text-primary fw-bold mb-2"><i class="fas fa-clock me-2"></i> Próxima Aula</h6>
+                            {% if proxima_aula %}
+                                <h4 class="mb-0">{{ proxima_aula.data_hora_inicio|date:"d/m - H:i" }}</h4>
+                                <small class="text-muted">Prof. {{ proxima_aula.profissional.nome }}</small>
+                            {% else %}
+                                <p class="text-muted mb-0">Nenhum agendamento futuro.</p>
+                                <a href="{% url 'calendario_semanal' %}" class="small text-decoration-none">Ver grade geral →</a>
+                            {% endif %}
+                        </div>
                     </div>
-                    <h5 class="fw-bold">Serviços<br>recorrentes</h5>
+                </div>
+                
+                <!-- Prontuário Recente -->
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning">
+                        <div class="card-body">
+                            <h6 class="text-warning fw-bold mb-2" style="color:#d39e00!important"><i class="fas fa-notes-medical me-2"></i> Última Evolução</h6>
+                            {% if ultima_evolucao %}
+                                <small class="fw-bold d-block">{{ ultima_evolucao.data_hora_inicio|date:"d/m/Y" }}</small>
+                                <p class="small text-muted mb-0 fst-italic">"{{ ultima_evolucao.evolucao_texto|truncatechars:60 }}"</p>
+                            {% else %}
+                                <p class="text-muted mb-0">Sem registros recentes.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MEUS CONTRATOS ATIVOS -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-file-signature me-2"></i>Contratos Ativos</h6>
+                </div>
+                <div class="card-body p-0">
                     {% if aluno.contratos.all %}
-                        <div class="mt-2">
+                        <div class="list-group list-group-flush">
                             {% for c in aluno.contratos.all %}
-                                <div class="bg-white bg-opacity-50 p-1 rounded mb-1 d-flex justify-content-between align-items-center small">
-                                    <span class="text-truncate fw-bold">{{ c.plano.nome }}</span>
-                                    <a href="{% url 'imprimir_contrato' c.id %}" target="_blank" class="text-dark" title="Imprimir"><i class="fas fa-print"></i></a>
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-bold">{{ c.plano.nome }}</div>
+                                        <small class="text-muted">Vence em: {{ c.data_fim|date:"d/m/Y" }}</small>
+                                    </div>
+                                    <a href="{% url 'imprimir_contrato' c.id %}" target="_blank" class="btn btn-sm btn-light border" title="Imprimir PDF">
+                                        <i class="fas fa-print"></i>
+                                    </a>
                                 </div>
                             {% endfor %}
                         </div>
                     {% else %}
-                        <p class="text-muted small mb-3">Recomendados para clientes mensais.</p>
+                        <div class="p-4 text-center text-muted">
+                            <i class="fas fa-folder-open fa-2x mb-2"></i><br>
+                            Nenhum contrato ativo.
+                        </div>
                     {% endif %}
                 </div>
-                <div class="mt-3 pt-3 border-top border-secondary border-opacity-25">
-                    <a href="{% url 'novo_contrato' aluno.pk %}" class="btn btn-sm w-100 text-white fw-bold" style="background-color: #6f42c1;"><i class="fas fa-plus"></i> Vender Plano</a>
-                </div>
             </div>
         </div>
-        
-        <!-- Card 2 -->
-        <div class="col-md-3">
-            <div class="option-card text-start h-100 d-flex flex-column">
-                <div class="mb-auto">
-                    <div class="icon-circle bg-i-green"><i class="fas fa-star"></i></div>
-                    <h5 class="fw-bold">Pacotes<br>Fixos</h5>
-                    <p class="text-muted small mb-3">Planos longos ou parcelados.</p>
+
+        <!-- COLUNA DIREITA: AÇÕES RÁPIDAS -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h6 class="fw-bold mb-0">Ações Rápidas</h6>
                 </div>
-                <div class="mt-3 pt-3 border-top">
-                    <a href="{% url 'novo_contrato' aluno.pk %}" class="btn btn-sm btn-outline-success w-100 fw-bold"><i class="fas fa-plus"></i> Vender Pacote</a>
+                <div class="card-body p-2">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-light text-start p-3 action-btn" data-bs-toggle="modal" data-bs-target="#modalDocumento">
+                            <i class="fas fa-cloud-upload-alt me-3 text-primary"></i> Anexar Documento
+                        </button>
+                        <a href="{% url 'novo_contrato' aluno.pk %}" class="btn btn-light text-start p-3 action-btn">
+                            <i class="fas fa-cart-plus me-3 text-success"></i> Vender Avulso/Pacote
+                        </a>
+                        <button class="btn btn-light text-start p-3 action-btn text-danger border-danger-subtle" onclick="if(confirm('Tem certeza?')) location.href='{% url 'aluno_delete' aluno.pk %}'">
+                            <i class="fas fa-user-times me-3"></i> Excluir Aluno
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Card 3 -->
-        <div class="col-md-3">
-            <div class="option-card text-start h-100 d-flex flex-column">
-                <div class="mb-auto">
-                    <div class="icon-circle bg-i-orange"><i class="fas fa-user"></i></div>
-                    <h5 class="fw-bold">Pacotes<br>personalizados</h5>
-                    <p class="text-muted small mb-3">Sessões de fisioterapia/estética.</p>
-                </div>
-                <div class="mt-3 pt-3 border-top">
-                    <a href="{% url 'novo_contrato' aluno.pk %}" class="btn btn-sm btn-outline-warning w-100 fw-bold text-dark"><i class="fas fa-plus"></i> Vender Sessão</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Card 4 -->
-        <div class="col-md-3">
-            <div class="option-card text-start h-100 d-flex flex-column">
-                <div class="mb-auto">
-                    <div class="icon-circle bg-i-cyan"><i class="fas fa-check-double"></i></div>
-                    <h5 class="fw-bold">Atendimento<br>avulso</h5>
-                    <p class="text-muted small mb-3">Atendimentos unitários.</p>
-                </div>
-                <div class="mt-3 pt-3 border-top">
-                    <a href="{% url 'novo_contrato' aluno.pk %}" class="btn btn-sm btn-outline-info w-100 fw-bold text-dark"><i class="fas fa-plus"></i> Vender Avulso</a>
-                </div>
-            </div>
-        </div>
     </div>
-
 </div>
 
-<!-- Modal Docs -->
-<div class="modal fade" id="modalDocumento" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Adicionar Documento Extra</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <form action="{% url 'upload_documento_extra' aluno.pk %}" method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="mb-3">
-                <label class="form-label">Arquivo</label>
-                <input type="file" name="arquivo" class="form-control" required>
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Descrição</label>
-                <input type="text" name="descricao" class="form-control" placeholder="Ex: Laudo Médico">
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Enviar</button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Modal TotalPass -->
+<!-- MANTENHA OS MODAIS (TotalPass e Docs) IGUAIS ABAIXO -->
+<!-- (O código dos modais continua o mesmo que você já tem) -->
 <div class="modal fade" id="modalTotalPass" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -257,31 +179,39 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-center">
-                <p>Aluno: <strong>{{ aluno.nome }}</strong></p>
                 <div class="form-floating mb-3">
-                    <input type="text" id="tp_token" class="form-control text-center fw-bold fs-4" placeholder="0000">
-                    <label>Token do App</label>
+                    <input type="text" class="form-control text-center fs-3 fw-bold" placeholder="Token" id="tp_token">
+                    <label>Token</label>
                 </div>
-                <button onclick="validarTotalPass()" class="btn btn-danger w-100 py-2">VALIDAR TOKEN</button>
-                <div id="tp_msg" class="mt-3 fw-bold"></div>
+                <button class="btn btn-danger w-100 py-3 fw-bold">VALIDAR TOKEN</button>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-function validarTotalPass() {
-    const token = document.getElementById('tp_token').value;
-    const msgDiv = document.getElementById('tp_msg');
-    
-    if(!token) { alert('Digite o token!'); return; }
-    msgDiv.innerHTML = '<div class="spinner-border text-danger"></div> Validando...';
-
-    // Simulação por enquanto (ou aponte para sua view real)
-    setTimeout(() => {
-        msgDiv.innerHTML = '<span class="text-success"><i class="fas fa-check-circle"></i> Check-in Confirmado!</span>';
-    }, 1000);
-}
-</script>
+<div class="modal fade" id="modalDocumento" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Adicionar Documento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form action="{% url 'upload_documento_extra' aluno.pk %}" method="post" enctype="multipart/form-data">
+              {% csrf_token %}
+              <div class="mb-3">
+                  <label class="form-label">Arquivo</label>
+                  <input type="file" name="arquivo" class="form-control" required>
+              </div>
+              <div class="mb-3">
+                  <label class="form-label">Descrição</label>
+                  <input type="text" name="descricao" class="form-control" placeholder="Ex: Laudo Médico">
+              </div>
+              <button type="submit" class="btn btn-primary w-100">Enviar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+</div>
 
 {% endblock %}
