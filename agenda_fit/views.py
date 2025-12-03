@@ -139,22 +139,39 @@ def gerenciar_aula(request, aula_id):
     aula = get_object_or_404(Aula, id=aula_id)
     
     if request.method == 'POST':
-        # Salva Evolução
-        aula.evolucao_texto = request.POST.get('evolucao_texto')
-        aula.status = 'REALIZADA'
-        aula.save()
-
-        # Salva Chamada em Lote
+        # 1. Processa as Presenças PRIMEIRO para saber se alguém veio
+        teve_presenca = False
+        
         for presenca in aula.presencas.all():
             key = f"status_{presenca.id}"
             novo_status = request.POST.get(key)
+            
             if novo_status:
                 presenca.status = novo_status
                 presenca.save()
+                
+                # Verifica se pelo menos um aluno está presente
+                if novo_status == 'PRESENTE':
+                    teve_presenca = True
+
+        # 2. Atualiza o Status da Aula
+        # Só marca como REALIZADA se houve presença confirmada
+        if teve_presenca:
+            aula.status = 'REALIZADA'
+        else:
+            # Se todos faltaram, a aula não foi "Realizada" tecnicamente
+            # Mantemos como estava (AGENDADA) ou mudamos para CANCELADA se preferir
+            # Por enquanto, vou manter como estava para não sumir da tela
+            pass
+
+        # 3. Salva a Evolução
+        aula.evolucao_texto = request.POST.get('evolucao_texto')
+        aula.save()
         
-        messages.success(request, "Aula finalizada com sucesso!")
+        messages.success(request, "Chamada salva com sucesso!")
         return redirect('calendario_semanal')
 
+    # GET: Se for abrir numa pagina separada (backup do modal)
     return render(request, 'agenda_fit/gerenciar_aula.html', {'aula': aula})
 
 # ==============================================================================
