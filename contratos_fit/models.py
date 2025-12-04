@@ -62,10 +62,12 @@ class Plano(models.Model):
 # ==============================================================================
 class Contrato(models.Model):
     STATUS_CHOICES = [
-        ('ATIVO', 'Ativo'),
         ('PENDENTE', 'Pendente Assinatura'),
+        ('ENVIADO_EMAIL', 'Enviado p/ Assinatura (E-mail)'),
+        ('ASSINADO_DIGITAL', 'Assinado Digitalmente'),
+        ('ASSINADO_PRESENCIAL', 'Assinado Presencialmente'),
         ('CANCELADO', 'Cancelado'),
-        ('ENCERRADO', 'Encerrado (Fim do Prazo)'),
+        ('ENCERRADO', 'Encerrado'),
     ]
 
     aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name='contratos')

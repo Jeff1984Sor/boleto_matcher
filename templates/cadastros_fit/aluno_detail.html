@@ -198,38 +198,8 @@
                                 </td>
                                 <td class="text-end">
                                     <div class="btn-group">
-                                        <!-- Botão CHECK (Se for passado/hoje e não confirmado) -->
-                                        {% if p.aula.data_hora_inicio <= agora and p.status != 'PRESENTE' %}
-                                            <a href="{% url 'confirmar_presenca' p.id %}" class="btn btn-sm btn-outline-success" title="Confirmar"><i class="fas fa-check"></i></a>
-                                        {% endif %}
-                                        
-                                        <!-- Botão REMARCAR -->
-                                        <button class="btn btn-sm btn-outline-warning text-dark" data-bs-toggle="modal" data-bs-target="#modalRemarcar{{ p.id }}"><i class="fas fa-calendar-alt"></i></button>
-                                        
-                                        <!-- Botão CANCELAR -->
-                                        <a href="{% url 'cancelar_presenca' p.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Cancelar aula?')"><i class="fas fa-trash"></i></a>
-                                    </div>
-
-                                    <!-- MODAL REMARCAR (Um por linha) -->
-                                    <div class="modal fade" id="modalRemarcar{{ p.id }}" tabindex="-1">
-                                        <div class="modal-dialog">
-                                            <div class="modal-content">
-                                                <form action="{% url 'remarcar_aula' p.id %}" method="post">
-                                                    {% csrf_token %}
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">Remarcar Aula</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                    </div>
-                                                    <div class="modal-body text-start">
-                                                        <label class="form-label fw-bold">Nova Data e Horário</label>
-                                                        <input type="datetime-local" name="nova_data" class="form-control" required>
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="submit" class="btn btn-warning fw-bold">Salvar</button>
-                                                    </div>
-                                                </form>
-                                            </div>
-                                        </div>
+                                        <!-- Botões de Ação (Placeholder - adicione as views se necessário) -->
+                                        <button class="btn btn-sm btn-outline-secondary" title="Detalhes"><i class="fas fa-eye"></i></button>
                                     </div>
                                 </td>
                             </tr>
@@ -307,24 +277,7 @@
                                     <a href="{% url 'imprimir_contrato' c.id %}" target="_blank" class="btn btn-sm btn-outline-dark" title="Imprimir">
                                         <i class="fas fa-print"></i>
                                     </a>
-                                    
-                                    {% if c.status == 'ATIVO' or c.status == 'PENDENTE' %}
-                                        <a href="{% url 'contrato_update' c.id %}" class="btn btn-sm btn-outline-primary" title="Editar">
-                                            <i class="fas fa-pen"></i>
-                                        </a>
-                                        
-                                        <!-- Botão Encerrar (Com confirmação simples) -->
-                                        <form action="{% url 'contrato_encerrar' c.id %}" method="post" class="d-inline" onsubmit="return confirm('Tem certeza que deseja ENCERRAR este contrato? As cobranças em aberto serão apagadas.');">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-sm btn-outline-warning text-dark" title="Encerrar Contrato">
-                                                <i class="fas fa-ban"></i>
-                                            </button>
-                                        </form>
-                                    {% endif %}
-
-                                    <a href="{% url 'contrato_delete' c.id %}" class="btn btn-sm btn-outline-danger" title="Excluir Definitivamente">
-                                        <i class="fas fa-trash"></i>
-                                    </a>
+                                    <!-- Outros botões como Editar ou Excluir podem ser adicionados aqui -->
                                 </div>
 
                             </div>

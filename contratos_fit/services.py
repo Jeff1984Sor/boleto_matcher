@@ -2,6 +2,9 @@ from datetime import timedelta
 from django.utils import timezone
 from dateutil.relativedelta import relativedelta
 from django.db.models import Sum
+import requests
+import json
+from django.conf import settings
 
 from agenda_fit.models import Aula, Presenca
 from financeiro_fit.models import Lancamento, CategoriaFinanceira, ContaBancaria
@@ -131,3 +134,34 @@ def gerar_financeiro(contrato, valor_custom=None, qtde_custom=None, inicio_custo
             data_vencimento=data_venc,
             status='PENDENTE'
         )
+
+def enviar_contrato_n8n(contrato):
+    """
+    Envia os dados do contrato para o N8N processar a assinatura digital.
+    """
+    if not contrato.aluno.email:
+        print("⚠️ Aluno sem e-mail. Pulei o envio para N8N.")
+        return False
+
+    webhook_url = "https://seu-n8n.com/webhook/assinatura-contrato" # <--- COLOCAR SUA URL DO N8N
+    
+    payload = {
+        "contrato_id": contrato.id,
+        "aluno_nome": contrato.aluno.nome,
+        "aluno_email": contrato.aluno.email,
+        "aluno_cpf": contrato.aluno.cpf,
+        "plano": contrato.plano.nome,
+        "valor": str(contrato.valor_total),
+        "data_inicio": str(contrato.data_inicio),
+        # Link para o N8N chamar de volta quando assinar
+        "callback_url": f"https://studio.mayacorp.com.br/api/contratos/{contrato.id}/assinado/" 
+    }
+
+    try:
+        requests.post(webhook_url, json=payload, timeout=5)
+        contrato.status = 'ENVIADO_EMAIL'
+        contrato.save()
+        return True
+    except Exception as e:
+        print(f"❌ Erro ao chamar N8N: {e}")
+        return False
