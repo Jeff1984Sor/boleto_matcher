@@ -172,10 +172,13 @@ def imprimir_contrato(request, pk):
 # 2. VENDA DE CONTRATO
 # ==============================================================================
 
+from .models import Contrato, HorarioFixo, Plano, TemplateContrato 
+
 @login_required
 def novo_contrato(request, aluno_id):
     aluno = get_object_or_404(Aluno, pk=aluno_id)
     
+    # Prepara dados para o JavaScript (cálculo de preço dinâmico)
     planos_data = {
         p.id: {
             'valor': float(p.valor_total_sugerido),
@@ -187,15 +190,25 @@ def novo_contrato(request, aluno_id):
 
     if request.method == 'POST':
         form = ContratoForm(request.POST)
+        
+        # Cria a instância em memória para validação do formset
         contrato_instance = form.save(commit=False) if form.is_valid() else None
         formset = HorarioFixoFormSet(request.POST, instance=contrato_instance)
         
         if form.is_valid() and formset.is_valid():
             try:
                 with transaction.atomic():
-                    # 1. Salva Contrato
+                    # 1. Configura o Contrato
                     contrato = form.save(commit=False)
                     contrato.aluno = aluno
+                    
+                    # --- CORREÇÃO: Vincula o Template Padrão automaticamente ---
+                    if not contrato.template_usado:
+                        template_padrao = TemplateContrato.objects.filter(ativo=True).first()
+                        if template_padrao:
+                            contrato.template_usado = template_padrao
+                    # -----------------------------------------------------------
+
                     contrato.save()
                     
                     # 2. Salva Horários
@@ -205,7 +218,7 @@ def novo_contrato(request, aluno_id):
                     # 3. Gera Agenda e Financeiro
                     processar_novo_contrato(contrato)
                     
-                    # 4. Envia para N8N (Assinatura Digital)
+                    # 4. Envia E-mail de Assinatura
                     if contrato.aluno.email:
                         sucesso, msg = disparar_email_contrato(contrato, request.get_host())
                         if sucesso:
@@ -213,12 +226,11 @@ def novo_contrato(request, aluno_id):
                         else:
                             messages.warning(request, f"Contrato criado, mas falha no e-mail: {msg}")
                     else:
-                        messages.warning(request, "Contrato criado, mas e-mail não enviado (Aluno sem e-mail).")
+                        messages.warning(request, "Contrato criado. E-mail não enviado (Aluno sem e-mail).")
 
                     return redirect('aluno_detail', pk=aluno.id)
             except Exception as e:
                 messages.error(request, f"Erro ao processar: {e}")
-                # Para debug, imprime o erro no console
                 print(f"ERRO CRÍTICO: {e}")
     else:
         form = ContratoForm()

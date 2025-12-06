@@ -291,6 +291,12 @@
                                 <div class="btn-group">
                                     {% if c.status == 'PENDENTE' or c.status == 'ENVIADO_EMAIL' %}
                                         <!-- Botão Email -->
+                                        <a href="https://wa.me/55{{ aluno.telefone|cut:' '|cut:'-'|cut:'('|cut:')' }}?text=Olá {{ aluno.nome }}, segue o link para assinatura do seu contrato: {{ request.scheme }}://{{ request.get_host }}{% url 'assinar_contrato' c.token_assinatura %}" 
+                                           target="_blank" 
+                                           class="btn btn-sm btn-outline-success" 
+                                           title="Enviar no WhatsApp">
+                                            <i class="fab fa-whatsapp"></i>
+                                        </a>
                                         <a href="{% url 'enviar_contrato_email' c.id %}" class="btn btn-sm btn-outline-primary" title="Enviar por E-mail">
                                             <i class="fas fa-envelope"></i>
                                         </a>
