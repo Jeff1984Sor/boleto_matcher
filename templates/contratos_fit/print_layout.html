@@ -25,9 +25,10 @@
 
         /* Área de Assinaturas no final da página */
         .assinaturas {
-            margin-top: 50px;
+            margin-top: 80px; /* Aumentei margem para caber a assinatura */
             display: flex;
             justify-content: space-between;
+            align-items: flex-end; /* Alinha na base */
             page-break-inside: avoid;
         }
         .linha-assinatura {
@@ -36,6 +37,7 @@
             text-align: center;
             padding-top: 5px;
             font-size: 14px;
+            position: relative;
         }
 
         /* Configurações de Impressão (Oculta botões e fundo) */
@@ -74,15 +76,30 @@
             {{ conteudo|safe }}
         </div>
 
-        <!-- Rodapé Padrão (Opcional) -->
+        <!-- Rodapé Padrão -->
         <div class="assinaturas">
+            
+            <!-- Assinatura Empresa -->
             <div class="linha-assinatura">
                 <strong>MayaCorp Fit</strong><br>
                 CNPJ: 00.000.000/0001-00
             </div>
+
+            <!-- Assinatura Aluno (Com Imagem Digital) -->
             <div class="linha-assinatura">
+                
+                <!-- SE TIVER ASSINATURA DIGITAL, MOSTRA A IMAGEM -->
+                {% if contrato.assinatura_imagem %}
+                    <img src="{{ contrato.assinatura_imagem }}" style="max-width: 150px; position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 1;">
+                {% endif %}
+
                 <strong>{{ contrato.aluno.nome }}</strong><br>
                 Contratante
+                
+                {% if contrato.data_assinatura %}
+                    <br><small style="font-size: 9px; color: #555;">Assinado digitalmente em {{ contrato.data_assinatura|date:"d/m/Y H:i" }}</small>
+                    <br><small style="font-size: 9px; color: #555;">IP: {{ contrato.ip_assinatura }}</small>
+                {% endif %}
             </div>
         </div>
 

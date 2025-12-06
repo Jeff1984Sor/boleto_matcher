@@ -5,7 +5,9 @@ from django.db.models import Sum
 import requests
 import json
 from django.conf import settings
-
+from django.core.mail import send_mail
+from django.urls import reverse
+from django.conf import settings
 from agenda_fit.models import Aula, Presenca
 from financeiro_fit.models import Lancamento, CategoriaFinanceira, ContaBancaria
 
@@ -165,3 +167,45 @@ def enviar_contrato_n8n(contrato):
     except Exception as e:
         print(f"❌ Erro ao chamar N8N: {e}")
         return False
+    
+def disparar_email_contrato(contrato, dominio_site):
+    """
+    Envia o e-mail com o link de assinatura.
+    dominio_site: ex: 'studio.mayacorp.com.br' (precisamos disso pq o service não tem 'request')
+    """
+    if not contrato.aluno.email:
+        return False, "Aluno sem e-mail cadastrado."
+
+    # Garante que o protocolo seja https se estiver em produção
+    protocolo = "https" if not settings.DEBUG else "http"
+    link_assinatura = f"{protocolo}://{dominio_site}{reverse('assinar_contrato', args=[contrato.token_assinatura])}"
+
+    assunto = f"Assinatura de Contrato - {contrato.plano.nome}"
+    mensagem = f"""
+    Olá, {contrato.aluno.nome}!
+    
+    Seu contrato do plano {contrato.plano.nome} foi gerado.
+    
+    Clique no link abaixo para assinar digitalmente:
+    {link_assinatura}
+    
+    Atenciosamente,
+    Equipe MayaCorp
+    """
+
+    try:
+        send_mail(
+            subject=assunto,
+            message=mensagem,
+            from_email=None,
+            recipient_list=[contrato.aluno.email],
+            fail_silently=False,
+        )
+        
+        if contrato.status == 'PENDENTE':
+            contrato.status = 'ENVIADO_EMAIL'
+            contrato.save()
+            
+        return True, "E-mail enviado com sucesso."
+    except Exception as e:
+        return False, f"Erro ao enviar: {e}"

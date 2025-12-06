@@ -41,6 +41,7 @@ from .models import Plano, Contrato
 from cadastros_fit.models import Aluno
 from .forms import ContratoForm, HorarioFixoFormSet
 from .services import processar_novo_contrato
+from .services import processar_novo_contrato, disparar_email_contrato 
 
 # Tenta importar a função do N8N (se não existir, não quebra)
 try:
@@ -205,11 +206,15 @@ def novo_contrato(request, aluno_id):
                     processar_novo_contrato(contrato)
                     
                     # 4. Envia para N8N (Assinatura Digital)
-                    if enviar_contrato_n8n:
-                        print("🚀 Enviando para N8N...")
-                        enviar_contrato_n8n(contrato)
-                    
-                    messages.success(request, "Contrato gerado com sucesso!")
+                    if contrato.aluno.email:
+                        sucesso, msg = disparar_email_contrato(contrato, request.get_host())
+                        if sucesso:
+                            messages.success(request, f"Contrato criado e {msg}")
+                        else:
+                            messages.warning(request, f"Contrato criado, mas falha no e-mail: {msg}")
+                    else:
+                        messages.warning(request, "Contrato criado, mas e-mail não enviado (Aluno sem e-mail).")
+
                     return redirect('aluno_detail', pk=aluno.id)
             except Exception as e:
                 messages.error(request, f"Erro ao processar: {e}")
