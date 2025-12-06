@@ -60,14 +60,17 @@ class Plano(models.Model):
 # ==============================================================================
 # 3. CONTRATO (A VENDA)
 # ==============================================================================
+import uuid # <--- Adicione este import no topo do arquivo!
+
 class Contrato(models.Model):
     STATUS_CHOICES = [
         ('PENDENTE', 'Pendente Assinatura'),
         ('ENVIADO_EMAIL', 'Enviado p/ Assinatura (E-mail)'),
-        ('ASSINADO_DIGITAL', 'Assinado Digitalmente'),
-        ('ASSINADO_PRESENCIAL', 'Assinado Presencialmente'),
+        ('ASSINADO_DIGITAL', 'Assinado Digitalmente (Email)'),
+        ('ASSINADO_PRESENCIAL', 'Assinado Presencialmente (Tablet)'),
+        ('ASSINADO_PAPEL', 'Assinado no Papel'),
         ('CANCELADO', 'Cancelado'),
-        ('ENCERRADO', 'Encerrado'),
+        ('ENCERRADO', 'Encerrado (Fim do Prazo)'),
     ]
 
     aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name='contratos')
@@ -76,34 +79,38 @@ class Contrato(models.Model):
     
     # Datas
     data_inicio = models.DateField()
-    data_fim = models.DateField(blank=True, null=True) # Agora pode ser nulo no form, pois calculamos no save()
+    data_fim = models.DateField(blank=True, null=True)
     dia_vencimento = models.PositiveIntegerField(default=10, help_text="Dia do mês para vencer o boleto/pix")
     
     # Financeiro da Venda
-    valor_total = models.DecimalField(max_digits=10, decimal_places=2, help_text="Valor FINAL fechado com o aluno (pode ter desconto)")
+    valor_total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Valor FINAL fechado")
     qtde_parcelas = models.PositiveIntegerField(default=1, help_text="Em quantas vezes será gerado o financeiro?")
     
-    # Dados de Controle
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDENTE')
-    
-    # Agora funciona porque TemplateContrato foi definido antes!
+    # Controle e Assinatura
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='PENDENTE')
     template_usado = models.ForeignKey(TemplateContrato, on_delete=models.SET_NULL, null=True, blank=True)
-    arquivo_assinado = models.FileField(upload_to='contratos/assinados/', blank=True, null=True)
     
+    # Campos de Assinatura Digital
+    token_assinatura = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, null=False)
+# Tirei o unique=True
+    assinatura_imagem = models.TextField(blank=True, null=True, help_text="Imagem Base64 da assinatura")
+    data_assinatura = models.DateTimeField(blank=True, null=True)
+    ip_assinatura = models.GenericIPAddressField(blank=True, null=True)
+    
+    arquivo_assinado = models.FileField(upload_to='contratos/assinados/', blank=True, null=True)
     criado_em = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        # 1. Se não informou valor total, usa o sugerido pelo plano
+        # 1. Valor padrão se vazio
         if not self.valor_total and self.plano:
             self.valor_total = self.plano.valor_total_sugerido
             
-        # 2. Se não informou qtde de parcelas, assume que é igual aos meses (pagamento recorrente)
+        # 2. Parcelas padrão se vazio
         if not self.qtde_parcelas and self.plano:
             self.qtde_parcelas = self.plano.duracao_meses
 
         # 3. Calcula Data Fim Automaticamente
         if self.data_inicio and self.plano:
-            # Usa relativedelta para somar meses corretamente (ex: 31 jan + 1 mes = 28 fev)
             self.data_fim = self.data_inicio + relativedelta(months=self.plano.duracao_meses)
             
         super().save(*args, **kwargs)

@@ -16,8 +16,21 @@ from agenda_fit.models import Presenca
 import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, get_object_or_404, redirect
+from django.utils import timezone
+from django.http import HttpResponse, JsonResponse
+from django.template import Template, Context
+from django.views.decorators.csrf import csrf_exempt
+import base64
+from django.core.files.base import ContentFile
 
+from .models import Contrato
 
+import base64
+from django.utils import timezone
+from django.http import JsonResponse
+from django.template import Template, Context
+from django.views.decorators.csrf import csrf_exempt
 
 import json
 from django.shortcuts import render, redirect, get_object_or_404
@@ -347,3 +360,206 @@ class TemplateEditorView(LoginRequiredMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         context['variaveis'] = get_variaveis_contrato() # <--- Pega a lista completa
         return context
+    
+
+def assinar_contrato_view(request, token):
+    """
+    Tela pública onde o aluno (ou recepção) vê o contrato e assina.
+    """
+    contrato = get_object_or_404(Contrato, token_assinatura=token)
+    
+    # Se já assinou, avisa e bloqueia
+    if contrato.status in ['ASSINADO_DIGITAL', 'ASSINADO_STUDIO', 'ASSINADO_PAPEL']:
+        return render(request, 'contratos_fit/ja_assinado.html', {'contrato': contrato})
+
+    # Renderiza o texto do contrato (igual fizemos na impressão)
+    if contrato.template_usado:
+        t = Template(contrato.template_usado.texto_html)
+        c = Context({'aluno': contrato.aluno, 'contrato': contrato, 'plano': contrato.plano, 'empresa_nome': "MayaFit"})
+        texto_renderizado = t.render(c)
+    else:
+        texto_renderizado = "<p>Erro: Template não encontrado.</p>"
+
+    if request.method == 'POST':
+        # Recebe a imagem da assinatura (base64) vinda do JS
+        assinatura_b64 = request.POST.get('assinatura_data') # String longa data:image/png...
+        origem = request.POST.get('origem') # 'EMAIL' ou 'STUDIO'
+        
+        if assinatura_b64:
+            contrato.assinatura_imagem = assinatura_b64
+            contrato.data_assinatura = timezone.now()
+            contrato.ip_assinatura = get_client_ip(request) # Função auxiliar
+            
+            if origem == 'STUDIO':
+                contrato.status = 'ASSINADO_STUDIO'
+            else:
+                contrato.status = 'ASSINADO_DIGITAL'
+            
+            contrato.save()
+            
+            # TODO: Aqui chamaremos a função para Gerar o PDF Final e salvar em arquivo_assinado
+            # gerar_pdf_final(contrato) 
+
+            return JsonResponse({'status': 'ok', 'msg': 'Assinado com sucesso!'})
+            
+    return render(request, 'contratos_fit/assinar.html', {
+        'contrato': contrato,
+        'texto_contrato': texto_renderizado
+    })
+
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        return x_forwarded_for.split(',')[0]
+    return request.META.get('REMOTE_ADDR')
+
+def assinar_contrato_view(request, token):
+    # Busca o contrato pelo Token secreto (sem precisar de login)
+    contrato = get_object_or_404(Contrato, token_assinatura=token)
+    
+    # Se já assinou, bloqueia
+    if contrato.status in ['ASSINADO_DIGITAL', 'ASSINADO_PRESENCIAL', 'ASSINADO_PAPEL']:
+        return render(request, 'contratos_fit/ja_assinado.html', {'contrato': contrato})
+
+    # Renderiza o texto do contrato (Substitui {{aluno.nome}} pelos dados reais)
+    texto_renderizado = ""
+    if contrato.template_usado:
+        t = Template(contrato.template_usado.texto_html)
+        c = Context({
+            'aluno': contrato.aluno, 
+            'contrato': contrato, 
+            'plano': contrato.plano, 
+            'empresa_nome': "Studio MayaCorp"
+        })
+        texto_renderizado = t.render(c)
+
+    # Processa a assinatura (POST via AJAX)
+    if request.method == 'POST':
+        assinatura_b64 = request.POST.get('assinatura_data') # Imagem Base64
+        origem = request.POST.get('origem') # STUDIO ou EMAIL
+        
+        if assinatura_b64:
+            contrato.assinatura_imagem = assinatura_b64
+            contrato.data_assinatura = timezone.now()
+            contrato.ip_assinatura = get_client_ip(request)
+            
+            if origem == 'STUDIO':
+                contrato.status = 'ASSINADO_PRESENCIAL'
+            else:
+                contrato.status = 'ASSINADO_DIGITAL'
+            
+            contrato.save()
+            return JsonResponse({'status': 'ok'})
+
+    return render(request, 'contratos_fit/assinar.html', {
+        'contrato': contrato,
+        'texto_contrato': texto_renderizado
+    })
+
+from financeiro_fit.models import Lancamento
+from contratos_fit.models import Contrato
+
+class AlunoDetailView(LoginRequiredMixin, DetailView):
+    model = Aluno
+    template_name = 'cadastros_fit/aluno_detail.html'
+    context_object_name = 'aluno'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        aluno = self.object
+        agora = timezone.now()
+        context['agora'] = agora
+
+        # 1. RESUMOS (Cards do Topo)
+        proxima_presenca = Presenca.objects.filter(
+            aluno=aluno,
+            aula__data_hora_inicio__gte=agora,
+            aula__status__in=['AGENDADA', 'CONFIRMADA']
+        ).select_related('aula', 'aula__profissional').order_by('aula__data_hora_inicio').first()
+        
+        ultima_evolucao = Aula.objects.filter(
+            presencas__aluno=aluno,
+            data_hora_inicio__lt=agora,
+        ).exclude(evolucao_texto='').order_by('-data_hora_inicio').first()
+
+        context['proxima_aula'] = proxima_presenca.aula if proxima_presenca else None
+        context['ultima_evolucao'] = ultima_evolucao
+
+        # 2. LISTAS COMPLETAS (Para as Abas novas)
+        
+        # Agenda Completa (Histórico)
+        context['agenda_completa'] = Presenca.objects.filter(
+            aluno=aluno
+        ).select_related('aula', 'aula__profissional').order_by('-aula__data_hora_inicio')
+
+        # Financeiro Completo
+        context['financeiro_completo'] = Lancamento.objects.filter(
+            aluno=aluno
+        ).order_by('data_vencimento')
+
+        # Contratos Completos
+        context['contratos_completo'] = Contrato.objects.filter(
+            aluno=aluno
+        ).order_by('-data_inicio')
+
+        # Docs
+        context['documentos_extras'] = aluno.documentos.all()
+        
+        return context
+    
+from django.core.mail import send_mail
+from django.urls import reverse
+
+def enviar_contrato_email(request, pk):
+    contrato = get_object_or_404(Contrato, pk=pk)
+    aluno = contrato.aluno
+    
+    if not aluno.email:
+        return HttpResponse("Erro: O aluno não tem e-mail cadastrado.")
+
+    # Gera o link absoluto (com https://dominio...)
+    link_assinatura = request.build_absolute_uri(
+        reverse('assinar_contrato', args=[contrato.token_assinatura])
+    )
+
+    assunto = f"Assinatura de Contrato - {contrato.plano.nome}"
+    mensagem = f"""
+    Olá, {aluno.nome}!
+    
+    Seu contrato do plano {contrato.plano.nome} já está disponível para assinatura.
+    
+    Clique no link abaixo para ler e assinar digitalmente:
+    {link_assinatura}
+    
+    Atenciosamente,
+    Equipe MayaCorp Fit
+    """
+
+    try:
+        send_mail(
+            subject=assunto,
+            message=mensagem,
+            from_email=None, # Usa o DEFAULT do settings
+            recipient_list=[aluno.email],
+            fail_silently=False,
+        )
+        
+        # Atualiza status
+        if contrato.status == 'PENDENTE':
+            contrato.status = 'ENVIADO_EMAIL'
+            contrato.save()
+            
+        messages.success(request, f"E-mail enviado com sucesso para {aluno.email}!")
+        
+    except Exception as e:
+        messages.error(request, f"Erro ao enviar e-mail: {e}")
+
+    return redirect('aluno_detail', pk=aluno.id)

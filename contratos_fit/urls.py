@@ -23,5 +23,8 @@ urlpatterns = [
     path('templates/editar/<int:pk>/', views.TemplateEditorView.as_view(), name='template_update'),
 
     path('contratos/aluno/<int:aluno_id>/', views.lista_contratos_aluno, name='lista_contratos_aluno'),
+    path('assinar/<uuid:token>/', views.assinar_contrato_view, name='assinar_contrato'),
+    path('enviar-email/<int:pk>/', views.enviar_contrato_email, name='enviar_contrato_email'),
+
 
 ]
