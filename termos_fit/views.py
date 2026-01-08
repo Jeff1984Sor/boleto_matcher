@@ -36,3 +36,9 @@ def assinar_termo(request, token):
         'termo': termo,
         'texto_contrato': texto_final
     })
+
+def termo_template_list(request):
+    templates = TermoTemplate.objects.filter(ativo=True)
+    return render(request, 'termos_fit/termo_template_list.html', {
+        'templates': templates
+    })
