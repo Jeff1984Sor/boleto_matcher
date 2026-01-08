@@ -1,6 +1,7 @@
 {% load static %}
 {% load core_extras %}
 
+<!-- SIDEBAR CONTAINER -->
 <div class="flex flex-col w-64 h-full bg-white border-r border-slate-100 p-4 transition-all duration-300">
     
     <!-- LOGO -->
@@ -19,7 +20,7 @@
         
         {% if user.is_authenticated %}
             
-            <!-- ITEM DASHBOARD (INÍCIO) -->
+            <!-- DASHBOARD (INÍCIO) -->
             <a href="{% url 'home' %}" 
                class="flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 group
                {% if request.path == '/' %} bg-serene-blue/15 text-serene-blue font-black {% else %} text-slate-500 hover:bg-slate-50 hover:text-slate-800 {% endif %}">
@@ -33,7 +34,7 @@
                     <span class="text-[9px] font-black text-slate-300 uppercase tracking-[3px]">Gestão Operacional</span>
                 </div>
                 
-                <!-- 1. LISTA DE ALUNOS (DESTAQUE ACIMA DA AGENDA) -->
+                <!-- 1. ALUNOS (Destaque Principal) -->
                 <a href="{% url 'aluno_list' %}" 
                    class="flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 group mb-1
                    {% if 'cadastros/aluno' in request.path %} bg-mint-green/15 text-emerald-700 font-black {% else %} text-slate-500 hover:bg-slate-50 hover:text-slate-800 {% endif %}">
@@ -78,8 +79,8 @@
                     </div>
                 </details>
                 
-                <!-- 4. CADASTROS (Removido Alunos daqui) -->
-                <details class="group [&_summary::-webkit-details-marker]:hidden" {% if 'cadastros' in request.path or 'contratos' in request.path %}open{% endif %}>
+                <!-- 4. CONFIGURAÇÕES (Agrupa Cadastros e Modelos) -->
+                <details class="group [&_summary::-webkit-details-marker]:hidden" {% if 'cadastros' in request.path or 'contratos' in request.path or 'termos' in request.path %}open{% endif %}>
                     <summary class="flex items-center justify-between px-4 py-3 text-slate-500 rounded-2xl cursor-pointer hover:bg-slate-50 hover:text-slate-800 transition-all">
                         <div class="flex items-center gap-3">
                             <div class="w-7 h-7 rounded-xl bg-blue-100 flex items-center justify-center">
@@ -93,11 +94,21 @@
                         <a href="{% url 'profissional_list' %}" class="block px-4 py-2 text-[11px] font-bold text-slate-400 hover:text-blue-600 transition-colors">Profissionais</a>
                         <a href="{% url 'plano_list' %}" class="block px-4 py-2 text-[11px] font-bold text-slate-400 hover:text-blue-600 transition-colors">Planos e Preços</a>
                         <a href="{% url 'unidade_list' %}" class="block px-4 py-2 text-[11px] font-bold text-slate-400 hover:text-blue-600 transition-colors">Unidades</a>
+                        
+                        <!-- DIVISOR PARA MODELOS -->
+                        <div class="divider my-1 opacity-20 px-4"></div>
+                        
+                        <a href="{% url 'template_list' %}" class="block px-4 py-2 text-[11px] font-black text-slate-400 hover:text-purple-600 transition-colors">
+                            <i class="fas fa-file-signature mr-2 opacity-50"></i> Modelos Contrato
+                        </a>
+                        <a href="{% url 'termo_template_list' %}" class="block px-4 py-2 text-[11px] font-black text-slate-400 hover:text-purple-600 transition-colors">
+                            <i class="fas fa-file-shield mr-2 opacity-50"></i> Modelos Termos
+                        </a>
                     </div>
                 </details>
             {% endif %}
 
-            <!-- FERRAMENTAS -->
+            <!-- INTELIGÊNCIA -->
             {% if user|tem_acesso:"gerador-pdf" %}
                 <div class="pt-8 pb-3 px-4">
                     <span class="text-[9px] font-black text-slate-300 uppercase tracking-[3px]">Inteligência</span>
@@ -113,7 +124,7 @@
         {% endif %}
     </nav>
     
-    <!-- RODAPÉ -->
+    <!-- RODAPÉ DA SIDEBAR -->
     <div class="mt-auto pt-6 border-t border-slate-50 text-center">
         <div class="flex items-center justify-center gap-2 mb-2 opacity-50">
             <div class="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
