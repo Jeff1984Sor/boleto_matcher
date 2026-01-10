@@ -24,5 +24,6 @@ urlpatterns = [
     path('api/totalpass/checkin/', views.checkin_totalpass, name='api_totalpass_checkin'),
     path('configuracao/integracao/', views.ConfiguracaoIntegracaoView.as_view(), name='config_integracao'),
     path('dashboard/', views.DashboardAulasView.as_view(), name='dashboard_aulas'),
-     path('api/n8n/agenda-diaria/', views.api_agenda_amanha, name='api_agenda_amanha'),
+    path('api/n8n/agenda-diaria/', views.api_agenda_amanha, name='api_agenda_amanha'),
+    path('performance/', views.performance_aulas, name='performance_aulas'),
 ]

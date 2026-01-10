@@ -383,3 +383,7 @@ def api_agenda_amanha(request):
         })
 
     return JsonResponse(list(dados_envio.values()), safe=False)
+
+def performance_aulas(request):
+    # Por enquanto apenas renderiza um template ou uma página em branco
+    return render(request, 'agenda_fit/performance.html')
