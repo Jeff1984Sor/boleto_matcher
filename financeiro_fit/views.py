@@ -433,3 +433,23 @@ class CategoriaUpdateView(LoginRequiredMixin, UpdateView):
 class CategoriaDeleteView(LoginRequiredMixin, DeleteView):
     model = CategoriaFinanceira
     success_url = reverse_lazy('categoria_list')
+
+class FornecedorCreateView(LoginRequiredMixin, CreateView):
+    model = Fornecedor
+    form_class = FornecedorForm
+    template_name = 'financeiro_fit/fornecedor_form.html' # Nome do template do formulário
+    success_url = reverse_lazy('fornecedor_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, "Fornecedor cadastrado com sucesso!")
+        return super().form_valid(form)
+
+class FornecedorUpdateView(LoginRequiredMixin, UpdateView):
+    model = Fornecedor
+    form_class = FornecedorForm
+    template_name = 'financeiro_fit/fornecedor_form.html'
+    success_url = reverse_lazy('fornecedor_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, "Fornecedor atualizado com sucesso!")
+        return super().form_valid(form)

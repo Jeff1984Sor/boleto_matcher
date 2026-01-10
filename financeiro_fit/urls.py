@@ -40,6 +40,10 @@ urlpatterns = [
     path('contas/<int:pk>/exportar/excel/', views.exportar_extrato_excel, name='exportar_extrato_excel'),
     path('contas/<int:pk>/exportar/pdf/', views.exportar_extrato_pdf, name='exportar_extrato_pdf'),
 
+    path('fornecedores/', views.FornecedorListView.as_view(), name='fornecedor_list'),
+    path('fornecedores/novo/', views.FornecedorCreateView.as_view(), name='fornecedor_create'),
+    path('fornecedores/<int:pk>/editar/', views.FornecedorUpdateView.as_view(), name='fornecedor_update'),
+
     # 5. DASHBOARD GERAL
     path('dashboard/', views.DashboardFinanceiroView.as_view(), name='dashboard_financeiro'),
     path('relatorio-dre/', views.relatorio_dre, name='relatorio_dre'),
