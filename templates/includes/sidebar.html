@@ -1,213 +1,74 @@
 <!-- sidebar.html -->
-<aside class="w-80 bg-white h-screen border-r border-slate-200 flex flex-col sticky top-0 overflow-y-auto custom-scroll z-30">
-    
-    <!-- LOGO: Identidade MayaCorp Fit -->
-    <div class="p-10 mb-2 relative overflow-hidden">
-        <div class="absolute -top-10 -left-10 w-32 h-32 bg-primary/5 rounded-full blur-3xl"></div>
-        <h1 class="text-3xl font-black text-slate-900 tracking-tighter italic relative z-10">
-            MayaCorp<span class="text-secondary">Fit</span>
+<div class="flex flex-col h-full py-6 px-4">
+    <!-- LOGO -->
+    <div class="px-4 mb-10">
+        <h1 class="text-2xl font-black text-slate-800 tracking-tighter">
+            MayaCorp<span class="text-primary italic">Fit</span>
         </h1>
-        <div class="flex items-center gap-2 mt-2 relative z-10">
-            <div class="h-[2px] w-8 bg-primary"></div>
-            <p class="text-[10px] font-black text-primary uppercase tracking-[4px]">Premium Studio</p>
-        </div>
     </div>
 
-    <!-- MENU PRINCIPAL -->
-    <nav class="flex-1 px-6 space-y-8 pb-10">
+    <!-- NAVEGAÇÃO PRINCIPAL -->
+    <nav class="flex-1 space-y-8 overflow-y-auto custom-scrollbar">
         
-        <!-- SEÇÃO: DASHBOARD -->
+        <!-- SEÇÃO: NAVEGAÇÃO -->
         <div>
-            <p class="text-[11px] font-black text-slate-900 uppercase tracking-[3px] mb-4 ml-2 opacity-50">Navegação</p>
-            <a href="{% url 'home' %}" 
-               class="flex items-center gap-4 p-3.5 rounded-2xl transition-all group 
-               {% if request.resolver_match.url_name == 'home' %} bg-primary text-white shadow-xl shadow-primary/30 {% else %} text-slate-600 hover:bg-slate-50 hover:text-primary {% endif %}">
-                <div class="w-9 h-9 {% if request.resolver_match.url_name == 'home' %} bg-white/20 {% else %} bg-slate-100 group-hover:bg-white {% endif %} rounded-xl flex items-center justify-center transition-all shadow-sm">
-                    <i class="fas fa-grid-2 text-xs"></i>
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-4 px-4">Navegação</p>
+            <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-4 py-3 rounded-2xl transition-all hover:bg-slate-50 group {% if request.path == '/dashboard/' %} bg-slate-100 text-primary {% endif %}">
+                <div class="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-white shadow-sm transition-colors">
+                    <i class="fas fa-th-large text-xs"></i>
                 </div>
-                <span class="text-xs font-black uppercase tracking-tight">Dashboard</span>
+                <span class="text-sm font-bold text-slate-600 group-hover:text-slate-900">Dashboard</span>
             </a>
         </div>
 
         <!-- SEÇÃO: OPERACIONAL -->
         <div>
-            <p class="text-[11px] font-black text-slate-900 uppercase tracking-[3px] mb-4 ml-2 opacity-50">Operacional</p>
-            <div class="space-y-1.5">
-                <a href="{% url 'aluno_list' %}" class="nav-link group {% if 'aluno' in request.path %} active {% endif %}">
-                    <div class="icon-box group-hover:bg-secondary group-hover:text-white">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-4 px-4">Operacional</p>
+            <div class="space-y-1">
+                <!-- ALUNOS -->
+                <a href="{% url 'aluno_list' %}" class="flex items-center gap-3 px-4 py-3 rounded-2xl transition-all hover:bg-slate-50 group {% if 'aluno' in request.path %} bg-slate-100 text-primary {% endif %}">
+                    <div class="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors shadow-sm">
                         <i class="fas fa-users text-xs"></i>
                     </div>
-                    <span>Alunos</span>
+                    <span class="text-sm font-bold text-slate-600 group-hover:text-slate-900">Alunos</span>
                 </a>
-                <a href="{% url 'calendario_semanal' %}" class="nav-link group {% if 'calendario' in request.path %} active {% endif %}">
-                    <div class="icon-box group-hover:bg-accent group-hover:text-amber-900">
+
+                <!-- AGENDA SEMANAL -->
+                <a href="{% url 'calendario_semanal' %}" class="flex items-center gap-3 px-4 py-3 rounded-2xl transition-all hover:bg-slate-50 group {% if 'calendario' in request.path %} bg-slate-100 text-primary {% endif %}">
+                    <div class="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-accent group-hover:text-amber-900 transition-colors shadow-sm">
                         <i class="fas fa-calendar-day text-xs"></i>
                     </div>
-                    <span>Agenda Semanal</span>
+                    <span class="text-sm font-bold text-slate-600 group-hover:text-slate-900">Agenda Semanal</span>
                 </a>
-                <a href="{% url 'performance_aulas' %}" class="nav-link group">
-                    <div class="icon-box group-hover:bg-primary group-hover:text-white">
+
+                <!-- PERFORMANCE -->
+                <a href="{% url 'performance_aulas' %}" class="flex items-center gap-3 px-4 py-3 rounded-2xl transition-all hover:bg-slate-50 group">
+                    <div class="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-colors shadow-sm">
                         <i class="fas fa-chart-line text-xs"></i>
                     </div>
-                    <span>Performance</span>
+                    <span class="text-sm font-bold text-slate-600 group-hover:text-slate-900">Performance</span>
                 </a>
             </div>
         </div>
 
         <!-- SEÇÃO: FINANCEIRO -->
         <div>
-            <p class="text-[11px] font-black text-slate-900 uppercase tracking-[3px] mb-4 ml-2 opacity-50">Financeiro</p>
-            <div class="space-y-1.5">
-                <a href="{% url 'contas_receber' %}" class="nav-link group">
-                    <div class="icon-box group-hover:bg-emerald-500 group-hover:text-white">
-                        <i class="fas fa-money-bill-trend-up text-xs"></i>
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-4 px-4">Financeiro</p>
+            <div class="space-y-1">
+                <a href="{% url 'contas_receber' %}" class="flex items-center gap-3 px-4 py-3 rounded-2xl transition-all hover:bg-slate-50 group">
+                    <div class="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors shadow-sm">
+                        <i class="fas fa-hand-holding-dollar text-xs"></i>
                     </div>
-                    <span>Recebíveis</span>
+                    <span class="text-sm font-bold text-slate-600">Recebíveis</span>
                 </a>
-                <a href="{% url 'contas_pagar' %}" class="nav-link group">
-                    <div class="icon-box group-hover:bg-primary group-hover:text-white">
+                <a href="{% url 'contas_pagar' %}" class="flex items-center gap-3 px-4 py-3 rounded-2xl transition-all hover:bg-slate-50 group">
+                    <div class="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-rose-500 group-hover:text-white transition-colors shadow-sm">
                         <i class="fas fa-file-invoice-dollar text-xs"></i>
                     </div>
-                    <span>Pagamentos</span>
-                </a>
-                <a href="{% url 'conta_list' %}" class="nav-link group">
-                    <div class="icon-box group-hover:bg-secondary group-hover:text-white">
-                        <i class="fas fa-vault text-xs"></i>
-                    </div>
-                    <span>Cofre & Bancos</span>
-                </a>
-                <a href="{% url 'relatorio_dre' %}" class="nav-link group">
-                    <div class="icon-box group-hover:bg-slate-900 group-hover:text-white">
-                        <i class="fas fa-magnifying-glass-chart text-xs"></i>
-                    </div>
-                    <span>DRE Mensal</span>
-                </a>
-            </div>
-        </div>
-
-        <!-- SEÇÃO: CONFIGURAÇÕES (TODOS OS LINKS) -->
-        <div>
-            <p class="text-[11px] font-black text-slate-900 uppercase tracking-[3px] mb-4 ml-2 opacity-50">Configurações</p>
-            <div class="space-y-1.5">
-                <!-- 1. UNIDADES -->
-                <a href="{% url 'unidade_list' %}" class="nav-link group">
-                    <div class="icon-box group-hover:bg-primary group-hover:text-white">
-                        <i class="fas fa-building text-xs"></i>
-                    </div>
-                    <span>Unidades</span>
-                </a>
-                <!-- 2. PROFISSIONAIS -->
-                <a href="{% url 'profissional_list' %}" class="nav-link group">
-                    <div class="icon-box group-hover:bg-secondary group-hover:text-white">
-                        <i class="fas fa-user-tie text-xs"></i>
-                    </div>
-                    <span>Profissionais</span>
-                </a>
-                <!-- 3. PLANO DE CONTAS -->
-                <a href="{% url 'categoria_list' %}" class="nav-link group">
-                    <div class="icon-box group-hover:bg-primary group-hover:text-white">
-                        <i class="fas fa-tags text-xs"></i>
-                    </div>
-                    <span>Plano de Contas</span>
-                </a>
-                <!-- 4. TIPO DE SERVIÇO -->
-                <a href="{% url 'servico_list' %}" class="nav-link group">
-                    <div class="icon-box group-hover:bg-accent group-hover:text-amber-950">
-                        <i class="fas fa-shapes text-xs"></i>
-                    </div>
-                    <span>Tipos de Serviço</span>
-                </a>
-                <!-- 5. PLANOS E PREÇOS -->
-                <a href="{% url 'plano_list' %}" class="nav-link group">
-                    <div class="icon-box group-hover:bg-emerald-500 group-hover:text-white">
-                        <i class="fas fa-layer-group text-xs"></i>
-                    </div>
-                    <span>Planos & Preços</span>
-                </a>
-                <!-- 6. MODELOS DE CONTRATO -->
-                <a href="{% url 'template_list' %}" class="nav-link group">
-                    <div class="icon-box group-hover:bg-slate-900 group-hover:text-white">
-                        <i class="fas fa-file-contract text-xs"></i>
-                    </div>
-                    <span>Modelos de Contrato</span>
-                </a>
-                <!-- 7. MODELOS DE TERMO -->
-                <a href="{% url 'termo_template_list' %}" class="nav-link group">
-                    <div class="icon-box group-hover:bg-slate-900 group-hover:text-white">
-                        <i class="fas fa-file-shield text-xs"></i>
-                    </div>
-                    <span>Modelos de Termo</span>
-                </a>
-                <!-- 8. FORNECEDORES -->
-                <a href="{% url 'fornecedor_list' %}" class="nav-link group">
-                    <div class="icon-box group-hover:bg-secondary group-hover:text-white">
-                        <i class="fas fa-truck-fast text-xs"></i>
-                    </div>
-                    <span>Fornecedores</span>
-                </a>
-                <!-- 9. EQUIPE DO SISTEMA -->
-                <a href="{% url 'lista_usuarios' %}" class="nav-link group">
-                    <div class="icon-box group-hover:bg-primary group-hover:text-white">
-                        <i class="fas fa-user-shield text-xs"></i>
-                    </div>
-                    <span>Equipe do Sistema</span>
-                </a>
-            </div>
-        </div>
-
-        <!-- SEÇÃO: COMUNICAÇÃO -->
-        <div>
-            <p class="text-[11px] font-black text-slate-900 uppercase tracking-[3px] mb-4 ml-2 opacity-50">Comunicação</p>
-            <div class="space-y-1.5">
-                <a href="{% url 'whatsapp_dashboard' %}" class="nav-link group">
-                    <div class="icon-box group-hover:bg-emerald-500 group-hover:text-white">
-                        <i class="fab fa-whatsapp text-sm"></i>
-                    </div>
-                    <span>WhatsApp & Automação</span>
+                    <span class="text-sm font-bold text-slate-600">Pagamentos</span>
                 </a>
             </div>
         </div>
 
     </nav>
-
-    <!-- FOOTER: USUÁRIO -->
-    <div class="p-8 border-t-2 border-slate-100 bg-slate-50/80">
-        <div class="flex items-center gap-4 px-2">
-            <div class="w-12 h-12 rounded-2xl bg-primary text-white flex items-center justify-center font-black text-lg shadow-xl shadow-primary/30 border-2 border-white">
-                {{ user.username|first|upper }}
-            </div>
-            <div class="flex-1 overflow-hidden">
-                <p class="text-xs font-black text-slate-900 truncate uppercase tracking-tighter">{{ user.username }}</p>
-                <p class="text-[9px] font-black text-primary uppercase tracking-widest mt-0.5">Gestor Mestre</p>
-            </div>
-            <form action="{% url 'logout' %}" method="post">
-                {% csrf_token %}
-                <button type="submit" class="text-slate-300 hover:text-primary transition-all hover:scale-125">
-                    <i class="fas fa-power-off text-lg"></i>
-                </button>
-            </form>
-        </div>
-    </div>
-</aside>
-
-<style>
-    /* Estilos para a Sidebar MayaCorp */
-    .nav-link {
-        @apply flex items-center gap-4 p-3 rounded-2xl transition-all text-slate-600 font-black uppercase text-[10px] tracking-widest border border-transparent !important;
-    }
-    .nav-link:hover {
-        @apply bg-slate-50 text-slate-900 !important;
-    }
-    .nav-link.active {
-        @apply bg-primary/5 text-primary border-primary/10 !important;
-    }
-    .nav-link.active .icon-box {
-        @apply bg-primary text-white shadow-lg shadow-primary/20 !important;
-    }
-    .icon-box {
-        @apply w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center transition-all shadow-sm shrink-0 !important;
-    }
-    
-    .custom-scroll::-webkit-scrollbar { width: 5px; }
-    .custom-scroll::-webkit-scrollbar-thumb { @apply bg-slate-200 rounded-full; }
-</style>
+</div>
