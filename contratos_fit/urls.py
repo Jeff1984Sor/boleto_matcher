@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views
 
-app_name = 'contratos'
+
 
 urlpatterns = [
     # GESTÃO DE CONTRATOS (Lista de contratos feitos para alunos)

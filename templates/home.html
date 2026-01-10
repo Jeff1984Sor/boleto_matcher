@@ -25,7 +25,7 @@
     <!-- GRID DE CARDS DE RESUMO -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
         
-        <!-- Alunos: AZUL VIBRANTE -->
+        <!-- Alunos -->
         <div class="group bg-white p-8 rounded-3xl shadow-lg border border-slate-100 hover:border-secondary transition-all duration-300">
             <div class="flex items-center gap-6">
                 <div class="w-20 h-20 bg-secondary rounded-2xl flex items-center justify-center text-white shadow-lg shadow-secondary/30 group-hover:scale-110 transition-transform">
@@ -41,7 +41,7 @@
             </div>
         </div>
 
-        <!-- Aulas: MARSALA (PRINCIPAL) -->
+        <!-- Aulas -->
         <div class="group bg-white p-8 rounded-3xl shadow-lg border border-slate-100 hover:border-primary transition-all duration-300">
             <div class="flex items-center gap-6">
                 <div class="w-20 h-20 bg-primary rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/30 group-hover:scale-110 transition-transform">
@@ -60,7 +60,7 @@
             </div>
         </div>
 
-        <!-- Financeiro: AMARELO STUDIO (CORRIGIDO) -->
+        <!-- Financeiro (CORRIGIDO SEM NAMESPACE) -->
         <div class="group bg-white p-8 rounded-3xl shadow-lg border border-slate-100 hover:border-accent transition-all duration-300">
             <div class="flex items-center gap-6">
                 <div class="w-20 h-20 bg-accent rounded-2xl flex items-center justify-center text-accent-content shadow-lg shadow-accent/20 group-hover:scale-110 transition-transform">
@@ -72,7 +72,7 @@
                 </div>
             </div>
             <div class="mt-6">
-                <a href="{% url 'financeiro:contas_receber' %}" class="inline-block px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold group-hover:bg-accent group-hover:text-accent-content transition-colors">
+                <a href="{% url 'contas_receber' %}" class="inline-block px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold group-hover:bg-accent group-hover:text-accent-content transition-colors">
                     Fluxo de Caixa →
                 </a>
             </div>
@@ -87,24 +87,24 @@
 
     <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
         
-        <!-- Atalho 1 - Novo Aluno (CORRIGIDO) -->
-        <a href="{% url 'cadastros:aluno_create' %}" class="flex flex-col items-center justify-center p-8 bg-white rounded-3xl border border-slate-100 shadow-sm hover:border-secondary hover:shadow-2xl hover:-translate-y-2 transition-all group">
+        <!-- Atalho 1 - Novo Aluno (SEM NAMESPACE) -->
+        <a href="{% url 'aluno_create' %}" class="flex flex-col items-center justify-center p-8 bg-white rounded-3xl border border-slate-100 shadow-sm hover:border-secondary hover:shadow-2xl hover:-translate-y-2 transition-all group">
             <div class="w-14 h-14 rounded-full bg-slate-50 flex items-center justify-center mb-4 group-hover:bg-secondary group-hover:text-white transition-all">
                 <i class="fas fa-user-plus text-xl text-secondary group-hover:text-white"></i>
             </div>
             <span class="text-sm font-black text-slate-600 uppercase tracking-tighter">Novo Aluno</span>
         </a>
 
-        <!-- Atalho 2 - Agenda (CORRIGIDO) -->
-        <a href="{% url 'agenda:calendario_semanal' %}" class="flex flex-col items-center justify-center p-8 bg-white rounded-3xl border border-slate-100 shadow-sm hover:border-primary hover:shadow-2xl hover:-translate-y-2 transition-all group">
+        <!-- Atalho 2 - Agenda (SEM NAMESPACE) -->
+        <a href="{% url 'calendario_semanal' %}" class="flex flex-col items-center justify-center p-8 bg-white rounded-3xl border border-slate-100 shadow-sm hover:border-primary hover:shadow-2xl hover:-translate-y-2 transition-all group">
             <div class="w-14 h-14 rounded-full bg-slate-50 flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-white transition-all">
                 <i class="fas fa-calendar-alt text-xl text-primary group-hover:text-white"></i>
             </div>
             <span class="text-sm font-black text-slate-600 uppercase tracking-tighter">Agenda</span>
         </a>
 
-        <!-- Atalho 3 - Relatórios (CORRIGIDO) -->
-        <a href="{% url 'financeiro:contas_receber' %}" class="flex flex-col items-center justify-center p-8 bg-white rounded-3xl border border-slate-100 shadow-sm hover:border-accent hover:shadow-2xl hover:-translate-y-2 transition-all group">
+        <!-- Atalho 3 - Relatórios (SEM NAMESPACE) -->
+        <a href="{% url 'contas_receber' %}" class="flex flex-col items-center justify-center p-8 bg-white rounded-3xl border border-slate-100 shadow-sm hover:border-accent hover:shadow-2xl hover:-translate-y-2 transition-all group">
             <div class="w-14 h-14 rounded-full bg-slate-50 flex items-center justify-center mb-4 group-hover:bg-accent group-hover:text-accent-content transition-all">
                 <i class="fas fa-chart-line text-xl text-accent group-hover:text-accent-content"></i>
             </div>

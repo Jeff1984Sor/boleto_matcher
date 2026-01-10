@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views
 
-app_name = 'pdf_tools'
+
 
 urlpatterns = [
     path('', views.gerador_home, name='pdf_home'),

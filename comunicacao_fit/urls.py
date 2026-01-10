@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views
 
-app_name = 'comunicacao'
+
 
 urlpatterns = [
     path('configuracoes/', views.whatsapp_dashboard, name='whatsapp_dashboard'),
