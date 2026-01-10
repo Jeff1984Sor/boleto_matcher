@@ -1,5 +1,8 @@
 {% extends 'base.html' %}
+
 {% block title %}Contas a Pagar - Financeiro Fit{% endblock %}
+
+{% block content %}
 <!-- HEADER: Título e Resumo Rápido -->
 <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6 px-2">
     <div class="flex items-center gap-4">
@@ -13,7 +16,7 @@
     </div>
     
     <div class="flex items-center gap-4">
-        <!-- Widget de Total Pendente (Opcional) -->
+        <!-- Widget de Total Pendente -->
         <div class="hidden md:flex flex-col items-end px-6 border-r border-slate-200">
             <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest">Total em aberto</span>
             <span class="text-xl font-black text-rose-400 italic">R$ --,--</span>
@@ -156,7 +159,3 @@
     </div>
 </footer>
 {% endblock %}
-
-
-
-
