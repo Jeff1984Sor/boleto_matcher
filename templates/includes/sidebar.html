@@ -1,4 +1,4 @@
-<!-- sidebar.html COMPLETA E SEM NAMESPACES -->
+<!-- sidebar.html COMPLETA, SEM NAMESPACES E COM AUTOMAÇÃO -->
 <div class="flex flex-col h-full py-6 px-4 bg-white border-r border-slate-100 shadow-sm">
     <!-- LOGO -->
     <div class="px-4 mb-10">
@@ -7,7 +7,7 @@
         </h1>
     </div>
 
-    <!-- NAVEGAÇÃO COM SCROLL SE NECESSÁRIO -->
+    <!-- NAVEGAÇÃO COM SCROLL -->
     <nav class="flex-1 space-y-6 overflow-y-auto pr-2 custom-scrollbar">
         
         <!-- SEÇÃO: DASHBOARD -->
@@ -77,6 +77,19 @@
             </div>
         </div>
 
+        <!-- NOVA SEÇÃO: AUTOMAÇÃO -->
+        <div>
+            <p class="text-[9px] font-black text-slate-400 uppercase tracking-[2px] mb-3 px-4">Automação</p>
+            <div class="space-y-1">
+                <a href="{% url 'whatsapp_dashboard' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all hover:bg-slate-50 group">
+                    <div class="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-green-500 group-hover:text-white shadow-sm">
+                        <i class="fab fa-whatsapp text-[12px]"></i>
+                    </div>
+                    <span class="text-sm font-bold text-slate-600">WhatsApp</span>
+                </a>
+            </div>
+        </div>
+
         <!-- SEÇÃO: CONFIGURAÇÕES -->
         <div>
             <p class="text-[9px] font-black text-slate-400 uppercase tracking-[2px] mb-3 px-4">Configurações</p>
@@ -111,7 +124,7 @@
                     </div>
                     <span class="text-sm font-bold text-slate-600">Planos & Preços</span>
                 </a>
-                <a href="{% url 'modelo_list' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all hover:bg-slate-50 group">
+                <a href="{% url 'template_list' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all hover:bg-slate-50 group">
                     <div class="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-slate-200 shadow-sm">
                         <i class="fas fa-scroll text-[10px]"></i>
                     </div>
