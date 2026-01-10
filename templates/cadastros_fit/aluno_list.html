@@ -46,7 +46,7 @@
                 <tbody class="divide-y divide-slate-100">
                     {% for aluno in alunos %}
                     <tr class="hover:bg-primary/5 transition-colors group cursor-pointer" 
-                        onclick="window.location='{% url 'cadastros:aluno_detail' aluno.pk %}'">
+                        onclick="window.location='{% url 'aluno_detail' aluno.pk %}'">
                         
                         <!-- ALUNO (Avatar + Nome) -->
                         <td class="py-7 pl-12">
