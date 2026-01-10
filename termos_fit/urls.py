@@ -1,6 +1,8 @@
 from django.urls import path
 from . import views
 
+app_name = 'termos'
+
 urlpatterns = [
     # Admin: Gerenciar Modelos
     path('modelos/', views.termo_template_list, name='termo_template_list'),

@@ -1,6 +1,8 @@
 from django.urls import path
 from . import views
 
+app_name = 'financeiro'
+
 urlpatterns = [
     # 1. VISÕES PRINCIPAIS (Listagens)
     # Rota raiz do financeiro agora cai em Contas a Receber por padrão
