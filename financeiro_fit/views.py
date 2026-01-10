@@ -417,3 +417,19 @@ def relatorio_dre(request):
         'margem_lucro': '39,7',
     }
     return render(request, 'financeiro_fit/relatorio_dre.html', context)
+
+# Adicione esta classe na sua views.py
+class CategoriaUpdateView(LoginRequiredMixin, UpdateView):
+    model = CategoriaFinanceira
+    form_class = CategoriaForm
+    template_name = 'financeiro_fit/form_generico.html'
+    success_url = reverse_lazy('categoria_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, "Categoria atualizada com sucesso!")
+        return super().form_valid(form)
+
+# Aproveite e adicione a de Deletar também para não dar erro depois
+class CategoriaDeleteView(LoginRequiredMixin, DeleteView):
+    model = CategoriaFinanceira
+    success_url = reverse_lazy('categoria_list')

@@ -28,6 +28,10 @@ urlpatterns = [
     path('config/categorias/', views.CategoriaListView.as_view(), name='categoria_list'),
     path('config/categorias/nova/', views.CategoriaCreateView.as_view(), name='categoria_create'),
     
+    # ESTAS DUAS LINHAS SÃO ESSENCIAIS:
+    path('config/categorias/<int:pk>/editar/', views.CategoriaUpdateView.as_view(), name='categoria_update'),
+    path('config/categorias/<int:pk>/excluir/', views.CategoriaDeleteView.as_view(), name='categoria_delete'),
+
     path('config/contas/', views.ContaListView.as_view(), name='conta_list'),
     path('config/contas/nova/', views.ContaCreateView.as_view(), name='conta_create'),
 
