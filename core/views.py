@@ -18,6 +18,10 @@ from django.utils import timezone
 from cadastros_fit.models import Aluno
 from agenda_fit.models import Aula
 from financeiro_fit.models import Lancamento
+from django.views.generic import ListView, CreateView, UpdateView
+from django.contrib.auth.models import User
+from django.urls import reverse_lazy
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 
 # Essa função agora manda o HTML completo (com menu)
@@ -117,3 +121,20 @@ def performance_aulas(request):
         # adicione seus dados aqui depois
     }
     return render(request, 'core/performance_aulas.html', context)
+
+class UsuarioListView(LoginRequiredMixin, ListView):
+    model = User
+    template_name = 'core/lista_usuarios.html'
+    context_object_name = 'usuarios' # Nome que você vai usar no {% for u in usuarios %}
+
+class UsuarioCreateView(LoginRequiredMixin, CreateView):
+    model = User
+    fields = ['username', 'email', 'first_name', 'last_name', 'is_staff', 'is_active']
+    template_name = 'core/form_usuario.html'
+    success_url = reverse_lazy('core:lista_usuarios')
+
+class UsuarioUpdateView(LoginRequiredMixin, UpdateView):
+    model = User
+    fields = ['username', 'email', 'first_name', 'last_name', 'is_staff', 'is_active']
+    template_name = 'core/form_usuario.html'
+    success_url = reverse_lazy('core:lista_usuarios')
