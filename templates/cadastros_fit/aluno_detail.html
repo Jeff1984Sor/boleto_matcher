@@ -111,47 +111,75 @@
                 </div>
             </div>
 
-            <!-- ABA 3: PRONTUÁRIO / AGENDA (FILTRADO POR CONTRATO) -->
+            <!-- ABA 3: PRONTUÁRIO / AGENDA (CORRIGIDA) -->
             <div id="prontuario" class="tab-content hidden animate-in fade-in duration-500">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-6 bg-slate-50 p-6 rounded-[2rem]">
                     <div class="flex items-center gap-4">
                         <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 shadow-sm"><i class="fas fa-calendar-alt text-xs"></i></div>
                         <div>
                             <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Filtrar Aulas do Contrato</p>
-                            <select onchange="filtrarTabela(this.value, 'agenda-row')" class="select select-sm bg-transparent border-none focus:ring-0 font-black text-slate-700 p-0 h-auto min-h-0 text-xs">
+                            <select id="select-prontuario" onchange="filtrarTabela(this.value, 'agenda-row')" class="select select-sm bg-transparent border-none focus:ring-0 font-black text-slate-700 p-0 h-auto min-h-0 text-xs">
+                                <!-- O Django vai marcar o Ativo como 'selected' -->
                                 <option value="all">Todo o Histórico</option>
                                 {% for c in contratos_completo %}
-                                    <option value="contrato-{{ c.id }}" {% if c.ativo %}selected{% endif %}>{% if c.ativo %}[ATIVO] {% endif %}{{ c.plano.nome }}</option>
+                                    <option value="contrato-{{ c.id }}" {% if c.ativo %}selected{% endif %}>
+                                        {% if c.ativo %}[ATIVO] {% endif %}{{ c.plano.nome }}
+                                    </option>
                                 {% endfor %}
                             </select>
                         </div>
                     </div>
                 </div>
+
                 <div class="overflow-hidden border border-slate-100 rounded-[2rem]">
                     <table class="table w-full">
                         <thead class="bg-slate-900 text-white uppercase text-[10px] tracking-widest font-black">
-                            <tr><th class="py-6 pl-10">Data/Hora</th><th>Profissional</th><th class="text-center">Presença</th><th class="pr-10">Evolução / Observação</th></tr>
+                            <tr>
+                                <th class="py-6 pl-10">Data/Hora</th>
+                                <th>Profissional</th>
+                                <th class="text-center">Situação</th>
+                                <th class="pr-10">Evolução / Observação</th>
+                            </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-50">
                             {% for p in agenda_completa %}
                             <tr class="agenda-row contrato-{{ p.contrato_id|default:'avulso' }}">
                                 <td class="py-6 pl-10">
                                     <div class="flex flex-col">
-                                        <span class="font-black">{{ p.aula.data_hora_inicio|date:"d/m/Y" }}</span>
+                                        <span class="font-black text-slate-900">{{ p.aula.data_hora_inicio|date:"d/m/Y" }}</span>
                                         <span class="text-[10px] text-primary font-black uppercase">{{ p.aula.data_hora_inicio|date:"H:i" }}</span>
                                     </div>
                                 </td>
                                 <td class="font-bold text-slate-600">{{ p.aula.profissional.nome }}</td>
                                 <td class="text-center">
-                                    <span class="badge {% if p.status == 'PRESENTE' %}bg-emerald-500{% elif p.status == 'FALTA' %}bg-primary{% else %}bg-secondary{% endif %} text-white border-none font-black text-[9px] rounded-lg px-4 py-3">{{ p.status }}</span>
+                                    {% if p.aula.data_hora_inicio > agora %}
+                                        <!-- AULA FUTURA: Sempre AGENDADA (Azul/Roxo) -->
+                                        <span class="badge bg-secondary text-white border-none font-black text-[9px] rounded-lg px-4 py-3 shadow-lg shadow-secondary/20">AGENDADA</span>
+                                    {% else %}
+                                        <!-- AULA PASSADA: Status Real (Verde ou Vermelho) -->
+                                        {% if p.status == 'PRESENTE' %}
+                                            <span class="badge bg-emerald-500 text-white border-none font-black text-[9px] rounded-lg px-4 py-3 shadow-lg shadow-emerald-200">PRESENTE</span>
+                                        {% elif p.status == 'FALTA' %}
+                                            <span class="badge bg-primary text-white border-none font-black text-[9px] rounded-lg px-4 py-3 shadow-lg shadow-primary/20">FALTA</span>
+                                        {% else %}
+                                            <span class="badge bg-slate-400 text-white border-none font-black text-[9px] rounded-lg px-4 py-3">NÃO REALIZADA</span>
+                                        {% endif %}
+                                    {% endif %}
                                 </td>
-                                <td class="text-xs text-slate-500 pr-10 italic">"{{ p.aula.evolucao_texto|default:"Sem registro técnico."|truncatechars:80 }}"</td>
+                                <td class="text-xs text-slate-500 pr-10 italic">
+                                    {% if p.aula.data_hora_inicio > agora %}
+                                        <span class="opacity-30">Aguardando realização...</span>
+                                    {% else %}
+                                        "{{ p.aula.evolucao_texto|default:"Sem registro técnico."|truncatechars:80 }}"
+                                    {% endif %}
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
             </div>
+            
 
             <!-- ABA 4: CONTRATOS (HISTÓRICO) -->
             <div id="contratos" class="tab-content hidden animate-in fade-in duration-500">
