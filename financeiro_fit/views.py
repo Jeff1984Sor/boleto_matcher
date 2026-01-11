@@ -78,31 +78,43 @@ class ContasPagarListView(LoginRequiredMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        # Filtra apenas DESPESAS
-        qs = super().get_queryset().filter(categoria__tipo='DESPESA')
+        # 1. Base: Apenas Despesas
+        qs = Lancamento.objects.filter(categoria__tipo='DESPESA')
         
-        status = self.request.GET.get('status')
+        # 2. Captura Filtros do GET
+        fornecedor = self.request.GET.get('fornecedor')
+        categoria = self.request.GET.get('categoria')
+        conta = self.request.GET.get('conta')
         inicio = self.request.GET.get('inicio')
         fim = self.request.GET.get('fim')
-        fornecedor = self.request.GET.get('fornecedor')
-        
-        if status: qs = qs.filter(status=status)
-        if inicio and fim: qs = qs.filter(data_vencimento__range=[inicio, fim])
+        status = self.request.GET.get('status')
+
+        # 3. Aplica os filtros se existirem
         if fornecedor: qs = qs.filter(fornecedor_id=fornecedor)
+        if categoria: qs = qs.filter(categoria_id=categoria)
+        if conta: qs = qs.filter(conta_id=conta)
+        if status: qs = qs.filter(status=status)
+        if inicio: qs = qs.filter(data_vencimento__gte=inicio)
+        if fim: qs = qs.filter(data_vencimento__lte=fim)
             
         return qs.order_by('status', 'data_vencimento')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['hoje'] = timezone.now().date()
-        context['fornecedores'] = Fornecedor.objects.filter(ativo=True)
-        
-        qs = self.get_queryset()
-        context['total_pago'] = qs.filter(status='PAGO').aggregate(Sum('valor'))['valor__sum'] or 0
-        context['total_pendente'] = qs.filter(status='PENDENTE').aggregate(Sum('valor'))['valor__sum'] or 0
-        
-        return context
+        qs_filtrada = self.get_queryset()
 
+        # 4. Cálculo do Total em Aberto (Baseado no Filtro Atual)
+        total_aberto = qs_filtrada.filter(status='PENDENTE').aggregate(Sum('valor'))['valor__sum'] or 0
+        context['total_aberto'] = total_aberto
+
+        # 5. Listas para os Selects do Filtro
+        context['fornecedores'] = Fornecedor.objects.filter(ativo=True).order_by('nome')
+        context['categorias'] = CategoriaFinanceira.objects.filter(tipo='DESPESA').order_by('nome')
+        context['contas_bancarias'] = ContaBancaria.objects.all().order_by('nome')
+        
+        # Mantém os filtros na tela após o submit
+        context['filtros'] = self.request.GET
+        return context
 class DespesaCreateView(LoginRequiredMixin, CreateView):
     model = Lancamento
     form_class = DespesaForm

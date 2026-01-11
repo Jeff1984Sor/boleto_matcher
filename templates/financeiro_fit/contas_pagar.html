@@ -1,161 +1,169 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Contas a Pagar - Financeiro Fit{% endblock %}
+{% block title %}Contas a Pagar | MayaCorp Fit{% endblock %}
 
 {% block content %}
-<!-- HEADER: Título e Resumo Rápido -->
-<header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6 px-2">
-    <div class="flex items-center gap-4">
-        <div class="w-14 h-14 bg-soft-lavender/30 rounded-[22px] flex items-center justify-center text-purple-600 shadow-sm border border-white">
-            <i class="fas fa-file-invoice-dollar text-2xl"></i>
-        </div>
-        <div>
-            <h1 class="text-3xl font-black text-slate-800 tracking-tight">Contas a Pagar</h1>
-            <p class="text-[10px] text-slate-400 font-black uppercase tracking-[2px] mt-1">Gestão de obrigações e despesas</p>
-        </div>
-    </div>
-    
-    <div class="flex items-center gap-4">
-        <!-- Widget de Total Pendente -->
-        <div class="hidden md:flex flex-col items-end px-6 border-r border-slate-200">
-            <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest">Total em aberto</span>
-            <span class="text-xl font-black text-rose-400 italic">R$ --,--</span>
-        </div>
-        
-        <a href="{% url 'despesa_create' %}" 
-           class="btn bg-rose-400 border-none text-white rounded-2xl px-8 h-14 shadow-xl shadow-rose-200 hover:bg-rose-500 hover:scale-[1.02] transition-all normal-case font-black italic">
-            <i class="fas fa-plus mr-2 text-xs"></i> Nova Despesa
-        </a>
-    </div>
-</header>
+<div class="max-w-7xl mx-auto pb-24 px-4">
 
-<!-- LISTA DE DESPESAS (Card Soft UI) -->
-<div class="bg-white rounded-[40px] shadow-2xl shadow-slate-200/50 overflow-hidden border border-white animate-in fade-in duration-500">
-    <div class="overflow-x-auto">
-        <table class="table w-full border-collapse">
-            <!-- CABEÇALHO -->
+    <!-- HEADER: Título e Widget de Total -->
+    <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-6 px-2">
+        <div class="flex items-center gap-6">
+            <div class="w-16 h-16 bg-primary rounded-[22px] flex items-center justify-center text-white shadow-xl">
+                <i class="fas fa-file-invoice-dollar text-2xl"></i>
+            </div>
+            <div>
+                <h1 class="text-4xl font-black text-slate-900 tracking-tighter uppercase">Contas a Pagar</h1>
+                <p class="text-[11px] text-primary font-black uppercase tracking-[3px] mt-1">Gestão de obrigações e despesas</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-6">
+            <!-- WIDGET DINÂMICO: TOTAL EM ABERTO -->
+            <div class="bg-slate-900 px-8 py-4 rounded-3xl shadow-xl text-right">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-[2px] mb-1">Total Pendente (Filtrado)</p>
+                <p class="text-2xl font-black text-primary italic">R$ <span class="text-white">{{ total_aberto|floatformat:2 }}</span></p>
+            </div>
+            
+            <a href="{% url 'despesa_create' %}" class="btn bg-primary hover:bg-red-900 border-none text-white rounded-2xl px-8 h-14 shadow-xl shadow-primary/20 font-black uppercase text-xs">
+                <i class="fas fa-plus mr-2"></i> Nova Despesa
+            </a>
+        </div>
+    </header>
+
+    <!-- BARRA DE FILTROS (ESTILO PREMIUM LADO A LADO) -->
+    <div class="bg-white rounded-[3rem] shadow-2xl p-8 mb-12 border border-slate-100 animate-in fade-in slide-in-from-top-4 duration-500">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-5 lg:grid-cols-6 gap-4 items-end">
+            
+            <!-- Fornecedor -->
+            <div class="flex flex-col gap-1">
+                <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-3">Fornecedor</label>
+                <select name="fornecedor" class="select select-bordered rounded-2xl bg-slate-50 border-none font-bold text-xs h-12 w-full">
+                    <option value="">TODOS</option>
+                    {% for f in fornecedores %}
+                        <option value="{{ f.id }}" {% if filtros.fornecedor == f.id|stringformat:"i" %}selected{% endif %}>{{ f.nome|upper }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Categoria -->
+            <div class="flex flex-col gap-1">
+                <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-3">Categoria</label>
+                <select name="categoria" class="select select-bordered rounded-2xl bg-slate-50 border-none font-bold text-xs h-12 w-full">
+                    <option value="">TODAS</option>
+                    {% for c in categorias %}
+                        <option value="{{ c.id }}" {% if filtros.categoria == c.id|stringformat:"i" %}selected{% endif %}>{{ c.nome|upper }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Conta Bancária -->
+            <div class="flex flex-col gap-1">
+                <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-3">Banco/Caixa</label>
+                <select name="conta" class="select select-bordered rounded-2xl bg-slate-50 border-none font-bold text-xs h-12 w-full">
+                    <option value="">TODOS</option>
+                    {% for cb in contas_bancarias %}
+                        <option value="{{ cb.id }}" {% if filtros.conta == cb.id|stringformat:"i" %}selected{% endif %}>{{ cb.nome|upper }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Período: Início -->
+            <div class="flex flex-col gap-1">
+                <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-3">Venc. Início</label>
+                <input type="date" name="inicio" value="{{ filtros.inicio }}" class="input input-bordered rounded-2xl bg-slate-50 border-none font-bold text-xs h-12 w-full">
+            </div>
+
+            <!-- Período: Fim -->
+            <div class="flex flex-col gap-1">
+                <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-3">Venc. Fim</label>
+                <input type="date" name="fim" value="{{ filtros.fim }}" class="input input-bordered rounded-2xl bg-slate-50 border-none font-bold text-xs h-12 w-full">
+            </div>
+
+            <!-- Botão Filtrar -->
+            <div class="flex gap-2">
+                <button type="submit" class="btn bg-primary hover:bg-red-900 border-none text-white rounded-2xl h-12 flex-1 font-black uppercase text-[10px] tracking-widest shadow-lg transition-all">
+                    FILTRAR
+                </button>
+                <a href="{% url 'contas_pagar' %}" class="btn btn-square bg-slate-100 border-none text-slate-400 rounded-2xl h-12 w-12 hover:bg-slate-200">
+                    <i class="fas fa-rotate-left text-xs"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- TABELA DE PAGAMENTOS -->
+    <div class="bg-white rounded-[3.5rem] shadow-2xl border border-slate-100 overflow-hidden">
+        <table class="table w-full">
             <thead>
-                <tr class="border-b border-slate-50">
-                    <th class="bg-white text-slate-400 uppercase text-[10px] tracking-[2px] font-black py-8 pl-10">Vencimento</th>
-                    <th class="bg-white text-slate-400 uppercase text-[10px] tracking-[2px] font-black py-8">Descrição / Fornecedor</th>
-                    <th class="bg-white text-slate-400 uppercase text-[10px] tracking-[2px] font-black py-8 text-center">Categoria</th>
-                    <th class="bg-white text-slate-400 uppercase text-[10px] tracking-[2px] font-black py-8 text-center">Valor</th>
-                    <th class="bg-white text-slate-400 uppercase text-[10px] tracking-[2px] font-black py-8 text-center">Status</th>
-                    <th class="bg-white text-slate-400 uppercase text-[10px] tracking-[2px] font-black py-8 pr-10 text-right">Ações</th>
+                <tr class="bg-slate-900 text-white uppercase text-[10px] tracking-widest font-black">
+                    <th class="py-8 pl-12">Vencimento</th>
+                    <th>Descrição / Fornecedor</th>
+                    <th class="text-center">Categoria</th>
+                    <th class="text-center">Valor</th>
+                    <th class="text-center">Status</th>
+                    <th class="text-right pr-12">Ações</th>
                 </tr>
             </thead>
-            
-            <tbody class="divide-y divide-slate-50">
+            <tbody class="divide-y divide-slate-100">
                 {% for lanc in lancamentos %}
-                <tr class="hover:bg-slate-50/50 transition-colors group">
-                    <!-- VENCIMENTO -->
-                    <td class="py-6 pl-10">
+                <tr class="hover:bg-slate-50 transition-colors group">
+                    <td class="py-7 pl-12">
                         <div class="flex flex-col">
-                            <span class="text-slate-800 font-bold text-sm">{{ lanc.data_vencimento|date:"d/m/Y" }}</span>
-                            <span class="text-[10px] text-slate-300 font-bold uppercase tracking-tighter">{{ lanc.data_vencimento|date:"l" }}</span>
+                            <span class="font-black text-slate-900">{{ lanc.data_vencimento|date:"d/m/Y" }}</span>
+                            <span class="text-[10px] text-slate-400 font-black uppercase">{{ lanc.data_vencimento|date:"l" }}</span>
                         </div>
                     </td>
-
-                    <!-- DESCRIÇÃO / FORNECEDOR -->
-                    <td class="py-6">
-                        <div class="flex items-center gap-3">
-                            <div class="flex flex-col">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-sm font-bold text-slate-700">{{ lanc.descricao }}</span>
-                                    {% if lanc.arquivo_boleto %}
-                                        <a href="{{ lanc.arquivo_boleto.url }}" target="_blank" class="text-rose-300 hover:text-rose-500 transition-colors" title="Ver Boleto">
-                                            <i class="fas fa-file-pdf text-xs"></i>
-                                        </a>
-                                    {% endif %}
-                                </div>
-                                <span class="text-[10px] text-slate-400 font-medium uppercase tracking-widest mt-1">
-                                    <i class="far fa-building mr-1 text-[8px]"></i> {{ lanc.fornecedor.nome|default:"Fornecedor não informado" }}
-                                </span>
-                            </div>
+                    <td>
+                        <div class="flex flex-col">
+                            <span class="font-black text-slate-700 text-sm">{{ lanc.descricao|upper }}</span>
+                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                                <i class="far fa-building mr-1"></i> {{ lanc.fornecedor.nome|default:"FORNECEDOR NÃO INFORMADO" }}
+                            </span>
                         </div>
                     </td>
-
-                    <!-- CATEGORIA -->
-                    <td class="py-6 text-center">
-                        <span class="badge bg-slate-50 border-slate-100 text-slate-400 text-[9px] font-black px-3 py-3 rounded-xl uppercase">
-                            {{ lanc.categoria.nome }}
-                        </span>
+                    <td class="text-center">
+                        <span class="badge bg-slate-100 border-none text-slate-400 font-black text-[9px] px-4 py-3 rounded-lg uppercase">{{ lanc.categoria.nome }}</span>
                     </td>
-
-                    <!-- VALOR -->
-                    <td class="py-6 text-center">
-                        <div class="text-sm font-black italic text-rose-400">
-                            <span class="text-[10px] not-italic mr-1 opacity-50">R$</span> {{ lanc.valor }}
+                    <td class="text-center">
+                        <div class="text-lg font-black text-primary tracking-tighter">
+                            <span class="text-xs opacity-50 mr-0.5">R$</span>{{ lanc.valor }}
                         </div>
                     </td>
-
-                    <!-- STATUS -->
-                    <td class="py-6 text-center">
+                    <td class="text-center">
                         {% if lanc.status == 'PAGO' %}
-                            <div class="badge bg-mint-green/20 border-none text-emerald-700 text-[9px] font-black py-3 px-4 rounded-xl uppercase tracking-tighter shadow-sm shadow-mint-green/10">
-                                PAGO
-                            </div>
+                            <div class="badge bg-emerald-500 border-none text-white font-black text-[9px] py-4 px-6 rounded-xl shadow-lg">PAGO</div>
                         {% else %}
-                            <div class="badge bg-orange-50 border-none text-orange-600 text-[9px] font-black py-3 px-4 rounded-xl uppercase tracking-tighter shadow-sm shadow-orange-100">
-                                PENDENTE
-                            </div>
+                            <div class="badge bg-orange-400 border-none text-white font-black text-[9px] py-4 px-6 rounded-xl">PENDENTE</div>
                         {% endif %}
                     </td>
-
-                    <!-- AÇÕES -->
-                    <td class="py-6 pr-10 text-right">
-                        <div class="flex justify-end gap-2">
+                    <td class="text-right pr-12">
+                        <div class="flex justify-end gap-3">
                             {% if lanc.status == 'PENDENTE' %}
-                            <form action="{% url 'baixar_lancamento' lanc.id %}" method="post">
-                                {% csrf_token %}
-                                <button class="btn btn-square btn-sm rounded-xl bg-mint-green/10 border-none text-emerald-600 hover:bg-mint-green hover:text-white transition-all shadow-sm" title="Confirmar Pagamento">
-                                    <i class="fas fa-check text-xs"></i>
-                                </button>
-                            </form>
+                                <form action="{% url 'baixar_lancamento' lanc.id %}" method="post">
+                                    {% csrf_token %}
+                                    <button class="btn btn-circle bg-emerald-500 hover:bg-emerald-600 border-none text-white shadow-lg shadow-emerald-100">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </form>
+                            {% else %}
+                                <form action="{% url 'estornar_lancamento' lanc.id %}" method="post" onsubmit="return confirm('Estornar pagamento?')">
+                                    {% csrf_token %}
+                                    <button class="btn btn-circle bg-slate-50 text-slate-300 hover:bg-primary hover:text-white border-none transition-all">
+                                        <i class="fas fa-rotate-left"></i>
+                                    </button>
+                                </form>
                             {% endif %}
-                            <button class="btn btn-square btn-sm rounded-xl bg-slate-50 border-none text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all">
-                                <i class="fas fa-trash-alt text-xs"></i>
-                            </button>
                         </div>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="7" class="py-24 text-center">
-                        <div class="flex flex-col items-center">
-                            <div class="w-20 h-20 bg-slate-50 rounded-[2.5rem] flex items-center justify-center text-slate-200 mb-6 border border-dashed border-slate-200 shadow-inner">
-                                <i class="fas fa-check-double text-3xl"></i>
-                            </div>
-                            <h3 class="text-slate-400 font-black uppercase text-sm tracking-widest">Tudo em dia!</h3>
-                            <p class="text-slate-300 text-xs mt-2 italic">Nenhuma conta pendente de pagamento no momento.</p>
-                        </div>
-                    </td>
+                    <td colspan="6" class="py-32 text-center text-slate-300 italic">Nenhuma conta encontrada com estes filtros.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
-
-<!-- RODAPÉ INFORMATIVO -->
-<footer class="mt-12 flex flex-col md:flex-row items-center justify-between gap-6 px-6 py-8 bg-slate-50 rounded-[32px] border border-slate-100">
-    <div class="flex items-center gap-4">
-        <div class="w-10 h-10 bg-white rounded-2xl flex items-center justify-center shadow-sm text-rose-300">
-            <i class="fas fa-hand-holding-dollar"></i>
-        </div>
-        <p class="text-xs text-slate-400 font-medium max-w-sm leading-relaxed">
-            As contas pagas são automaticamente deduzidas do saldo da conta bancária vinculada e registradas no <strong>DRE mensal</strong>.
-        </p>
-    </div>
-    <div class="flex gap-6">
-        <div class="flex items-center gap-2">
-            <div class="w-2 h-2 rounded-full bg-orange-400 shadow-[0_0_8px_rgba(251,191,36,1)]"></div>
-            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Aguardando</span>
-        </div>
-        <div class="flex items-center gap-2">
-            <div class="w-2 h-2 rounded-full bg-mint-green shadow-[0_0_8px_rgba(178,242,187,1)]"></div>
-            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Liquidado</span>
-        </div>
-    </div>
-</footer>
 {% endblock %}
