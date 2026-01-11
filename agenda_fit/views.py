@@ -52,11 +52,11 @@ def calendario_semanal(request):
     presencas = Presenca.objects.filter(
         aula__data_hora_inicio__date__gte=inicio_semana,
         aula__data_hora_inicio__date__lte=fim_semana
-    ).select_related('aula', 'aluno', 'aula__profissional').order_by('aula__data_hora_inicio')
+    ).select_related('aula', 'aluno', 'aula__profissional')
 
     # Filtro por Profissional
     prof_id = request.GET.get('prof_id')
-    if prof_id:
+    if prof_id and prof_id != 'all':
         presencas = presencas.filter(aula__profissional_id=prof_id)
     
     lista_profissionais = Profissional.objects.filter(ativo=True)
