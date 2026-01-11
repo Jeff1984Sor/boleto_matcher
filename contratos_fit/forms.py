@@ -78,10 +78,28 @@ HorarioFixoFormSet = inlineformset_factory(
 class PlanoForm(forms.ModelForm):
     class Meta:
         model = Plano
+        # O 'exclude' garante que todos os outros campos do Model (incluindo descricao) 
+        # sejam incluídos no formulário, exceto 'organizacao' e 'ativo'.
         exclude = ['organizacao', 'ativo'] 
+        
         widgets = {
-            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Pilates 2x - Trimestral'}),
-            'valor_mensal': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00'}),
-            'frequencia_semanal': forms.NumberInput(attrs={'class': 'form-control'}),
-            'duracao_meses': forms.Select(attrs={'class': 'form-select'}),
+            'nome': forms.TextInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'Ex: Pilates 2x - Trimestral'
+            }),
+            'descricao': forms.Textarea(attrs={
+                'class': 'form-control', 
+                'placeholder': 'Descreva os detalhes e benefícios deste plano...',
+                'rows': 3  # Ajusta a altura da caixa de texto
+            }),
+            'valor_mensal': forms.NumberInput(attrs={
+                'class': 'form-control', 
+                'placeholder': '0.00'
+            }),
+            'frequencia_semanal': forms.NumberInput(attrs={
+                'class': 'form-control'
+            }),
+            'duracao_meses': forms.Select(attrs={
+                'class': 'form-select'
+            }),
         }

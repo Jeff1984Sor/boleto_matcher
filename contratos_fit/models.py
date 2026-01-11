@@ -40,6 +40,8 @@ class Plano(models.Model):
     # organizacao = models.ForeignKey(Organizacao, on_delete=models.CASCADE) 
     
     nome = models.CharField(max_length=100, help_text="Ex: Pilates Solo 2x - Trimestral")
+
+    descricao = models.TextField(blank=True, null=True, verbose_name="Descrição do Plano")
     
     valor_mensal = models.DecimalField(max_digits=10, decimal_places=2, help_text="Valor base mensal (sem descontos)")
     
