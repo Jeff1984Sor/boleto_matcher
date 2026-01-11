@@ -28,6 +28,11 @@ from django.utils import timezone
 import calendar
 from .models import Aula, Presenca
 from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Count, Q, Sum
+from django.utils import timezone
+from datetime import datetime
+from agenda_fit.models import Aula, Presenca
+from cadastros_fit.models import Aluno
 # Se você tiver o serviço TotalPass, mantenha. Se não, comente para evitar erro.
 # from .services_totalpass import TotalPassService
 
@@ -384,6 +389,61 @@ def api_agenda_amanha(request):
 
     return JsonResponse(list(dados_envio.values()), safe=False)
 
+@login_required
 def performance_aulas(request):
-    # Por enquanto apenas renderiza um template ou uma página em branco
-    return render(request, 'agenda_fit/performance.html')
+    hoje = timezone.now()
+    mes_atual = hoje.month
+    ano_atual = hoje.year
+
+    # 1. Aulas Realizadas no mês
+    aulas_realizadas = Aula.objects.filter(
+        status='REALIZADA',
+        data_hora_inicio__month=mes_atual,
+        data_hora_inicio__year=ano_atual
+    ).count()
+
+    # 2. Taxa de Ocupação (Presenças Reais / Capacidade Total das Aulas Realizadas)
+    dados_ocupacao = Aula.objects.filter(
+        status='REALIZADA',
+        data_hora_inicio__month=mes_atual,
+        data_hora_inicio__year=ano_atual
+    ).aggregate(
+        total_vagas=Sum('capacidade_maxima'),
+        total_presencas=Count('presencas', filter=Q(presencas__status='PRESENTE'))
+    )
+    
+    vagas = dados_ocupacao['total_vagas'] or 1 # evita divisão por zero
+    presencas = dados_ocupacao['total_presencas'] or 0
+    taxa_ocupacao = round((presencas / vagas) * 100)
+
+    # 3. Faltas no Mês
+    faltas_mes = Presenca.objects.filter(
+        status='FALTA',
+        aula__data_hora_inicio__month=mes_atual,
+        aula__data_hora_inicio__year=ano_atual
+    ).count()
+
+    # 4. Novos Alunos no Mês (Assumindo que seu model Aluno tem 'criado_em')
+    novos_alunos = Aluno.objects.filter(
+        criado_at__month=mes_atual,
+        criado_at__year=ano_atual
+    ).count()
+
+    # 5. Top Alunos (Ranking por presença)
+    top_alunos = Presenca.objects.filter(
+        status='PRESENTE',
+        aula__data_hora_inicio__month=mes_atual,
+        aula__data_hora_inicio__year=ano_atual
+    ).values('aluno__nome').annotate(
+        total_aulas=Count('id')
+    ).order_by('-total_aulas')[:5]
+
+    context = {
+        'aulas_realizadas': aulas_realizadas,
+        'taxa_ocupacao': taxa_ocupacao,
+        'faltas_mes': faltas_mes,
+        'novos_alunos': novos_alunos,
+        'top_alunos': top_alunos,
+    }
+    
+    return render(request, 'agenda_fit/performance.html', context)
