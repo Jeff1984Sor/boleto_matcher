@@ -64,8 +64,7 @@ class ContasReceberListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Mantém os valores preenchidos no formulário após o filtro
-        context['filtros'] = self.request.GET
+        context['alunos_list'] = Aluno.objects.filter(ativo=True).order_by('nome')
         return context
 
 # ==============================================================================
@@ -157,15 +156,23 @@ class DespesaCreateView(LoginRequiredMixin, CreateView):
 # 3. AÇÕES (BAIXA)
 # ==============================================================================
 
+@login_required
 def baixar_lancamento(request, pk):
     lancamento = get_object_or_404(Lancamento, pk=pk)
     
     if request.method == 'POST':
+        # Pega os dados do modal
+        data_pagto = request.POST.get('data_pagamento')
+        obs = request.POST.get('observacao')
+        forma = request.POST.get('forma_pagamento', 'PIX')
+
         lancamento.status = 'PAGO'
-        lancamento.data_pagamento = timezone.now().date()
-        lancamento.forma_pagamento = request.POST.get('forma_pagamento')
+        lancamento.data_pagamento = data_pagto if data_pagto else timezone.now().date()
+        lancamento.observacao = obs
+        lancamento.forma_pagamento = forma
         lancamento.save()
         
+        # Atualiza o saldo bancário
         if lancamento.conta:
             if lancamento.categoria.tipo == 'RECEITA':
                 lancamento.conta.saldo_atual += lancamento.valor
@@ -173,11 +180,34 @@ def baixar_lancamento(request, pk):
                 lancamento.conta.saldo_atual -= lancamento.valor
             lancamento.conta.save()
         
-        messages.success(request, "Baixa realizada!")
+        messages.success(request, f"Recebimento de {lancamento.aluno.nome} confirmado!")
         
-    next_url = request.META.get('HTTP_REFERER')
-    if next_url: return HttpResponseRedirect(next_url)
-    return redirect('contas_receber')
+    return redirect(request.META.get('HTTP_REFERER', 'contas_receber'))
+
+@login_required
+def estornar_lancamento(request, pk):
+    """ Reverte um lançamento PAGO para PENDENTE """
+    lancamento = get_object_or_404(Lancamento, pk=pk)
+    
+    if request.method == 'POST' and lancamento.status == 'PAGO':
+        # Remove o valor do saldo bancário (revertendo)
+        if lancamento.conta:
+            if lancamento.categoria.tipo == 'RECEITA':
+                lancamento.conta.saldo_atual -= lancamento.valor
+            else:
+                lancamento.conta.saldo_atual += lancamento.valor
+            lancamento.conta.save()
+
+        # Reseta os campos
+        lancamento.status = 'PENDENTE'
+        lancamento.data_pagamento = None
+        # Mantemos a observação mas avisamos que foi estornado
+        lancamento.observacao = f"[ESTORNADO] {lancamento.observacao or ''}"
+        lancamento.save()
+        
+        messages.warning(request, "Lançamento estornado com sucesso!")
+        
+    return redirect(request.META.get('HTTP_REFERER', 'contas_receber'))
 
 # ==============================================================================
 # 4. CADASTROS AUXILIARES

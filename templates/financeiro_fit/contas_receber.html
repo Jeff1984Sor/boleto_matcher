@@ -1,221 +1,162 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Contas a Receber | MayaCorp Fit{% endblock %}
-
 {% block content %}
 <div class="max-w-7xl mx-auto pb-24 px-4">
-    
-    <!-- HEADER: Identidade Studio Premium -->
-    <header class="flex flex-col md:flex-row justify-between items-center mb-12 gap-8 px-2">
+
+    <!-- HEADER -->
+    <header class="flex justify-between items-center mb-10 px-2">
         <div class="flex items-center gap-6">
-            <!-- Ícone em MARSALA (Vibrante) -->
-            <div class="w-16 h-16 bg-primary rounded-[22px] flex items-center justify-center text-white shadow-xl shadow-primary/30 border-2 border-white transition-transform hover:rotate-6">
+            <div class="w-16 h-16 bg-slate-900 rounded-[22px] flex items-center justify-center text-white shadow-xl">
                 <i class="fas fa-hand-holding-dollar text-2xl"></i>
             </div>
             <div>
                 <h1 class="text-4xl font-black text-slate-900 tracking-tighter uppercase">Contas a Receber</h1>
-                <p class="text-[11px] text-primary font-black uppercase tracking-[3px] mt-1">
-                    Previsão de <span class="text-slate-900">Entradas e Mensalidades</span>
-                </p>
-            </div>
-        </div>
-        
-        <!-- Widget de Valor Total (MÁXIMA NITIDEZ - ESTILO BLACK) -->
-        <div class="bg-slate-900 px-10 py-6 rounded-[2.5rem] shadow-2xl border-b-4 border-emerald-500 text-right group transition-all hover:scale-105 relative overflow-hidden">
-            <div class="absolute top-0 right-0 w-16 h-16 bg-white/5 rounded-full -mr-8 -mt-8"></div>
-            <p class="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-1 relative z-10">Total em Aberto</p>
-            <div class="text-white font-black text-4xl tracking-tighter relative z-10">
-                <span class="text-emerald-500 text-sm not-italic mr-1">R$</span>{{ total_pendente }}
+                <p class="text-[11px] text-primary font-black uppercase tracking-[3px] mt-1">Previsão de entradas e mensalidades</p>
             </div>
         </div>
     </header>
 
-    <!-- BARRA DE FILTROS (Visual Studio MayaCorp) -->
-    <section class="bg-white p-8 md:p-10 rounded-[3rem] shadow-2xl shadow-slate-200/50 border border-slate-100 mb-12 relative overflow-hidden">
-        <!-- Detalhe decorativo lateral em Azul -->
-        <div class="absolute left-0 top-0 w-2 h-full bg-secondary"></div>
-
-        <form method="GET" class="grid grid-cols-1 md:grid-cols-12 gap-8 items-end relative z-10">
-            
-            <!-- Busca por Aluno -->
-            <div class="md:col-span-4 flex flex-col gap-3">
-                <label class="text-[11px] font-black text-slate-500 uppercase tracking-[2px] ml-2">Localizar Aluno</label>
-                <div class="relative">
-                    <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 text-sm"></i>
-                    <input type="text" name="aluno" value="{{ request.GET.aluno }}" placeholder="DIGITE O NOME..." 
-                           class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl h-14 pl-12 pr-6 text-sm font-black text-slate-900 focus:border-primary focus:ring-0 transition-all">
-                </div>
-            </div>
-
-            <!-- Status (AMARELO FOCUS) -->
-            <div class="md:col-span-2 flex flex-col gap-3">
-                <label class="text-[11px] font-black text-slate-500 uppercase tracking-[2px] ml-2">Situação</label>
-                <select name="status" class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl h-14 px-6 text-sm font-black text-slate-900 focus:border-accent focus:ring-0 transition-all appearance-none cursor-pointer">
-                    <option value="">TODOS</option>
-                    <option value="PENDENTE" {% if request.GET.status == 'PENDENTE' %}selected{% endif %}>PENDENTE</option>
-                    <option value="PAGO" {% if request.GET.status == 'PAGO' %}selected{% endif %}>PAGO</option>
-                    <option value="ATRASADO" {% if request.GET.status == 'ATRASADO' %}selected{% endif %}>ATRASADO</option>
+    <!-- BARRA DE FILTROS EVOLUÍDA -->
+    <div class="bg-white rounded-[3rem] shadow-2xl p-8 mb-12 border border-slate-100">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-5 gap-6 items-end">
+            <!-- 1. SELECIONAR CLIENTE (NOVO) -->
+            <div class="flex flex-col gap-2">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Localizar Aluno</label>
+                <select name="aluno_id" class="select select-bordered rounded-2xl bg-slate-50 border-none font-bold text-xs h-14">
+                    <option value="">Selecionar Aluno...</option>
+                    {% for a in alunos_list %}
+                        <option value="{{ a.id }}" {% if request.GET.aluno_id == a.id|stringformat:"i" %}selected{% endif %}>{{ a.nome|upper }}</option>
+                    {% endfor %}
                 </select>
             </div>
 
-            <!-- Período -->
-            <div class="md:col-span-2 flex flex-col gap-3">
-                <label class="text-[11px] font-black text-slate-500 uppercase tracking-[2px] ml-2">Início</label>
-                <input type="date" name="data_inicio" value="{{ request.GET.data_inicio }}" 
-                       class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl h-14 px-6 text-xs font-black text-slate-900 focus:border-primary">
+            <!-- 2. DIGITAR NOME (MANTIDO) -->
+            <div class="flex flex-col gap-2">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Ou digite o nome</label>
+                <input type="text" name="aluno_nome" value="{{ request.GET.aluno_nome }}" placeholder="Digite aqui..." class="input input-bordered rounded-2xl bg-slate-50 border-none font-bold text-xs h-14">
             </div>
 
-            <div class="md:col-span-2 flex flex-col gap-3">
-                <label class="text-[11px] font-black text-slate-500 uppercase tracking-[2px] ml-2">Fim</label>
-                <input type="date" name="data_fim" value="{{ request.GET.data_fim }}" 
-                       class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl h-14 px-6 text-xs font-black text-slate-900 focus:border-primary">
+            <div class="flex flex-col gap-2">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Situação</label>
+                <select name="status" class="select select-bordered rounded-2xl bg-slate-50 border-none font-bold text-xs h-14">
+                    <option value="">TODOS</option>
+                    <option value="PENDENTE" {% if request.GET.status == 'PENDENTE' %}selected{% endif %}>PENDENTES</option>
+                    <option value="PAGO" {% if request.GET.status == 'PAGO' %}selected{% endif %}>PAGOS</option>
+                </select>
             </div>
 
-            <!-- Botões de Ação (AZUL VIBRANTE) -->
-            <div class="md:col-span-2 flex gap-3">
-                <button type="submit" class="btn bg-secondary hover:bg-blue-800 border-none text-white rounded-2xl flex-1 h-14 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-secondary/30 transition-all hover:scale-105">
-                    FILTRAR
-                </button>
-                <a href="{% url 'contas_receber' %}" class="btn bg-slate-100 border-none text-slate-400 rounded-2xl h-14 w-14 flex items-center justify-center hover:bg-slate-200 transition-all">
-                    <i class="fas fa-rotate-left"></i>
-                </a>
+            <div class="flex flex-col gap-2">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Início</label>
+                <input type="date" name="inicio" value="{{ request.GET.inicio }}" class="input input-bordered rounded-2xl bg-slate-50 border-none font-bold text-xs h-14">
             </div>
 
+            <button type="submit" class="btn bg-primary hover:bg-red-900 border-none text-white rounded-2xl h-14 font-black uppercase tracking-widest shadow-xl shadow-primary/20">
+                FILTRAR
+            </button>
         </form>
-    </section>
-
-    <!-- TABELA DE RESULTADOS (Máxima Nitidez e Contraste) -->
-    <div class="bg-white rounded-[3.5rem] shadow-2xl shadow-slate-200/60 overflow-hidden border border-slate-100 relative animate-in fade-in duration-700">
-        <div class="overflow-x-auto">
-            <table class="table w-full border-collapse">
-                <thead>
-                    <tr class="bg-slate-900 border-none">
-                        <th class="text-white uppercase text-[11px] tracking-[2px] font-black py-8 pl-12 text-left">Data de Vencimento</th>
-                        <th class="text-white uppercase text-[11px] tracking-[2px] font-black py-8 text-left">Identificação do Aluno</th>
-                        <th class="text-white uppercase text-[11px] tracking-[2px] font-black py-8 text-center">Método</th>
-                        <th class="text-white uppercase text-[11px] tracking-[2px] font-black py-8 text-center">Valor do Recebível</th>
-                        <th class="text-white uppercase text-[11px] tracking-[2px] font-black py-8 text-center">Situação</th>
-                        <th class="text-white uppercase text-[11px] tracking-[2px] font-black py-8 pr-12 text-right">Ação</th>
-                    </tr>
-                </thead>
-                
-                <tbody class="divide-y divide-slate-100">
-                    {% for lanc in lancamentos %}
-                    <tr class="hover:bg-primary/5 transition-colors group">
-                        <!-- VENCIMENTO -->
-                        <td class="py-7 pl-12">
-                            <div class="flex flex-col">
-                                <span class="text-slate-900 font-black text-base">{{ lanc.data_vencimento|date:"d/m/Y" }}</span>
-                                <span class="text-[10px] text-primary font-black uppercase tracking-widest mt-1">{{ lanc.data_vencimento|date:"l" }}</span>
-                            </div>
-                        </td>
-
-                        <!-- ORIGEM / ALUNO -->
-                        <td class="py-7">
-                            <div class="flex flex-col">
-                                <span class="text-sm font-black text-slate-800 uppercase tracking-tight group-hover:text-primary transition-colors">{{ lanc.descricao }}</span>
-                                {% if lanc.aluno %}
-                                    <a href="{% url 'aluno_detail' lanc.aluno.id %}" class="flex items-center gap-2 text-[10px] text-secondary font-black uppercase tracking-widest mt-2 hover:underline">
-                                        <i class="fas fa-user-circle text-xs"></i> {{ lanc.aluno.nome|upper }}
-                                    </a>
-                                {% endif %}
-                            </div>
-                        </td>
-
-                        <!-- FORMA -->
-                        <td class="py-7 text-center">
-                            <span class="text-[10px] font-black text-slate-500 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 uppercase tracking-widest">
-                                {{ lanc.forma_pagamento|default:"A DEFINIR" }}
-                            </span>
-                        </td>
-
-                        <!-- VALOR (NÍTIDO) -->
-                        <td class="py-7 text-center">
-                            <div class="text-xl font-black tracking-tighter text-emerald-600 group-hover:scale-105 transition-transform">
-                                <span class="text-xs opacity-60 mr-1 italic">R$</span> {{ lanc.valor }}
-                            </div>
-                        </td>
-
-                        <!-- STATUS (BADGES VIBRANTES) -->
-                        <td class="py-7 text-center">
-                            {% if lanc.status == 'PAGO' %}
-                                <div class="badge bg-emerald-500 border-none text-white text-[10px] font-black py-4 px-6 rounded-xl shadow-lg shadow-emerald-200 uppercase tracking-widest">PAGO</div>
-                            {% elif lanc.status == 'PENDENTE' %}
-                                <div class="badge bg-accent border-none text-accent-content text-[10px] font-black py-4 px-6 rounded-xl shadow-lg shadow-accent/20 uppercase tracking-widest">EM ABERTO</div>
-                            {% else %}
-                                <div class="badge bg-primary border-none text-white text-[10px] font-black py-4 px-6 rounded-xl shadow-lg shadow-primary/20 uppercase tracking-widest">ATRASADO</div>
-                            {% endif %}
-                        </td>
-
-                        <!-- AÇÃO (VERDE VIBRANTE) -->
-                        <td class="py-7 pr-12 text-right">
-                            <div class="flex justify-end gap-3">
-                                {% if lanc.status != 'PAGO' %}
-                                <form action="{% url 'baixar_lancamento' lanc.id %}" method="post">
-                                    {% csrf_token %}
-                                    <button class="btn bg-emerald-500 hover:bg-emerald-600 border-none text-white transition-all rounded-xl px-6 py-3 h-auto min-h-0 text-[10px] font-black uppercase tracking-widest shadow-md shadow-emerald-200" title="Confirmar Recebimento">
-                                        <i class="fas fa-check mr-2"></i> BAIXAR
-                                    </button>
-                                </form>
-                                {% else %}
-                                    <div class="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500 shadow-inner">
-                                        <i class="fas fa-check-circle text-lg"></i>
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <!-- EMPTY STATE -->
-                    <tr>
-                        <td colspan="6" class="py-32 text-center">
-                            <div class="flex flex-col items-center">
-                                <div class="w-28 h-28 bg-slate-50 rounded-[3rem] flex items-center justify-center text-slate-200 mb-8 border-2 border-dashed border-slate-200">
-                                    <i class="fas fa-magnifying-glass-dollar text-4xl"></i>
-                                </div>
-                                <h3 class="text-slate-900 text-2xl font-black tracking-tight uppercase">Nenhum lançamento</h3>
-                                <p class="text-slate-400 mt-2 font-bold uppercase tracking-widest text-[11px]">Não encontramos registros para os critérios selecionados.</p>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
     </div>
 
-    <!-- RODAPÉ INFORMATIVO (CORES STUDIO) -->
-    <footer class="mt-16 flex flex-col lg:flex-row items-center justify-between gap-10 px-10 py-12 bg-white rounded-[3.5rem] shadow-2xl border border-slate-100 relative overflow-hidden">
-        <!-- Detalhe em Amarelo -->
-        <div class="absolute left-0 top-0 w-full h-1 bg-accent/30"></div>
-        
-        <div class="flex items-center gap-6">
-            <div class="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 shadow-inner">
-                <i class="fas fa-shield-check text-xl"></i>
-            </div>
-            <div>
-                <h5 class="text-sm font-black text-slate-900 uppercase tracking-widest">Conciliação Financeira</h5>
-                <p class="text-xs text-slate-500 font-medium max-w-sm mt-1">
-                    Utilize os filtros para monitorar a inadimplência e garantir a <span class="text-primary font-bold">saúde do caixa</span> do seu studio.
-                </p>
-            </div>
-        </div>
+    <!-- TABELA DE RECEBÍVEIS -->
+    <div class="bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden">
+        <table class="table w-full">
+            <thead>
+                <tr class="bg-slate-900 text-white uppercase text-[10px] tracking-widest font-black">
+                    <th class="py-8 pl-10">Vencimento / Pago em</th>
+                    <th>Identificação do Aluno</th>
+                    <th class="text-center">Valor</th>
+                    <th class="text-center">Situação</th>
+                    <th class="text-right pr-10">Ações</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for lanc in lancamentos %}
+                <tr class="hover:bg-slate-50 transition-colors group">
+                    <td class="py-7 pl-10">
+                        <div class="flex flex-col">
+                            <span class="font-black text-slate-900">{{ lanc.data_vencimento|date:"d/m/Y" }}</span>
+                            {% if lanc.data_pagamento %}
+                                <span class="text-[10px] text-emerald-500 font-black uppercase">Pago em: {{ lanc.data_pagamento|date:"d/m/Y" }}</span>
+                            {% else %}
+                                <span class="text-[10px] text-slate-400 font-black uppercase">{{ lanc.data_vencimento|date:"l" }}</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="flex flex-col">
+                            <span class="font-black text-slate-700 uppercase text-xs">{{ lanc.descricao }}</span>
+                            <span class="text-[10px] text-primary font-black uppercase tracking-tighter"><i class="fas fa-user-circle mr-1"></i> {{ lanc.aluno.nome }}</span>
+                            {% if lanc.observacao %}
+                                <span class="text-[10px] text-slate-400 italic mt-1 bg-slate-100 px-2 py-0.5 rounded-lg w-fit">Obs: {{ lanc.observacao }}</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <span class="text-lg font-black text-slate-900 tracking-tighter">R$ {{ lanc.valor }}</span>
+                    </td>
+                    <td class="text-center">
+                        {% if lanc.status == 'PAGO' %}
+                            <div class="badge bg-emerald-500 border-none text-white font-black text-[9px] py-4 px-6 rounded-xl shadow-lg shadow-emerald-200">PAGO</div>
+                        {% else %}
+                            <div class="badge bg-orange-400 border-none text-white font-black text-[9px] py-4 px-6 rounded-xl">PENDENTE</div>
+                        {% endif %}
+                    </td>
+                    <td class="text-right pr-10">
+                        <div class="flex justify-end gap-3">
+                            {% if lanc.status == 'PENDENTE' %}
+                                <!-- BOTÃO BAIXAR (ABRE MODAL) -->
+                                <button onclick="modal_baixa_{{ lanc.id }}.showModal()" class="btn btn-circle bg-emerald-500 hover:bg-emerald-600 border-none text-white shadow-lg">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            {% else %}
+                                <!-- BOTÃO REVERTER/ESTORNAR (NOVO) -->
+                                <form action="{% url 'estornar_lancamento' lanc.id %}" method="post" onsubmit="return confirm('Deseja realmente cancelar este recebimento e voltar para pendente?')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-circle bg-slate-100 hover:bg-primary hover:text-white border-none text-slate-400 shadow-sm" title="Estornar Recebimento">
+                                        <i class="fas fa-rotate-left"></i>
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
 
-        <div class="flex flex-wrap justify-center gap-10">
-            <div class="flex items-center gap-3">
-                <div class="w-3 h-3 rounded-full bg-accent shadow-[0_0_10px_rgba(250,204,21,0.6)]"></div>
-                <span class="text-[10px] font-black text-slate-500 uppercase tracking-[2px]">Recebimento Pendente</span>
-            </div>
-            <div class="flex items-center gap-3">
-                <div class="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.6)]"></div>
-                <span class="text-[10px] font-black text-slate-500 uppercase tracking-[2px]">Liquidado</span>
-            </div>
-            <div class="flex items-center gap-3">
-                <div class="w-3 h-3 rounded-full bg-primary animate-pulse shadow-[0_0_10px_rgba(128,36,34,0.6)]"></div>
-                <span class="text-[10px] font-black text-slate-500 uppercase tracking-[2px]">Alerta de Atraso</span>
-            </div>
-        </div>
-    </footer>
+                <!-- MODAL DE CONFIRMAÇÃO DE PAGAMENTO -->
+                <dialog id="modal_baixa_{{ lanc.id }}" class="modal">
+                  <div class="modal-box bg-white rounded-[3rem] p-10 max-w-md">
+                    <h3 class="text-2xl font-black text-slate-800 mb-2 tracking-tighter">Confirmar Recebimento</h3>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-8">{{ lanc.aluno.nome }} - R$ {{ lanc.valor }}</p>
+                    
+                    <form action="{% url 'baixar_lancamento' lanc.id %}" method="post" class="space-y-6">
+                        {% csrf_token %}
+                        <div class="form-control">
+                            <label class="label"><span class="label-text font-black text-slate-500 text-[10px] uppercase">Data do Recebimento</span></label>
+                            <input type="date" name="data_pagamento" value="{% now 'Y-m-d' %}" class="input input-bordered rounded-2xl font-bold">
+                        </div>
+                        <div class="form-control">
+                            <label class="label"><span class="label-text font-black text-slate-500 text-[10px] uppercase">Forma de Pagamento</span></label>
+                            <select name="forma_pagamento" class="select select-bordered rounded-2xl font-bold">
+                                <option value="PIX">PIX</option>
+                                <option value="CARTAO_CREDITO">Cartão de Crédito</option>
+                                <option value="DINHEIRO">Dinheiro</option>
+                                <option value="TRANSFERENCIA">Transferência</option>
+                            </select>
+                        </div>
+                        <div class="form-control">
+                            <label class="label"><span class="label-text font-black text-slate-500 text-[10px] uppercase">Observações Internas</span></label>
+                            <textarea name="observacao" class="textarea textarea-bordered rounded-2xl h-24 font-medium" placeholder="Ex: Pagou adiantado..."></textarea>
+                        </div>
+                        <div class="modal-action flex flex-col gap-3">
+                            <button type="submit" class="btn bg-emerald-500 hover:bg-emerald-600 border-none text-white rounded-2xl h-16 font-black uppercase tracking-widest shadow-xl shadow-emerald-200">CONFIRMAR E BAIXAR</button>
+                            <button type="button" onclick="modal_baixa_{{ lanc.id }}.close()" class="btn btn-ghost font-bold text-slate-400">CANCELAR</button>
+                        </div>
+                    </form>
+                  </div>
+                </dialog>
+
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}
