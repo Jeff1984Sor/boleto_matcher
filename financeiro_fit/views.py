@@ -109,47 +109,56 @@ class DespesaCreateView(LoginRequiredMixin, CreateView):
     template_name = 'financeiro_fit/despesa_form.html'
     success_url = reverse_lazy('contas_pagar')
 
-    def form_valid(self, form):
-        # --- LÓGICA DE RECORRÊNCIA ---
-        dados = form.save(commit=False)
-        # dados.organizacao = self.request.tenant  (Se não tiver o campo no model, mantenha comentado)
-        
-        repetir = form.cleaned_data.get('repetir')
-        frequencia = form.cleaned_data.get('frequencia')
-        qtd = form.cleaned_data.get('qtd_repeticoes') or 1
+    def get_context_data(self, **kwargs):
+        """ Este método envia as listas para os selects do seu HTML """
+        context = super().get_context_data(**kwargs)
+        # Filtra apenas categorias de DESPESA
+        context['categorias'] = CategoriaFinanceira.objects.filter(tipo='DESPESA')
+        context['fornecedores'] = Fornecedor.objects.filter(ativo=True)
+        context['contas'] = ContaBancaria.objects.all()
+        return context
 
-        if repetir and qtd > 1:
+    def form_valid(self, form):
+        # Captura dados extras do formulário que não estão no Model padrão do Form
+        repetir = self.request.POST.get('repetir') == 'on'
+        frequencia = self.request.POST.get('frequencia')
+        qtd_parcelas = int(self.request.POST.get('total_parcelas', 1))
+
+        if repetir and qtd_parcelas > 1:
+            # LÓGICA DE RECORRÊNCIA (CRIA VÁRIOS LANÇAMENTOS)
+            dados = form.save(commit=False)
             grupo_id = uuid.uuid4()
+            base_date = dados.data_vencimento
             
-            for i in range(qtd):
-                nova_despesa = Lancamento(
-                    descricao=f"{dados.descricao} ({i+1}/{qtd})",
+            for i in range(qtd_parcelas):
+                nova_data = base_date
+                if i > 0:
+                    if frequencia == 'MENSAL':
+                        nova_data = base_date + relativedelta(months=i)
+                    elif frequencia == 'SEMANAL':
+                        nova_data = base_date + relativedelta(weeks=i)
+                    elif frequencia == 'ANUAL':
+                        nova_data = base_date + relativedelta(years=i)
+
+                Lancamento.objects.create(
+                    descricao=f"{dados.descricao} ({i+1}/{qtd_parcelas})",
                     fornecedor=dados.fornecedor,
-                    profissional=dados.profissional,
                     categoria=dados.categoria,
                     conta=dados.conta,
                     valor=dados.valor,
+                    data_vencimento=nova_data,
                     arquivo_boleto=dados.arquivo_boleto,
                     grupo_serie=grupo_id,
-                    status='PENDENTE'
+                    parcela_atual=i+1,
+                    total_parcelas=qtd_parcelas,
+                    status=dados.status
                 )
-                
-                base_date = dados.data_vencimento
-                if frequencia == 'MENSAL':
-                    nova_despesa.data_vencimento = base_date + relativedelta(months=i)
-                elif frequencia == 'SEMANAL':
-                    nova_despesa.data_vencimento = base_date + relativedelta(weeks=i)
-                elif frequencia == 'ANUAL':
-                    nova_despesa.data_vencimento = base_date + relativedelta(years=i)
-                else: 
-                    nova_despesa.data_vencimento = base_date
-                
-                nova_despesa.save()
             
-            messages.success(self.request, f"{qtd} despesas geradas com sucesso!")
+            messages.success(self.request, f"Geradas {qtd_parcelas} parcelas com sucesso!")
             return redirect(self.success_url)
-        
         else:
+            # Salva apenas uma despesa normal
+            messages.success(self.request, "Despesa salva com sucesso!")
             return super().form_valid(form)
 
 # ==============================================================================
