@@ -200,3 +200,6 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_SSL_REDIRECT = True
 
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGOUT_REDIRECT_URL = 'login'
