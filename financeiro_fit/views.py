@@ -17,7 +17,8 @@ from dateutil.relativedelta import relativedelta
 from xhtml2pdf import pisa
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
-from datetime import datetime
+from datetime import datetime, date  # <--- CERTIFIQUE-SE DE TER O 'date' AQUI
+import calendar
 
 # Imports Locais
 from .models import Lancamento, CategoriaFinanceira, ContaBancaria, Fornecedor
