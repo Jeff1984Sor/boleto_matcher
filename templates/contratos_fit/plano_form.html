@@ -2,122 +2,104 @@
 {% load static %}
 {% load crispy_forms_tags %}
 
-{% block title %}{% if form.instance.pk %}Editar Plano{% else %}Novo Plano{% endif %} - MayaCorp Fit{% endblock %}
+{% block title %}{% if form.instance.pk %}Editar Plano{% else %}Novo Plano{% endif %} - MayaCorp{% endblock %}
 
 {% block content %}
 <style>
-    /* Nitidez extrema para campos Crispy */
-    .asteriskField { color: #802422 !important; font-weight: 900; }
-    input, select, textarea { 
-        @apply rounded-2xl bg-white border-2 border-slate-200 focus:border-primary focus:ring-0 text-slate-900 font-black transition-all !important; 
-        height: 3.5rem;
+    /* Reset de Estilo para os Campos Crispy */
+    .asteriskField { display: none; } /* Esconde o asterisco vermelho feio */
+    
+    .input-maya, .textinput, .numberinput, .select, .textarea {
+        @apply w-full rounded-xl border-slate-200 bg-slate-50 font-semibold text-slate-800 transition-all !important;
+        @apply focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 !important;
+        border-width: 2px !important;
+        height: 3.5rem !important;
     }
-    textarea { height: auto !important; }
-    label { @apply text-[11px] font-black text-slate-500 uppercase tracking-[2px] ml-2 mb-3 block !important; }
+    .textarea { height: auto !important; min-height: 100px !important; }
+    
+    /* Ajuste de Labels */
+    label { 
+        @apply text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block ml-1 !important; 
+    }
+
+    /* Esconde o texto de ajuda (help_text) do Django que polui o visual */
+    .help-block { @apply text-[10px] text-slate-400 mt-1 ml-1 !important; }
 </style>
 
-<div class="max-w-3xl mx-auto pb-24 px-4">
+<div class="max-w-4xl mx-auto pb-24 px-4 mt-8">
     
-    <!-- HEADER: Identidade Studio Premium -->
-    <header class="flex flex-col md:flex-row justify-between items-center mb-12 gap-6 text-center md:text-left">
-        <div class="flex items-center gap-6">
-            <!-- Ícone em MARSALA -->
-            <div class="w-16 h-16 bg-primary rounded-[22px] flex items-center justify-center text-white shadow-xl shadow-primary/30 border-2 border-white transition-transform hover:rotate-6">
-                <i class="fas fa-tags text-2xl"></i>
-            </div>
-            <div>
-                <h1 class="text-4xl font-black text-slate-900 tracking-tighter uppercase">
-                    {% if form.instance.pk %}Editar Plano{% else %}Novo Plano{% endif %}
-                </h1>
-                <p class="text-[11px] text-primary font-black uppercase tracking-[3px] mt-1">Engenharia de Preços e Pacotes</p>
-            </div>
+    <!-- HEADER -->
+    <div class="flex items-center gap-4 mb-10">
+        <div class="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-white shadow-lg">
+            <i class="fas fa-gem"></i>
         </div>
-    </header>
-
-    <!-- CARD PRINCIPAL (Visual de Luxo) -->
-    <div class="bg-white rounded-[3rem] shadow-2xl shadow-slate-200/60 border border-slate-100 overflow-hidden relative">
-        
-        <!-- Detalhe decorativo no topo -->
-        <div class="h-2 w-full bg-gradient-to-r from-primary via-secondary to-accent"></div>
-
-        <form method="post" class="p-8 md:p-16 space-y-12">
-            {% csrf_token %}
-
-            <!-- SEÇÃO 1: IDENTIFICAÇÃO (MÁXIMA NITIDEZ) -->
-            <section>
-                <div class="flex items-center gap-4 mb-10">
-                    <div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400">
-                        <i class="fas fa-fingerprint"></i>
-                    </div>
-                    <h3 class="text-xs font-black text-slate-900 uppercase tracking-[4px]">Identificação do Plano</h3>
-                </div>
-                
-                <div class="grid grid-cols-1 gap-8">
-                    <div class="form-control">
-                        {{ form.nome|as_crispy_field }}
-                    </div>
-                    
-                    <div class="form-control">
-                        {{ form.descricao|as_crispy_field }}
-                    </div>
-                </div>
-            </section>
-
-            <!-- SEÇÃO 2: REGRAS E PREÇO (AZUL E AMARELO) -->
-            <section class="bg-slate-50 p-10 rounded-[2.5rem] border-2 border-slate-100 relative overflow-hidden">
-                <!-- Detalhe em Amarelo -->
-                <div class="absolute right-0 top-0 w-24 h-24 bg-accent/5 rounded-full -mr-12 -mt-12"></div>
-
-                <div class="flex items-center gap-4 mb-10 relative z-10">
-                    <div class="w-10 h-10 bg-secondary rounded-xl flex items-center justify-center text-white shadow-lg shadow-secondary/20">
-                        <i class="fas fa-coins text-sm"></i>
-                    </div>
-                    <h3 class="text-xs font-black text-slate-900 uppercase tracking-[4px]">Vigência e Investimento</h3>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
-                    <!-- Frequência Semanal -->
-                    <div class="form-control">
-                        {{ form.frequencia_semanal|as_crispy_field }}
-                    </div>
-                    
-                    <!-- Duração -->
-                    <div class="form-control">
-                        {{ form.duracao_meses|as_crispy_field }}
-                    </div>
-
-                    <!-- Valor do Plano (DESTAQUE MÁXIMO) -->
-                    <div class="form-control group">
-                        <label class="label mb-3">
-                            <span class="label-text text-[11px] font-black text-primary uppercase tracking-[2px]">Valor Total</span>
-                        </label>
-                        <div class="relative">
-                            <span class="absolute left-5 top-1/2 -translate-y-1/2 text-sm font-black text-primary italic">R$</span>
-                            <input type="number" name="valor" step="0.01" value="{{ form.valor.value|default:'' }}" 
-                                   class="input w-full bg-white border-2 border-slate-200 rounded-2xl pl-12 pr-6 h-14 focus:border-primary text-slate-900 font-black text-lg shadow-sm" required>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- BOTÕES DE AÇÃO (AZUL VIBRANTE) -->
-            <div class="flex flex-col md:flex-row justify-end items-center gap-6 pt-12 border-t border-slate-100">
-                <a href="{% url 'plano_list' %}" class="text-sm font-black text-slate-400 hover:text-primary transition-colors uppercase tracking-widest order-2 md:order-1">
-                    Descartar
-                </a>
-                
-                <button type="submit" class="btn bg-secondary border-none text-white rounded-[1.5rem] px-12 h-20 shadow-2xl shadow-secondary/30 font-black uppercase tracking-[2px] text-lg order-1 md:order-2 hover:bg-blue-800 hover:scale-105 active:scale-95 transition-all group">
-                    <i class="fas fa-check-double mr-3 text-xl group-hover:animate-pulse"></i> SALVAR CONFIGURAÇÕES
-                </button>
-            </div>
-        </form>
+        <div>
+            <h1 class="text-2xl font-black text-slate-900 uppercase tracking-tight">Configuração de Plano</h1>
+            <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">Gestão de Portfólio Premium</p>
+        </div>
     </div>
 
-    <!-- RODAPÉ TÉCNICO -->
-    <div class="mt-12 text-center">
-        <div class="inline-flex items-center gap-3 px-6 py-2 bg-white rounded-full border border-slate-200 shadow-sm">
-            <div class="w-2 h-2 bg-accent rounded-full animate-pulse shadow-[0_0_8px_rgba(250,204,21,0.6)]"></div>
-            <span class="text-[9px] font-black text-slate-400 uppercase tracking-[2px]">MayaCorp Logic: Smart Pricing Engine v4.0</span>
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        <!-- CARD 1: IDENTIFICAÇÃO -->
+        <div class="bg-white rounded-[2rem] p-8 md:p-12 shadow-sm border border-slate-100">
+            <div class="flex items-center gap-3 mb-8">
+                <span class="w-1.5 h-6 bg-primary rounded-full"></span>
+                <h3 class="font-black text-slate-800 uppercase text-sm tracking-wider">Identificação do Plano</h3>
+            </div>
+            
+            <div class="grid grid-cols-1 gap-6">
+                <div>{{ form.nome|as_crispy_field }}</div>
+                <div>{{ form.descricao|as_crispy_field }}</div>
+                <div>{{ form.tipo_servico|as_crispy_field }}</div>
+            </div>
+        </div>
+
+        <!-- CARD 2: REGRAS E PREÇO -->
+        <div class="bg-white rounded-[2rem] p-8 md:p-12 shadow-sm border border-slate-100">
+            <div class="flex items-center gap-3 mb-8">
+                <span class="w-1.5 h-6 bg-secondary rounded-full"></span>
+                <h3 class="font-black text-slate-800 uppercase text-sm tracking-wider">Regras & Investimento</h3>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    {{ form.frequencia_semanal|as_crispy_field }}
+                </div>
+                <div>
+                    {{ form.duracao_meses|as_crispy_field }}
+                </div>
+                <div>
+                    <!-- Valor Mensal -->
+                    <label class="font-bold text-primary uppercase text-[10px] tracking-widest">Valor Mensal (R$)</label>
+                    <div class="relative mt-2">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 font-black text-slate-400">R$</span>
+                        <input type="number" name="valor_mensal" step="0.01" 
+                               value="{{ form.valor_mensal.value|default:'' }}" 
+                               class="numberinput w-full pl-12 rounded-xl border-2 border-slate-200 bg-slate-50 h-[3.5rem] font-black text-slate-900 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all" required>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AÇÕES -->
+        <div class="flex flex-col md:flex-row items-center justify-between gap-6 pt-6">
+            <a href="{% url 'plano_list' %}" class="text-xs font-bold text-slate-400 hover:text-red-500 transition-colors uppercase tracking-[2px]">
+                <i class="fas fa-times mr-2"></i> Cancelar Alterações
+            </a>
+            
+            <button type="submit" class="w-full md:w-auto px-12 py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-[2px] hover:bg-primary hover:shadow-xl hover:shadow-primary/20 transition-all active:scale-95">
+                <i class="fas fa-save mr-3"></i> Salvar Plano
+            </button>
+        </div>
+    </form>
+
+    <!-- FOOTER LOGIC -->
+    <div class="mt-16 flex justify-center">
+        <div class="bg-slate-50 px-6 py-2 rounded-full border border-slate-100 flex items-center gap-3">
+            <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest italic">MayaCorp Logic: Smart Pricing Engine v4.0</span>
         </div>
     </div>
 </div>

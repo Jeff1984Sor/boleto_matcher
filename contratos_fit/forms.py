@@ -83,23 +83,10 @@ class PlanoForm(forms.ModelForm):
         exclude = ['organizacao', 'ativo'] 
         
         widgets = {
-            'nome': forms.TextInput(attrs={
-                'class': 'form-control', 
-                'placeholder': 'Ex: Pilates 2x - Trimestral'
-            }),
-            'descricao': forms.Textarea(attrs={
-                'class': 'form-control', 
-                'placeholder': 'Descreva os detalhes e benefícios deste plano...',
-                'rows': 3  # Ajusta a altura da caixa de texto
-            }),
-            'valor_mensal': forms.NumberInput(attrs={
-                'class': 'form-control', 
-                'placeholder': '0.00'
-            }),
-            'frequencia_semanal': forms.NumberInput(attrs={
-                'class': 'form-control'
-            }),
-            'duracao_meses': forms.Select(attrs={
-                'class': 'form-select'
-            }),
+            'nome': forms.TextInput(attrs={'class': 'input-maya'}),
+            'descricao': forms.Textarea(attrs={'class': 'input-maya', 'rows': 3}),
+            'valor_mensal': forms.NumberInput(attrs={'class': 'input-maya'}),
+            'frequencia_semanal': forms.NumberInput(attrs={'class': 'input-maya'}),
+            'duracao_meses': forms.Select(attrs={'class': 'select-maya'}),
+            'tipo_servico': forms.Select(attrs={'class': 'select-maya'}),
         }
