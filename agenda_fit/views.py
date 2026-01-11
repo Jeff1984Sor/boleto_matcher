@@ -392,51 +392,47 @@ def api_agenda_amanha(request):
 @login_required
 def performance_aulas(request):
     hoje = timezone.now()
-    mes_atual = hoje.month
-    ano_atual = hoje.year
+    
+    # 1. Capturar Filtros
+    mes_sel = int(request.GET.get('mes', hoje.month))
+    ano_sel = int(request.GET.get('ano', hoje.year))
+    prof_id = request.GET.get('prof_id')
 
-    # 1. Aulas Realizadas no mês
-    aulas_realizadas = Aula.objects.filter(
-        status='REALIZADA',
-        data_hora_inicio__month=mes_atual,
-        data_hora_inicio__year=ano_atual
-    ).count()
+    # 2. Base de Filtro para Aulas e Presenças
+    filtros_aula = Q(data_hora_inicio__month=mes_sel, data_hora_inicio__year=ano_sel)
+    filtros_presenca = Q(aula__data_hora_inicio__month=mes_sel, aula__data_hora_inicio__year=ano_sel)
 
-    # 2. Taxa de Ocupação
-    dados_ocupacao = Aula.objects.filter(
-        status='REALIZADA',
-        data_hora_inicio__month=mes_atual,
-        data_hora_inicio__year=ano_atual
-    ).aggregate(
+    if prof_id and prof_id != 'all':
+        filtros_aula &= Q(profissional_id=prof_id)
+        filtros_presenca &= Q(aula__profissional_id=prof_id)
+
+    # 3. Cálculo de KPIs
+    aulas_realizadas = Aula.objects.filter(filtros_aula, status='REALIZADA').count()
+
+    # Ocupação: Presenças vs Vagas
+    dados_ocupacao = Aula.objects.filter(filtros_aula, status='REALIZADA').aggregate(
         total_vagas=Sum('capacidade_maxima'),
         total_presencas=Count('presencas', filter=Q(presencas__status='PRESENTE'))
     )
-    
     vagas = dados_ocupacao['total_vagas'] or 1
     presencas = dados_ocupacao['total_presencas'] or 0
     taxa_ocupacao = round((presencas / vagas) * 100)
 
-    # 3. Faltas no Mês
-    faltas_mes = Presenca.objects.filter(
-        status='FALTA',
-        aula__data_hora_inicio__month=mes_atual,
-        aula__data_hora_inicio__year=ano_atual
-    ).count()
+    # Faltas
+    faltas_mes = Presenca.objects.filter(filtros_presenca, status='FALTA').count()
 
-    # 4. Novos Alunos no Mês (CORREÇÃO AQUI)
-    novos_alunos = Aluno.objects.filter(
-        criado_em__month=mes_atual,
-        criado_em__year=ano_atual
-    ).count()
+    # Novos Alunos (Geral do Studio no período)
+    novos_alunos = Aluno.objects.filter(criado_em__month=mes_sel, criado_em__year=ano_sel).count()
 
-    # 5. Top Alunos
-    top_alunos = Presenca.objects.filter(
-        status='PRESENTE',
-        aula__data_hora_inicio__month=mes_atual,
-        aula__data_hora_inicio__year=ano_atual
-    ).values('aluno__nome').annotate(
+    # 4. Top Alunos (Ranking Real)
+    top_alunos = Presenca.objects.filter(filtros_presenca, status='PRESENTE').values(
+        'aluno__nome'
+    ).annotate(
         total_aulas=Count('id')
     ).order_by('-total_aulas')[:5]
+
+    # 5. Lista de Profissionais para o Filtro
+    profissionais = Profissional.objects.filter(ativo=True)
 
     context = {
         'aulas_realizadas': aulas_realizadas,
@@ -444,6 +440,10 @@ def performance_aulas(request):
         'faltas_mes': faltas_mes,
         'novos_alunos': novos_alunos,
         'top_alunos': top_alunos,
+        'profissionais': profissionais,
+        'mes_sel': mes_sel,
+        'ano_sel': ano_sel,
+        'prof_sel': int(prof_id) if prof_id and prof_id != 'all' else 'all',
     }
     
     return render(request, 'agenda_fit/performance.html', context)

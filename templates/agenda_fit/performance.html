@@ -1,88 +1,125 @@
 {% extends 'base.html' %}
 
-{% block title %}Performance de Aulas - MayaCorp Fit{% endblock %}
+{% block title %}Performance de Aulas | MayaCorp Fit{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 py-8">
     
-    <!-- HEADER -->
-    <header class="mb-10 flex items-center justify-between">
-        <div>
-            <h1 class="text-4xl font-black text-slate-800 tracking-tighter italic">PERFORMANCE <span class="text-primary text-2xl not-italic tracking-normal">| GESTÃO DE AULAS</span></h1>
-            <p class="text-slate-400 font-bold uppercase text-[10px] tracking-[3px] mt-1">Dados reais de ocupação e produtividade</p>
+    <!-- HEADER E FILTROS -->
+    <header class="flex flex-col lg:flex-row justify-between items-center mb-12 gap-8 px-2 animate-in fade-in duration-700">
+        <div class="flex items-center gap-6">
+            <div class="w-16 h-16 bg-slate-900 rounded-[22px] flex items-center justify-center text-white shadow-xl border-2 border-white">
+                <i class="fas fa-chart-pie text-2xl"></i>
+            </div>
+            <div>
+                <h1 class="text-4xl font-black text-slate-900 tracking-tighter uppercase">Performance</h1>
+                <p class="text-[11px] text-primary font-black uppercase tracking-[3px] mt-1">Análise de ocupação e produtividade</p>
+            </div>
         </div>
+        
+        <!-- Formulário de Filtro Estilo Studio Luxo -->
+        <form method="get" class="flex flex-wrap items-center gap-3 bg-white p-3 rounded-2xl shadow-xl border-2 border-slate-100 w-full lg:w-auto">
+            <!-- Filtro Profissional -->
+            <select name="prof_id" class="select select-sm bg-transparent border-none focus:ring-0 font-black text-slate-800 text-xs uppercase cursor-pointer">
+                <option value="all">Todos os Profissionais</option>
+                {% for p in profissionais %}
+                    <option value="{{ p.id }}" {% if prof_sel == p.id %}selected{% endif %}>{{ p.nome }}</option>
+                {% endfor %}
+            </select>
+            
+            <div class="h-6 w-[2px] bg-slate-100 hidden lg:block"></div>
+
+            <!-- Filtro Mês -->
+            <select name="mes" class="select select-sm bg-transparent border-none focus:ring-0 font-black text-slate-800 text-xs uppercase cursor-pointer">
+                <option value="1" {% if mes_sel == 1 %}selected{% endif %}>Janeiro</option>
+                <option value="2" {% if mes_sel == 2 %}selected{% endif %}>Fevereiro</option>
+                <option value="3" {% if mes_sel == 3 %}selected{% endif %}>Março</option>
+                <option value="4" {% if mes_sel == 4 %}selected{% endif %}>Abril</option>
+                <option value="5" {% if mes_sel == 5 %}selected{% endif %}>Maio</option>
+                <option value="6" {% if mes_sel == 6 %}selected{% endif %}>Junho</option>
+                <option value="7" {% if mes_sel == 7 %}selected{% endif %}>Julho</option>
+                <option value="8" {% if mes_sel == 8 %}selected{% endif %}>Agosto</option>
+                <option value="9" {% if mes_sel == 9 %}selected{% endif %}>Setembro</option>
+                <option value="10" {% if mes_sel == 10 %}selected{% endif %}>Outubro</option>
+                <option value="11" {% if mes_sel == 11 %}selected{% endif %}>Novembro</option>
+                <option value="12" {% if mes_sel == 12 %}selected{% endif %}>Dezembro</option>
+            </select>
+
+            <div class="h-6 w-[2px] bg-slate-100 hidden lg:block"></div>
+
+            <!-- Filtro Ano -->
+            <select name="ano" class="select select-sm bg-transparent border-none focus:ring-0 font-black text-slate-800 text-xs cursor-pointer">
+                <option value="2024" {% if ano_sel == 2024 %}selected{% endif %}>2024</option>
+                <option value="2025" {% if ano_sel == 2025 %}selected{% endif %}>2025</option>
+            </select>
+
+            <button type="submit" class="btn btn-square btn-sm bg-primary hover:bg-red-900 border-none text-white rounded-xl shadow-lg transition-all ml-2">
+                <i class="fas fa-search text-xs"></i>
+            </button>
+        </form>
     </header>
 
-    <!-- GRID DE INDICADORES (AGORA REAIS) -->
+    <!-- GRID DE INDICADORES -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-        <!-- Aulas Realizadas -->
-        <div class="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 group hover:border-primary transition-all">
+        <div class="bg-white p-8 rounded-[35px] shadow-sm border border-slate-100 group hover:border-primary transition-all">
             <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Aulas Realizadas</p>
             <div class="flex items-end justify-between">
-                <h3 class="text-3xl font-black text-slate-800">{{ aulas_realizadas|default:"0" }}</h3>
+                <h3 class="text-3xl font-black text-slate-800">{{ aulas_realizadas }}</h3>
                 <i class="fas fa-check-double text-emerald-500 text-xl opacity-20"></i>
             </div>
         </div>
         
-        <!-- Taxa de Ocupação -->
-        <div class="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 group hover:border-secondary transition-all">
+        <div class="bg-white p-8 rounded-[35px] shadow-sm border border-slate-100 group hover:border-secondary transition-all">
             <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Taxa de Ocupação</p>
             <div class="flex items-end justify-between">
-                <h3 class="text-3xl font-black text-slate-800">{{ taxa_ocupacao|default:"0" }}%</h3>
-                <div class="radial-progress text-secondary" style="--value:{{ taxa_ocupacao|default:'0' }}; --size:2rem; --thickness: 4px;" role="progressbar"></div>
+                <h3 class="text-3xl font-black text-slate-800">{{ taxa_ocupacao }}%</h3>
+                <div class="radial-progress text-secondary" style="--value:{{ taxa_ocupacao }}; --size:2rem; --thickness: 4px;" role="progressbar"></div>
             </div>
         </div>
 
-        <!-- Faltas -->
-        <div class="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 group hover:border-accent transition-all">
+        <div class="bg-white p-8 rounded-[35px] shadow-sm border border-slate-100 group hover:border-accent transition-all">
             <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Faltas no Mês</p>
             <div class="flex items-end justify-between">
-                <h3 class="text-3xl font-black text-slate-800">{{ faltas_mes|default:"0" }}</h3>
+                <h3 class="text-3xl font-black text-slate-800">{{ faltas_mes }}</h3>
                 <i class="fas fa-user-times text-primary text-xl opacity-20"></i>
             </div>
         </div>
 
-        <!-- Novos Alunos -->
-        <div class="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 group hover:border-slate-800 transition-all">
+        <div class="bg-white p-8 rounded-[35px] shadow-sm border border-slate-100 group hover:border-slate-800 transition-all">
             <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Novos Alunos</p>
             <div class="flex items-end justify-between">
-                <h3 class="text-3xl font-black text-slate-800">{{ novos_alunos|default:"0" }}</h3>
+                <h3 class="text-3xl font-black text-slate-800">{{ novos_alunos }}</h3>
                 <i class="fas fa-user-plus text-slate-400 text-xl opacity-20"></i>
             </div>
         </div>
     </div>
 
-    <!-- ÁREA DE GRÁFICOS E RANKING -->
+    <!-- RANKING E GRÁFICO -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div class="lg:col-span-2 bg-white p-8 rounded-[40px] shadow-sm border border-slate-100 h-96 flex flex-col items-center justify-center text-center">
+        <div class="lg:col-span-2 bg-white p-10 rounded-[45px] shadow-sm border border-slate-100 h-96 flex flex-col items-center justify-center text-center">
             <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-200 border-2 border-dashed">
                 <i class="fas fa-chart-area text-4xl"></i>
             </div>
-            <h3 class="text-slate-400 font-bold uppercase text-xs tracking-widest">Evolução da Ocupação</h3>
-            <p class="text-slate-300 text-[10px] mt-1">Gráficos automáticos em breve...</p>
+            <h3 class="text-slate-400 font-bold uppercase text-xs tracking-widest">Evolução do Período</h3>
+            <p class="text-slate-300 text-[10px] mt-1">Comparativo mensal em breve...</p>
         </div>
 
-        <!-- TOP ALUNOS (RANKING REAL) -->
-        <div class="bg-slate-900 p-8 rounded-[40px] shadow-xl text-white">
-            <h3 class="font-black text-lg mb-6 tracking-tighter uppercase">Ranking de Assiduidade <span class="text-primary italic text-[10px] block opacity-60">Membros com mais presenças</span></h3>
+        <div class="bg-slate-900 p-10 rounded-[45px] shadow-xl text-white">
+            <h3 class="font-black text-lg mb-8 tracking-tighter uppercase italic">Top Assiduidade <span class="text-primary not-italic text-[9px] block opacity-60 tracking-[2px]">RANKING DO PERÍODO</span></h3>
             <div class="space-y-6">
-                
                 {% for item in top_alunos %}
                 <div class="flex items-center gap-4 group">
-                    <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-black text-primary group-hover:bg-primary group-hover:text-white transition-all">
+                    <div class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center font-black text-primary group-hover:bg-primary group-hover:text-white transition-all">
                         {{ forloop.counter }}º
                     </div>
                     <div>
                         <p class="text-sm font-black uppercase tracking-tight">{{ item.aluno__nome }}</p>
-                        <p class="text-[10px] text-slate-400 font-bold tracking-widest">{{ item.total_aulas }} AULAS</p>
+                        <p class="text-[10px] text-slate-400 font-bold tracking-widest uppercase">{{ item.total_aulas }} Aulas Concluídas</p>
                     </div>
                 </div>
                 {% empty %}
-                <div class="text-center py-10">
-                    <p class="text-slate-500 italic text-sm">Nenhuma presença registrada neste mês.</p>
-                </div>
+                <p class="text-slate-500 italic text-sm py-10 text-center uppercase font-black text-[10px] tracking-widest">Sem dados para este filtro.</p>
                 {% endfor %}
-
             </div>
         </div>
     </div>
