@@ -21,6 +21,7 @@ from financeiro_fit.models import Lancamento
 from contratos_fit.models import Contrato
 from django.contrib import messages
 from .models import TipoServico
+from django.contrib.auth import get_user_model
 
 # --- ALUNOS ---
 class AlunoListView(LoginRequiredMixin, ListView):
@@ -105,11 +106,34 @@ class ProfissionalListView(LoginRequiredMixin, ListView):
     template_name = 'cadastros_fit/profissional_list.html'
     context_object_name = 'profissionais'
 
+User = get_user_model()
+
 class ProfissionalCreateView(LoginRequiredMixin, CreateView):
     model = Profissional
-    form_class = ProfissionalForm
+    form_class = ProfissionalForm # Use um form que contenha campos de senha
     template_name = 'cadastros_fit/profissional_form.html'
     success_url = reverse_lazy('profissional_list')
+
+    def form_valid(self, form):
+        try:
+            with transaction.atomic():
+                # 1. Cria o Usuário no Core (Login)
+                # O username pode ser o CPF ou o E-mail
+                usuario = User.objects.create_user(
+                    username=form.cleaned_data['cpf'].replace('.','').replace('-',''),
+                    email=form.cleaned_data['email'],
+                    password='Mudar123', # Senha padrão inicial
+                    first_name=form.cleaned_data['nome'],
+                    organizacao=self.request.tenant
+                )
+                
+                # 2. Vincula o Usuário ao Profissional e salva
+                form.instance.user = usuario
+                messages.success(self.request, "Profissional cadastrado com sucesso! Login liberado.")
+                return super().form_valid(form)
+        except Exception as e:
+            messages.error(self.request, f"Erro ao criar usuário: {e}")
+            return self.form_invalid(form)
 
 class ProfissionalUpdateView(LoginRequiredMixin, UpdateView):
     model = Profissional

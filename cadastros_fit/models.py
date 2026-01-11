@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 
 # Função utilitária para deixar nomes bonitos (Ex: "joão da silva" -> "João da Silva")
 def formatar_nome(nome):
@@ -22,13 +23,24 @@ class Unidade(models.Model):
     def __str__(self):
         return self.nome
 
+
+
 class Profissional(models.Model):
+    # --- VÍNCULO COM O USUÁRIO DO SISTEMA (CORE) ---
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='perfil_profissional',
+        verbose_name="Usuário de Acesso"
+    )
+
     # --- DADOS PESSOAIS ---
     nome = models.CharField("Nome Completo", max_length=100)
     cpf = models.CharField("CPF", max_length=14, unique=True)
     data_nascimento = models.DateField("Data de Nascimento", blank=True, null=True)
     email = models.EmailField("E-mail", max_length=255, blank=True, null=True)
     telefone = models.CharField("Celular/WhatsApp", max_length=20, blank=True, null=True)
+    
     PERFIL_CHOICES = [('ADMIN', 'Administrador'), ('INSTRUTOR', 'Instrutor / Prof.')]
     perfil = models.CharField(max_length=20, choices=PERFIL_CHOICES, default='INSTRUTOR')
     
@@ -48,16 +60,16 @@ class Profissional(models.Model):
     ativo = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs):
-        if self.nome: self.nome = formatar_nome(self.nome)
-        if self.logradouro: self.logradouro = formatar_nome(self.logradouro)
-        if self.bairro: self.bairro = formatar_nome(self.bairro)
-        if self.cidade: self.cidade = formatar_nome(self.cidade)
-        if self.estado: self.estado = self.estado.upper()
+        # Formata para MAIÚSCULO diretamente aqui
+        if self.nome: self.nome = self.nome.upper()
+        if self.logradouro: self.logradouro = self.logradouro.upper()
+        if self.bairro: self.bairro = self.bairro.upper()
+        if self.cidade: self.cidade = self.cidade.upper()
+        if self.estado: self.estado = self.estado.upper() if self.estado else None
         super().save(*args, **kwargs)
 
     def __str__(self):
         return self.nome
-
 # ==============================================================================
 # 2. ALUNOS
 # ==============================================================================
