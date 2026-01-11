@@ -9,78 +9,80 @@
     <header class="mb-10 flex items-center justify-between">
         <div>
             <h1 class="text-4xl font-black text-slate-800 tracking-tighter italic">PERFORMANCE <span class="text-primary text-2xl not-italic tracking-normal">| GESTÃO DE AULAS</span></h1>
-            <p class="text-slate-400 font-bold uppercase text-[10px] tracking-[3px] mt-1">Análise de ocupação e produtividade do estúdio</p>
-        </div>
-        <div class="flex gap-4">
-            <button class="btn btn-outline border-slate-200 rounded-2xl normal-case">
-                <i class="fas fa-download mr-2"></i> Exportar Relatório
-            </button>
+            <p class="text-slate-400 font-bold uppercase text-[10px] tracking-[3px] mt-1">Dados reais de ocupação e produtividade</p>
         </div>
     </header>
 
-    <!-- GRID DE INDICADORES (KPIs) -->
+    <!-- GRID DE INDICADORES (AGORA REAIS) -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+        <!-- Aulas Realizadas -->
         <div class="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 group hover:border-primary transition-all">
             <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Aulas Realizadas</p>
             <div class="flex items-end justify-between">
-                <h3 class="text-3xl font-black text-slate-800">128</h3>
-                <span class="text-emerald-500 text-xs font-bold mb-1">+12%</span>
+                <h3 class="text-3xl font-black text-slate-800">{{ aulas_realizadas|default:"0" }}</h3>
+                <i class="fas fa-check-double text-emerald-500 text-xl opacity-20"></i>
             </div>
         </div>
         
+        <!-- Taxa de Ocupação -->
         <div class="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 group hover:border-secondary transition-all">
             <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Taxa de Ocupação</p>
             <div class="flex items-end justify-between">
-                <h3 class="text-3xl font-black text-slate-800">82%</h3>
-                <div class="radial-progress text-secondary" style="--value:82; --size:2rem; --thickness: 4px;" role="progressbar"></div>
+                <h3 class="text-3xl font-black text-slate-800">{{ taxa_ocupacao|default:"0" }}%</h3>
+                <div class="radial-progress text-secondary" style="--value:{{ taxa_ocupacao|default:'0' }}; --size:2rem; --thickness: 4px;" role="progressbar"></div>
             </div>
         </div>
 
+        <!-- Faltas -->
         <div class="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 group hover:border-accent transition-all">
             <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Faltas no Mês</p>
             <div class="flex items-end justify-between">
-                <h3 class="text-3xl font-black text-slate-800">14</h3>
-                <span class="text-rose-400 text-xs font-bold mb-1">-5%</span>
+                <h3 class="text-3xl font-black text-slate-800">{{ faltas_mes|default:"0" }}</h3>
+                <i class="fas fa-user-times text-primary text-xl opacity-20"></i>
             </div>
         </div>
 
+        <!-- Novos Alunos -->
         <div class="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 group hover:border-slate-800 transition-all">
             <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Novos Alunos</p>
             <div class="flex items-end justify-between">
-                <h3 class="text-3xl font-black text-slate-800">08</h3>
-                <i class="fas fa-user-plus text-slate-200 text-2xl"></i>
+                <h3 class="text-3xl font-black text-slate-800">{{ novos_alunos|default:"0" }}</h3>
+                <i class="fas fa-user-plus text-slate-400 text-xl opacity-20"></i>
             </div>
         </div>
     </div>
 
-    <!-- ÁREA DE GRÁFICOS (PLACEHOLDER) -->
+    <!-- ÁREA DE GRÁFICOS E RANKING -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div class="lg:col-span-2 bg-white p-8 rounded-[40px] shadow-sm border border-slate-100 h-96 flex flex-col items-center justify-center text-center">
-            <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-200">
+            <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-200 border-2 border-dashed">
                 <i class="fas fa-chart-area text-4xl"></i>
             </div>
-            <h3 class="text-slate-400 font-bold uppercase text-xs tracking-widest">Gráfico de Evolução Mensal</h3>
-            <p class="text-slate-300 text-[10px] mt-1">Conecte o Chart.js para visualizar os dados reais.</p>
+            <h3 class="text-slate-400 font-bold uppercase text-xs tracking-widest">Evolução da Ocupação</h3>
+            <p class="text-slate-300 text-[10px] mt-1">Gráficos automáticos em breve...</p>
         </div>
 
+        <!-- TOP ALUNOS (RANKING REAL) -->
         <div class="bg-slate-900 p-8 rounded-[40px] shadow-xl text-white">
-            <h3 class="font-black text-lg mb-6">Top Alunos <span class="text-primary italic text-xs block opacity-60">Frequência máxima</span></h3>
+            <h3 class="font-black text-lg mb-6 tracking-tighter uppercase">Ranking de Assiduidade <span class="text-primary italic text-[10px] block opacity-60">Membros com mais presenças</span></h3>
             <div class="space-y-6">
-                <!-- Exemplo de item da lista -->
-                <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-bold">1º</div>
+                
+                {% for item in top_alunos %}
+                <div class="flex items-center gap-4 group">
+                    <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-black text-primary group-hover:bg-primary group-hover:text-white transition-all">
+                        {{ forloop.counter }}º
+                    </div>
                     <div>
-                        <p class="text-sm font-bold">Ana Paula Silva</p>
-                        <p class="text-[10px] text-slate-400">22 aulas este mês</p>
+                        <p class="text-sm font-black uppercase tracking-tight">{{ item.aluno__nome }}</p>
+                        <p class="text-[10px] text-slate-400 font-bold tracking-widest">{{ item.total_aulas }} AULAS</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-bold">2º</div>
-                    <div>
-                        <p class="text-sm font-bold">Marcos Oliveira</p>
-                        <p class="text-[10px] text-slate-400">19 aulas este mês</p>
-                    </div>
+                {% empty %}
+                <div class="text-center py-10">
+                    <p class="text-slate-500 italic text-sm">Nenhuma presença registrada neste mês.</p>
                 </div>
+                {% endfor %}
+
             </div>
         </div>
     </div>
