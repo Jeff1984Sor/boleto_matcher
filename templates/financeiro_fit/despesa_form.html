@@ -1,164 +1,150 @@
 {% extends 'base.html' %}
 {% load static %}
-{% load crispy_forms_tags %}
 
-{% block title %}Lançar Despesa | MayaCorp Fit{% endblock %}
+{% block title %}Nova Despesa | MayaCorp Fit{% endblock %}
 
 {% block content %}
-<style>
-    /* Nitidez extrema para campos Crispy Forms */
-    .asteriskField { color: #802422 !important; font-weight: 900; }
-    input, select, textarea { 
-        @apply rounded-2xl bg-white border-2 border-slate-200 focus:border-primary focus:ring-0 text-slate-900 font-black transition-all !important; 
-        height: 3.5rem;
-    }
-    textarea { height: auto !important; }
-    label { @apply text-[11px] font-black text-slate-500 uppercase tracking-[2px] ml-2 mb-3 block !important; }
-    
-    /* Estilo para o input de arquivo */
-    .file-input { @apply h-14 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold !important; }
-</style>
-
 <div class="max-w-4xl mx-auto pb-24 px-4">
-    
-    <!-- HEADER: Identidade Studio Premium -->
-    <header class="flex flex-col md:flex-row justify-between items-center mb-12 gap-6 text-center md:text-left">
+
+    <!-- HEADER: Título e Voltar -->
+    <header class="flex justify-between items-center mb-10 px-2">
         <div class="flex items-center gap-6">
-            <!-- Ícone em MARSALA -->
-            <div class="w-16 h-16 bg-primary rounded-[22px] flex items-center justify-center text-white shadow-xl shadow-primary/30 border-2 border-white transition-transform hover:rotate-6">
+            <div class="w-16 h-16 bg-primary rounded-[22px] flex items-center justify-center text-white shadow-xl shadow-primary/30 border-2 border-white transition-transform hover:scale-105">
                 <i class="fas fa-file-invoice-dollar text-2xl"></i>
             </div>
             <div>
-                <h1 class="text-4xl font-black text-slate-900 tracking-tighter uppercase">Nova Despesa</h1>
-                <p class="text-[11px] text-primary font-black uppercase tracking-[3px] mt-1">Registro e Classificação de Custos</p>
+                <h1 class="text-3xl font-black text-slate-800 tracking-tighter uppercase italic">Nova Despesa</h1>
+                <p class="text-[10px] text-primary font-black uppercase tracking-[3px] mt-1">Registro e classificação de custos</p>
             </div>
         </div>
-        
-        <a href="{% url 'contas_pagar' %}" class="btn btn-ghost btn-circle text-slate-300 hover:text-primary transition-all">
-            <i class="fas fa-times text-2xl"></i>
+        <a href="{% url 'contas_pagar' %}" class="btn btn-circle btn-ghost text-slate-300 hover:text-primary transition-all">
+            <i class="fas fa-times text-xl"></i>
         </a>
     </header>
 
-    <!-- CARD PRINCIPAL (Visual de Luxo) -->
-    <div class="bg-white rounded-[3rem] shadow-2xl shadow-slate-200/60 border border-slate-100 overflow-hidden relative animate-in fade-in slide-in-from-bottom-6 duration-700">
-        
-        <!-- Detalhe decorativo no topo -->
-        <div class="h-2 w-full bg-gradient-to-r from-primary via-secondary to-accent"></div>
+    <!-- FORMULÁRIO PADRÃO (CARD LUXO) -->
+    <form method="post" enctype="multipart/form-data" class="space-y-8 animate-in slide-in-from-bottom-6 duration-700">
+        {% csrf_token %}
 
-        <form method="post" enctype="multipart/form-data" class="p-8 md:p-16 space-y-12">
-            {% csrf_token %}
-
-            <!-- SEÇÃO 1: DADOS BÁSICOS (MÁXIMA NITIDEZ) -->
-            <section>
-                <div class="flex items-center gap-4 mb-10">
-                    <div class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-                        <i class="fas fa-pen-to-square"></i>
-                    </div>
-                    <h3 class="text-xs font-black text-slate-900 uppercase tracking-[4px]">Informações da Conta</h3>
+        <!-- BLOCO 1: IDENTIFICAÇÃO DA CONTA -->
+        <div class="bg-white rounded-[3.5rem] shadow-2xl shadow-slate-200/60 border border-slate-100 p-12 relative overflow-hidden">
+            <div class="flex items-center gap-4 mb-12">
+                <div class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">
+                    <i class="fas fa-pen-to-square text-sm"></i>
                 </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
-                    <div class="md:col-span-8">{{ form.descricao|as_crispy_field }}</div>
-                    
-                    <!-- Campo de Valor em destaque AMARELO -->
-                    <div class="md:col-span-4 form-control">
-                        <label class="label mb-3">
-                            <span class="label-text text-[11px] font-black text-primary uppercase tracking-[2px]">Valor do Lançamento</span>
-                        </label>
-                        <div class="relative">
-                            <span class="absolute left-5 top-1/2 -translate-y-1/2 text-sm font-black text-primary italic">R$</span>
-                            <input type="number" name="valor" step="0.01" value="{{ form.valor.value|default:'' }}" 
-                                   class="input w-full bg-white border-2 border-slate-200 rounded-2xl pl-12 pr-6 h-14 focus:border-primary text-slate-900 font-black text-lg shadow-sm" required>
-                        </div>
-                    </div>
-                    
-                    <div class="md:col-span-6">{{ form.fornecedor|as_crispy_field }}</div>
-                    <div class="md:col-span-6">{{ form.categoria|as_crispy_field }}</div>
-                    
-                    <div class="md:col-span-6">{{ form.data_vencimento|as_crispy_field }}</div>
-                    <div class="md:col-span-6">{{ form.conta|as_crispy_field }}</div>
-                </div>
-            </section>
-
-            <!-- SEÇÃO 2: RECORRÊNCIA (ESTILO AZUL VIBRANTE) -->
-            <section class="bg-slate-50 p-10 rounded-[2.5rem] border-2 border-slate-100 relative overflow-hidden group">
-                <div class="absolute right-0 top-0 w-24 h-24 bg-secondary/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110"></div>
-                
-                <div class="flex items-center justify-between mb-8 relative z-10">
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 bg-secondary rounded-xl flex items-center justify-center text-white shadow-lg shadow-secondary/20">
-                            <i class="fas fa-arrows-rotate text-sm"></i>
-                        </div>
-                        <h3 class="text-xs font-black text-slate-900 uppercase tracking-[4px]">Recorrência Programada</h3>
-                    </div>
-                    <input type="checkbox" name="{{ form.repetir.name }}" id="id_repetir" class="toggle toggle-secondary scale-125" {% if form.repetir.value %}checked{% endif %} />
-                </div>
-
-                <div id="area-recorrencia" class="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10 transition-all duration-500" style="display:none;">
-                    <div class="form-control">{{ form.frequencia|as_crispy_field }}</div>
-                    <div class="form-control">{{ form.qtd_repeticoes|as_crispy_field }}</div>
-                    <div class="md:col-span-2 p-6 bg-white rounded-2xl border-2 border-dashed border-slate-200 text-center">
-                        <p class="text-[10px] text-secondary font-black uppercase tracking-widest">
-                            <i class="fas fa-circle-info mr-2"></i> O MayaCorp gerará as parcelas futuras automaticamente
-                        </p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SEÇÃO 3: ANEXOS (AMARELO DESTAQUE) -->
-            <section class="space-y-8">
-                <div class="grid grid-cols-1 md:grid-cols-12 gap-10 items-end">
-                    <div class="md:col-span-7">
-                        <label class="label mb-3">
-                            <span class="label-text text-[11px] font-black text-slate-500 uppercase tracking-[2px]">Comprovante / Boleto (PDF ou JPG)</span>
-                        </label>
-                        <div class="relative group">
-                            <input type="file" name="{{ form.arquivo_boleto.name }}" class="file-input w-full shadow-sm group-hover:border-primary transition-all" />
-                        </div>
-                    </div>
-                    <div class="md:col-span-5">
-                        {{ form.status|as_crispy_field }}
-                    </div>
-                </div>
-            </section>
-
-            <!-- BOTÕES DE AÇÃO (AZUL VIBRANTE) -->
-            <div class="flex flex-col md:flex-row justify-end items-center gap-6 pt-12 border-t border-slate-100">
-                <a href="{% url 'contas_pagar' %}" class="text-sm font-black text-slate-400 hover:text-primary transition-colors uppercase tracking-widest order-2 md:order-1">
-                    Cancelar Lançamento
-                </a>
-                
-                <button type="submit" class="btn bg-secondary border-none text-white rounded-[1.5rem] px-12 h-20 shadow-2xl shadow-secondary/30 font-black uppercase tracking-[2px] text-lg order-1 md:order-2 hover:bg-blue-800 hover:scale-105 active:scale-95 transition-all group">
-                    <i class="fas fa-check-double mr-3 text-xl group-hover:animate-pulse"></i> SALVAR DESPESA
-                </button>
+                <h3 class="text-sm font-black text-slate-900 uppercase tracking-[4px]">Informações da Conta</h3>
             </div>
-        </form>
-    </div>
 
-    <!-- RODAPÉ TÉCNICO -->
-    <div class="mt-12 text-center">
-        <div class="inline-flex items-center gap-3 px-6 py-2 bg-slate-100 rounded-full border border-slate-200">
-            <div class="w-2 h-2 bg-primary rounded-full animate-pulse shadow-[0_0_8px_rgba(128,36,34,0.6)]"></div>
-            <span class="text-[9px] font-black text-slate-500 uppercase tracking-[2px]">MayaCorp Logic: Outflow Management Engine v4.0</span>
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+                <!-- Descrição -->
+                <div class="md:col-span-8 flex flex-col gap-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Descrição do Lançamento*</label>
+                    <input type="text" name="descricao" class="input input-bordered rounded-2xl bg-slate-50 border-none font-bold text-slate-700 h-14 w-full focus:ring-2 focus:ring-primary/20" required>
+                </div>
+
+                <!-- Valor -->
+                <div class="md:col-span-4 flex flex-col gap-2">
+                    <label class="text-[10px] font-black text-primary uppercase tracking-widest ml-4">Valor*</label>
+                    <div class="relative">
+                        <span class="absolute left-5 top-1/2 -translate-y-1/2 text-primary font-black text-xs italic">R$</span>
+                        <input type="number" step="0.01" name="valor" class="input input-bordered rounded-2xl bg-primary/5 border-none font-black text-primary text-xl h-14 w-full pl-12 focus:ring-2 focus:ring-primary/20" required>
+                    </div>
+                </div>
+
+                <!-- Fornecedor -->
+                <div class="md:col-span-6 flex flex-col gap-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Fornecedor</label>
+                    <select name="fornecedor" class="select select-bordered rounded-2xl bg-slate-50 border-none font-bold text-slate-700 h-14 w-full">
+                        <option value="">Selecione um Fornecedor</option>
+                        {% for f in fornecedores %}
+                            <option value="{{ f.id }}">{{ f.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Categoria -->
+                <div class="md:col-span-6 flex flex-col gap-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Categoria / Plano de Contas*</label>
+                    <select name="categoria" class="select select-bordered rounded-2xl bg-slate-50 border-none font-bold text-slate-700 h-14 w-full" required>
+                        <option value="">Selecione a Categoria</option>
+                        {% for c in categorias %}
+                            <option value="{{ c.id }}">{{ c.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Data Vencimento -->
+                <div class="md:col-span-6 flex flex-col gap-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Data de Vencimento*</label>
+                    <input type="date" name="data_vencimento" class="input input-bordered rounded-2xl bg-slate-50 border-none font-bold text-slate-700 h-14 w-full" required>
+                </div>
+
+                <!-- Conta Bancária -->
+                <div class="md:col-span-6 flex flex-col gap-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Conta de Saída*</label>
+                    <select name="conta" class="select select-bordered rounded-2xl bg-slate-50 border-none font-bold text-slate-700 h-14 w-full" required>
+                        <option value="">Selecione a Conta/Caixa</option>
+                        {% for conta in contas %}
+                            <option value="{{ conta.id }}">{{ conta.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
         </div>
-    </div>
+
+        <!-- BLOCO 2: RECORRÊNCIA -->
+        <div class="bg-slate-900 rounded-[3rem] p-10 shadow-xl border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6 transition-all hover:border-primary/50">
+            <div class="flex items-center gap-6">
+                <div class="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-primary border border-white/10">
+                    <i class="fas fa-arrows-rotate text-xl"></i>
+                </div>
+                <div>
+                    <h4 class="text-white font-black uppercase tracking-[2px] text-sm italic">Recorrência Programada</h4>
+                    <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Ative para repetir esta conta mensalmente</p>
+                </div>
+            </div>
+            <div class="bg-white/5 p-4 rounded-2xl border border-white/10 flex items-center gap-4">
+                <span class="text-slate-400 text-[9px] font-black uppercase">Ativar</span>
+                <input type="checkbox" name="repetir" class="toggle toggle-primary toggle-lg">
+            </div>
+        </div>
+
+        <!-- BLOCO 3: COMPROVANTE E SITUAÇÃO -->
+        <div class="bg-white rounded-[3.5rem] shadow-2xl border border-slate-100 p-12">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-10 items-end">
+                <div class="flex flex-col gap-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Arquivo / Boleto (PDF ou JPG)</label>
+                    <input type="file" name="arquivo_boleto" class="file-input file-input-bordered bg-slate-50 border-none rounded-2xl w-full h-14 font-bold text-slate-400">
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Situação do Lançamento*</label>
+                    <select name="status" class="select select-bordered rounded-2xl bg-slate-50 border-none font-black text-slate-700 h-14 w-full">
+                        <option value="PENDENTE">Aguardando Pagamento</option>
+                        <option value="PAGO">Lançar como Pago (Liquidado)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTÕES DE AÇÃO -->
+        <div class="flex flex-col md:flex-row justify-center gap-4 pt-6">
+            <button type="submit" class="btn bg-primary hover:bg-red-900 border-none text-white rounded-[2.2rem] px-24 h-20 shadow-2xl shadow-primary/30 font-black uppercase tracking-[3px] italic transition-all hover:scale-105">
+                Salvar Despesa
+            </button>
+        </div>
+
+    </form>
 </div>
 
-<script>
-    // Lógica de Recorrência com Animação Studio
-    const checkRepetir = document.getElementById('id_repetir');
-    const areaRecorrencia = document.getElementById('area-recorrencia');
-
-    function toggleRecorrencia() {
-        if (checkRepetir.checked) {
-            areaRecorrencia.style.display = 'grid';
-            areaRecorrencia.classList.add('animate-in', 'fade-in', 'slide-in-from-top-4');
-        } else {
-            areaRecorrencia.style.display = 'none';
-        }
+<style>
+    /* Remove setas do input number e estiliza selects */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    
+    select {
+        background-position: right 1.5rem center !important;
+        padding-right: 3rem !important;
     }
-
-    checkRepetir.addEventListener('change', toggleRecorrencia);
-    document.addEventListener('DOMContentLoaded', toggleRecorrencia);
-</script>
+</style>
 {% endblock %}
