@@ -36,7 +36,6 @@
                 <form method="get" class="flex-1 lg:w-72">
                     <input type="hidden" name="data" value="{{ inicio_semana|date:'Y-m-d' }}">
                     <select name="prof_id" class="select select-sm w-full bg-white border-2 border-slate-200 rounded-xl focus:border-primary text-slate-700 font-bold" onchange="this.form.submit()">
-                        <!-- FILTRO "TODOS" ADICIONADO -->
                         <option value="all" {% if not prof_selecionado or prof_selecionado == 'all' %}selected{% endif %}>Todos os Profissionais</option>
                         {% for prof in lista_profissionais %}
                         <option value="{{ prof.id }}" {% if prof_selecionado == prof.id %}selected{% endif %}>{{ prof.nome }}</option>
@@ -71,35 +70,41 @@
                     {% if dia_index == forloop.parentloop.counter0 %}
                         {% for p in lista_presencas %}
                         
-                        <!-- CARD DO ALUNO (COR DEFINIDA PELO PROFISSIONAL) -->
+                        <!-- CARD DO ALUNO (COM FORÇA TOTAL NA COR DO PROFISSIONAL) -->
                         <div onclick="modal_checkin_{{ p.id }}.showModal()" 
-                             class="group bg-white p-4 rounded-2xl shadow-md border-l-[8px] cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden"
-                             style="border-left-color: {{ p.aula.profissional.cor|default:'#primary' }};">
+                             class="group bg-white p-4 rounded-2xl shadow-md cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden"
+                             style="border-left: 10px solid {{ p.aula.profissional.cor|default:'#cbd5e1' }} !important;">
                             
                             <div class="flex justify-between items-start mb-3">
                                 <span class="bg-slate-900 text-white text-[10px] font-black px-2.5 py-1 rounded-lg tracking-wider">
                                     {{ p.aula.data_hora_inicio|date:"H:i" }}
                                 </span>
-                                {% if p.status == 'PRESENTE' %}
-                                    <i class="fas fa-check-circle text-emerald-500 text-sm"></i>
+                                
+                                <!-- Só mostra ícone se já foi marcado (Passado) -->
+                                {% if p.aula.data_hora_inicio < agora %}
+                                    {% if p.status == 'PRESENTE' %}
+                                        <i class="fas fa-check-circle text-emerald-500 text-sm"></i>
+                                    {% elif p.status == 'FALTA' %}
+                                        <i class="fas fa-times-circle text-primary text-sm"></i>
+                                    {% endif %}
                                 {% endif %}
                             </div>
                             
                             <div class="text-[15px] font-black text-slate-900 truncate group-hover:text-primary transition-colors">{{ p.aluno.nome|upper }}</div>
                             <div class="text-[11px] text-slate-500 font-bold truncate mt-2 flex items-center gap-1">
-                                <i class="fas fa-user-tie text-[10px]" style="color: {{ p.aula.profissional.cor }};"></i> 
+                                <i class="fas fa-user-tie text-[10px]" style="color: {{ p.aula.profissional.cor }} !important;"></i> 
                                 {{ p.aula.profissional.nome }}
                             </div>
                         </div>
 
-                        <!-- MODAL DE CHECK-IN (SEM OPÇÃO MARCADA POR PADRÃO) -->
+                        <!-- MODAL DE CHECK-IN (TOTALMENTE EM BRANCO) -->
                         <dialog id="modal_checkin_{{ p.id }}" class="modal">
                           <div class="modal-box bg-white rounded-[2.5rem] p-10 max-w-lg border border-slate-100 shadow-2xl">
                             <form action="{% url 'gerenciar_aula' p.aula.id %}" method="post">
                                 {% csrf_token %}
                                 
                                 <div class="text-center mb-10">
-                                    <div class="w-24 h-24 rounded-[2.5rem] flex items-center justify-center mx-auto mb-5" style="background-color: {{ p.aula.profissional.cor }}20; color: {{ p.aula.profissional.cor }};">
+                                    <div class="w-24 h-24 rounded-[2.5rem] flex items-center justify-center mx-auto mb-5 shadow-inner" style="background-color: {{ p.aula.profissional.cor }}20; color: {{ p.aula.profissional.cor }} !important;">
                                         <i class="fas fa-user-check text-4xl"></i>
                                     </div>
                                     <h3 class="text-3xl font-black text-slate-900 tracking-tighter">{{ p.aluno.nome|upper }}</h3>
@@ -133,7 +138,7 @@
                                 </div>
 
                                 <div class="modal-action flex gap-4 mt-10">
-                                    <button type="button" class="btn btn-ghost flex-1 rounded-2xl text-slate-400 font-black" onclick="modal_checkin_{{ p.id }}.close()">CANCELAR</button>
+                                    <button type="button" class="btn btn-ghost flex-1 rounded-2xl text-slate-400 font-black uppercase text-xs" onclick="modal_checkin_{{ p.id }}.close()">CANCELAR</button>
                                     <button type="submit" class="btn bg-slate-900 hover:bg-black border-none text-white flex-1 rounded-2xl shadow-xl font-black uppercase tracking-widest h-16">
                                         SALVAR REGISTRO
                                     </button>
@@ -157,7 +162,6 @@
 </div>
 
 <style>
-    /* Estilo para garantir que o scroll horizontal seja suave */
     .custom-scroll::-webkit-scrollbar { height: 6px; }
     .custom-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
 </style>
