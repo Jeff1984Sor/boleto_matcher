@@ -267,11 +267,7 @@ def cobrar_aluno_whatsapp(request, aluno_id):
     if sucesso:
         return JsonResponse({'status': 'ok'})
     return JsonResponse({'status': 'error', 'message': resposta})
-class AlunoListView(LoginRequiredMixin, ListView):
-    model = Aluno
-    template_name = 'cadastros_fit/aluno_list.html'
-    context_object_name = 'alunos'
-    
+
 class TipoServicoListView(LoginRequiredMixin, ListView):
     model = TipoServico
     template_name = 'cadastros_fit/servico_list.html'
