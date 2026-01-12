@@ -130,22 +130,15 @@
 </div>
 </section>
 
-<!-- ================= ENDEREÇO ================= -->
+<!-- ================= ENDEREÇO (NÚMERO AO LADO DO LOGRADOURO) ================= -->
 <section class="space-y-10 mt-16">
 <div class="text-center text-[11px] font-black text-slate-400 uppercase tracking-[4px]">
     Endereço & localização
 </div>
-<div class="grid grid-cols-1 md:grid-cols-12 gap-x-8 gap-y-12">
 
-    <!-- CEP -->
-    <div class="md:col-span-3">
-        <label class="block text-[11px] font-black text-slate-900 uppercase tracking-[2px] mb-2">CEP</label>
-        <input type="text" name="{{ form.cep.html_name }}" value="{{ form.cep.value|default:'' }}" 
-               class="w-full h-14 px-5 rounded-2xl border border-slate-200 bg-white shadow-sm focus:ring-2 focus:ring-primary focus:border-primary font-bold" 
-               {% if form.cep.field.required %}required{% endif %}>
-        {% if form.cep.errors %}<div class="text-red-500 text-xs mt-1">{{ form.cep.errors.0 }}</div>{% endif %}
-    </div>
-
+<!-- LINHA 1: Logradouro + Número (lado a lado) -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-x-8 gap-y-6">
+    
     <!-- Logradouro -->
     <div class="md:col-span-9">
         <label class="block text-[11px] font-black text-slate-900 uppercase tracking-[2px] mb-2">Logradouro</label>
@@ -155,13 +148,26 @@
         {% if form.logradouro.errors %}<div class="text-red-500 text-xs mt-1">{{ form.logradouro.errors.0 }}</div>{% endif %}
     </div>
 
-    <!-- Numero -->
+    <!-- Número (ao lado direito) -->
     <div class="md:col-span-3">
         <label class="block text-[11px] font-black text-slate-900 uppercase tracking-[2px] mb-2">Número</label>
         <input type="text" name="{{ form.numero.html_name }}" value="{{ form.numero.value|default:'' }}" 
                class="w-full h-14 px-5 rounded-2xl border border-slate-200 bg-white shadow-sm focus:ring-2 focus:ring-primary focus:border-primary font-bold" 
                {% if form.numero.field.required %}required{% endif %}>
         {% if form.numero.errors %}<div class="text-red-500 text-xs mt-1">{{ form.numero.errors.0 }}</div>{% endif %}
+    </div>
+</div>
+
+<!-- LINHA 2: CEP + Bairro + Cidade -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-x-8 gap-y-6">
+    
+    <!-- CEP -->
+    <div class="md:col-span-3">
+        <label class="block text-[11px] font-black text-slate-900 uppercase tracking-[2px] mb-2">CEP</label>
+        <input type="text" name="{{ form.cep.html_name }}" value="{{ form.cep.value|default:'' }}" 
+               class="w-full h-14 px-5 rounded-2xl border border-slate-200 bg-white shadow-sm focus:ring-2 focus:ring-primary focus:border-primary font-bold" 
+               {% if form.cep.field.required %}required{% endif %}>
+        {% if form.cep.errors %}<div class="text-red-500 text-xs mt-1">{{ form.cep.errors.0 }}</div>{% endif %}
     </div>
 
     <!-- Bairro -->
@@ -182,6 +188,7 @@
         {% if form.cidade.errors %}<div class="text-red-500 text-xs mt-1">{{ form.cidade.errors.0 }}</div>{% endif %}
     </div>
 </div>
+
 </section>
 
 <!-- ================= ALERTA ================= -->
