@@ -1,4 +1,4 @@
-<!-- sidebar.html COMPLETA, SEM NAMESPACES E COM AUTOMAÇÃO -->
+<!-- sidebar.html COMPLETA, SEM NAMESPACES E COM AUTOMAÇÃO + PDF -->
 <div class="flex flex-col h-full py-6 px-4 bg-white border-r border-slate-100 shadow-sm">
     <!-- LOGO -->
     <div class="px-4 mb-10">
@@ -77,7 +77,7 @@
             </div>
         </div>
 
-        <!-- NOVA SEÇÃO: AUTOMAÇÃO -->
+        <!-- SEÇÃO: AUTOMAÇÃO E FERRAMENTAS -->
         <div>
             <p class="text-[9px] font-black text-slate-400 uppercase tracking-[2px] mb-3 px-4">Automação</p>
             <div class="space-y-1">
@@ -86,6 +86,13 @@
                         <i class="fab fa-whatsapp text-[12px]"></i>
                     </div>
                     <span class="text-sm font-bold text-slate-600">WhatsApp</span>
+                </a>
+                <!-- ADICIONADO: CONVERSOR PDF -->
+                <a href="{% url 'pdf_home' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all hover:bg-slate-50 group">
+                    <div class="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-red-600 group-hover:text-white shadow-sm">
+                        <i class="fas fa-file-pdf text-[10px]"></i>
+                    </div>
+                    <span class="text-sm font-bold text-slate-600">Conversor PDF</span>
                 </a>
             </div>
         </div>
