@@ -7,19 +7,17 @@
 <div class="max-w-7xl mx-auto pb-24 px-4 sm:px-6">
 
 <!-- ================= HEADER DO ALUNO ================= -->
-<header class="bg-white rounded-[3rem] shadow-2xl border border-slate-100 p-10 mb-10 relative overflow-hidden">
+<header class="bg-white rounded-[3rem] shadow-2xl border border-slate-100 p-10 mb-12 relative overflow-hidden">
     <div class="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full -mr-40 -mt-40 blur-3xl"></div>
 
     <div class="relative z-10 flex flex-col lg:flex-row gap-10 items-center">
         <!-- FOTO -->
-        <div class="relative">
-            <div class="w-40 h-40 rounded-[3rem] overflow-hidden shadow-xl border-4 border-white bg-slate-100 flex items-center justify-center text-5xl font-black text-primary">
-                {% if aluno.foto_rosto %}
-                    <img src="{{ aluno.foto_rosto.url }}" class="w-full h-full object-cover">
-                {% else %}
-                    {{ aluno.nome|first }}
-                {% endif %}
-            </div>
+        <div class="w-40 h-40 rounded-[3rem] overflow-hidden shadow-xl border-4 border-white bg-slate-100 flex items-center justify-center text-5xl font-black text-primary">
+            {% if aluno.foto_rosto %}
+                <img src="{{ aluno.foto_rosto.url }}" class="w-full h-full object-cover">
+            {% else %}
+                {{ aluno.nome|first }}
+            {% endif %}
         </div>
 
         <!-- INFO -->
@@ -64,45 +62,40 @@
 </header>
 
 <!-- ================= KPIs ================= -->
-<section class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10">
-    <div class="card-kpi">
-        Status
-        <span class="ok">Ativo</span>
+<section class="grid grid-cols-2 md:grid-cols-5 gap-6 mb-12">
+
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Status</p>
+        <p class="text-xl font-black text-emerald-600">Ativo</p>
     </div>
 
-    <div class="card-kpi">
-        Financeiro
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Financeiro</p>
         {% if total_em_aberto > 0 %}
-            <span class="bad">Em aberto</span>
+            <p class="text-xl font-black text-red-600">Em aberto</p>
         {% else %}
-            <span class="ok">Em dia</span>
+            <p class="text-xl font-black text-emerald-600">Em dia</p>
         {% endif %}
     </div>
 
-    <div class="card-kpi">
-        Última aula
-        <span>{{ ultima_aula|default:"—" }}</span>
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Última aula</p>
+        <p class="text-xl font-black text-slate-800">{{ ultima_aula|default:"—" }}</p>
     </div>
 
-    <div class="card-kpi">
-        Frequência
-        <span>{{ percentual_presenca }}%</span>
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Frequência</p>
+        <p class="text-xl font-black text-slate-800">{{ percentual_presenca }}%</p>
     </div>
 
-    <div class="card-kpi">
-        Próx. venc.
-        <span>{{ proximo_vencimento|date:"d/m"|default:"—" }}</span>
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Próx. venc.</p>
+        <p class="text-xl font-black text-slate-800">
+            {{ proximo_vencimento|date:"d/m"|default:"—" }}
+        </p>
     </div>
+
 </section>
-
-{% if faltas_consecutivas >= 3 %}
-<div class="mb-8 bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-center gap-4">
-    <i class="fas fa-exclamation-triangle text-amber-500"></i>
-    <p class="text-xs font-black uppercase tracking-widest text-amber-800">
-        Aluno com faltas recorrentes
-    </p>
-</div>
-{% endif %}
 
 <!-- ================= ABAS ================= -->
 <div class="bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden">
@@ -117,72 +110,79 @@
 
 <div class="p-10">
 
-<!-- FINANCEIRO -->
-<div id="financeiro" class="tab-content">
-    <table class="table w-full">
-        <thead>
-            <tr>
-                <th>Vencimento</th>
-                <th>Descrição</th>
-                <th>Valor</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for l in financeiro_completo %}
-            <tr>
-                <td>{{ l.data_vencimento|date:"d/m/Y" }}</td>
-                <td>{{ l.descricao }}</td>
-                <td>R$ {{ l.valor }}</td>
-                <td>
-                    {% if l.status == 'PAGO' %}
-                        <span class="ok">Pago</span>
-                    {% else %}
-                        <span class="bad">Pendente</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="4">Nenhum lançamento financeiro</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-<!-- PRONTUÁRIO -->
-<div id="prontuario" class="tab-content hidden space-y-4">
-    {% for p in agenda_completa %}
-    <div class="border rounded-2xl p-6 shadow-sm bg-white">
-        <b>{{ p.aula.data_hora_inicio|date:"d/m/Y H:i" }}</b>
-        — {{ p.aula.profissional.nome }}<br>
-        <i class="text-sm text-slate-500">
-            {{ p.aula.evolucao_texto|default:"Sem registro" }}
-        </i>
+<!-- ================= FINANCEIRO ================= -->
+<div id="financeiro" class="tab-content grid md:grid-cols-2 gap-6">
+{% for l in financeiro_completo %}
+<div class="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+    <div class="flex justify-between items-center mb-3">
+        <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">
+            {{ l.data_vencimento|date:"d/m/Y" }}
+        </span>
+        {% if l.status == 'PAGO' %}
+            <span class="px-3 py-1 text-[9px] font-black bg-emerald-100 text-emerald-700 rounded-full">PAGO</span>
+        {% else %}
+            <span class="px-3 py-1 text-[9px] font-black bg-red-100 text-primary rounded-full">PENDENTE</span>
+        {% endif %}
     </div>
-    {% empty %}
-    <p class="text-slate-400 italic">Nenhum registro clínico.</p>
-    {% endfor %}
+    <p class="font-black text-slate-900 uppercase">{{ l.descricao }}</p>
+    <p class="text-xl font-black text-slate-900 mt-2">R$ {{ l.valor }}</p>
+</div>
+{% empty %}
+<p class="text-slate-400 italic">Nenhum lançamento financeiro.</p>
+{% endfor %}
 </div>
 
-<!-- AGENDA -->
-<div id="agenda" class="tab-content hidden">
-    <a href="{% url 'aluno_aulas_list' aluno.id %}"
-       class="btn bg-secondary text-white rounded-xl">
-        Ver agenda completa
-    </a>
+<!-- ================= PRONTUÁRIO ================= -->
+<div id="prontuario" class="tab-content hidden space-y-6">
+{% for p in agenda_completa %}
+<div class="relative pl-6">
+    <div class="absolute left-0 top-2 w-2 h-2 bg-secondary rounded-full"></div>
+    <div class="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">
+            {{ p.aula.data_hora_inicio|date:"d/m/Y H:i" }} • {{ p.aula.profissional.nome }}
+        </p>
+        <p class="text-sm text-slate-700 mt-2">
+            {{ p.aula.evolucao_texto|default:"Sem registro clínico." }}
+        </p>
+    </div>
+</div>
+{% empty %}
+<p class="text-slate-400 italic">Nenhum registro clínico.</p>
+{% endfor %}
 </div>
 
-<!-- CONTRATOS -->
+<!-- ================= AGENDA ================= -->
+<div id="agenda" class="tab-content hidden space-y-4">
+{% for p in agenda_completa %}
+<div class="flex justify-between items-center bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+    <div>
+        <p class="font-black text-slate-900">{{ p.aula.data_hora_inicio|date:"d/m/Y" }}</p>
+        <p class="text-xs text-slate-500 font-bold">
+            {{ p.aula.data_hora_inicio|date:"H:i" }} — {{ p.aula.data_hora_fim|date:"H:i" }}
+        </p>
+    </div>
+    <span class="px-4 py-2 text-[10px] font-black uppercase rounded-xl bg-slate-100 text-slate-600">
+        {{ p.status }}
+    </span>
+</div>
+{% empty %}
+<p class="text-slate-400 italic">Nenhuma aula registrada.</p>
+{% endfor %}
+</div>
+
+<!-- ================= CONTRATOS ================= -->
 <div id="contratos" class="tab-content hidden grid md:grid-cols-2 gap-6">
-    {% for c in contratos_completo %}
-    <div class="border rounded-3xl p-8 shadow-sm bg-white">
-        <b>{{ c.plano.nome }}</b><br>
-        {{ c.data_inicio|date:"d/m/Y" }} — {{ c.data_fim|date:"d/m/Y" }}<br>
-        <span class="font-black">R$ {{ c.valor_total }}</span>
-    </div>
-    {% empty %}
-    <p class="text-slate-400 italic">Nenhum contrato ativo.</p>
-    {% endfor %}
+{% for c in contratos_completo %}
+<div class="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm">
+    <p class="font-black text-slate-900 uppercase">{{ c.plano.nome }}</p>
+    <p class="text-xs text-slate-500 font-bold mt-2">
+        {{ c.data_inicio|date:"d/m/Y" }} — {{ c.data_fim|date:"d/m/Y" }}
+    </p>
+    <p class="text-xl font-black text-slate-900 mt-4">R$ {{ c.valor_total }}</p>
+</div>
+{% empty %}
+<p class="text-slate-400 italic">Nenhum contrato ativo.</p>
+{% endfor %}
 </div>
 
 </div>
@@ -191,22 +191,6 @@
 
 <!-- ================= ESTILOS ================= -->
 <style>
-.card-kpi{
-    background:#fff;
-    border:1px solid #eee;
-    padding:16px;
-    border-radius:16px;
-    font-weight:900;
-    text-transform:uppercase;
-    font-size:10px;
-}
-.card-kpi span{
-    display:block;
-    font-size:18px;
-}
-.ok{color:#10b981}
-.bad{color:#dc2626}
-
 .tab-btn{
     flex:1;
     padding:16px;
