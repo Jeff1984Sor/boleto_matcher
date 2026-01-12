@@ -1,0 +1,46 @@
+:root {
+  /* =====================
+     BRAND
+  ===================== */
+  --color-primary: #802422;     /* Marsala */
+  --color-secondary: #2563EB;   /* Azul */
+  --color-accent: #FACC15;      /* Amarelo */
+
+  /* =====================
+     BACKGROUNDS
+  ===================== */
+  --bg-app: var(--color-primary);
+  --bg-card: #ffffff;
+  --bg-soft: #f8fafc;
+  --bg-dark: #0f172a;
+
+  /* =====================
+     TEXT
+  ===================== */
+  --text-light: #ffffff;
+  --text-dark: #0f172a;
+  --text-muted: #64748b;
+
+  /* =====================
+     BORDERS / RADIUS
+  ===================== */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+
+  /* =====================
+     SHADOWS
+  ===================== */
+  --shadow-sm: 0 2px 8px rgba(0,0,0,.06);
+  --shadow-md: 0 10px 25px rgba(0,0,0,.12);
+  --shadow-lg: 0 25px 50px rgba(0,0,0,.18);
+
+  /* =====================
+     INPUTS
+  ===================== */
+  --input-height: 56px;
+  --input-bg: #ffffff;
+  --input-border: #e5e7eb;
+  --input-border-focus: var(--color-secondary);
+}
