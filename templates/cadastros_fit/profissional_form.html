@@ -6,117 +6,49 @@
 {% block content %}
 <div class="max-w-5xl mx-auto pb-24 px-4">
 
-<form method="post" class="space-y-12 animate-in slide-in-from-bottom-6 duration-700">
+<form method="post" class="space-y-14 animate-in fade-in slide-in-from-bottom-6 duration-700">
 {% csrf_token %}
 
 <!-- ================= HEADER ================= -->
-<header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+<header class="flex flex-col gap-6">
+    <h1 class="text-4xl font-black text-slate-900 tracking-tight">
+        {% if object %}Editar Profissional{% else %}Novo Profissional{% endif %}
+    </h1>
+    <p class="text-sm text-slate-500 font-semibold max-w-2xl">
+        Cadastre os dados do profissional e defina como ele poderá acessar o sistema do estúdio.
+    </p>
 
-    <div class="flex items-center gap-6">
-        <div class="w-16 h-16 bg-slate-900 rounded-[22px] flex items-center justify-center text-white shadow-xl">
-            <i class="fas fa-user-tie text-2xl"></i>
-        </div>
-        <div>
-            <h1 class="text-3xl font-black text-slate-800 tracking-tighter uppercase italic">
-                {% if object %}Editar Profissional{% else %}Novo Profissional{% endif %}
-            </h1>
-            <p class="text-[10px] text-primary font-black uppercase tracking-[3px] mt-1">
-                Gestão de instrutores e acesso ao sistema
-            </p>
-        </div>
-    </div>
-
-    <!-- STATUS (AGORA FUNCIONA) -->
-    <div class="bg-white px-8 py-4 rounded-3xl shadow-xl border border-slate-100 flex items-center gap-4">
-        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+    <div class="flex items-center gap-6 mt-4">
+        <span class="text-xs font-black text-slate-400 uppercase tracking-widest">
             Profissional ativo
         </span>
         <input type="checkbox" name="ativo"
                class="toggle toggle-primary toggle-lg"
                {% if form.ativo.value or not object %}checked{% endif %}>
     </div>
-
 </header>
 
-<!-- ================= BLOCO ALERTA ================= -->
-<div class="bg-amber-50 border border-amber-200 rounded-[2.5rem] p-8 flex items-start gap-6">
+<!-- ================= ALERTA ================= -->
+<div class="bg-amber-50 border border-amber-200 rounded-3xl p-6 flex gap-4">
     <div class="w-10 h-10 bg-amber-400/20 rounded-xl flex items-center justify-center text-amber-700">
         <i class="fas fa-shield-alt"></i>
     </div>
-    <div>
-        <p class="font-black text-amber-900 uppercase text-xs tracking-widest">
-            Atenção
-        </p>
-        <p class="text-sm text-amber-800 leading-relaxed mt-1">
-            Este profissional terá acesso à agenda, dados de alunos e poderá impactar o financeiro do studio.
-            Configure permissões com cuidado.
-        </p>
-    </div>
+    <p class="text-sm text-amber-800 leading-relaxed">
+        Este profissional poderá acessar agenda, dados de alunos e informações financeiras,
+        conforme o nível de acesso definido abaixo.
+    </p>
 </div>
 
-<!-- ================= BLOCO 1: ACESSO ================= -->
-<div class="bg-slate-900 rounded-[3.5rem] p-12 shadow-2xl relative overflow-hidden">
-
-    <div class="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full -mr-32 -mt-32"></div>
-
-    <div class="flex items-center gap-4 mb-10 relative z-10">
-        <div class="w-2 h-8 bg-primary rounded-full"></div>
-        <h3 class="text-sm font-black text-white uppercase tracking-[4px]">
-            Acesso ao Sistema
-        </h3>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-12 gap-8 relative z-10">
-
-        <div class="md:col-span-4">
-            <label class="label-maya">Usuário (CPF / Login)</label>
-            <input type="text" name="username"
-                   value="{{ object.user.username|default:'' }}"
-                   class="input-maya-dark"
-                   {% if object %}readonly{% endif %}
-                   required>
-        </div>
-
-        <div class="md:col-span-4">
-            <label class="label-maya">
-                {% if object %}Nova Senha{% else %}Senha Inicial{% endif %}
-            </label>
-            <input type="password" name="password"
-                   class="input-maya-dark"
-                   {% if not object %}required{% endif %}>
-        </div>
-
-        <div class="md:col-span-4">
-            <label class="label-maya text-primary text-center">
-                Nível de Acesso
-            </label>
-            <select name="perfil" class="select-maya-dark">
-                <option value="INSTRUTOR" {% if object.perfil == 'INSTRUTOR' %}selected{% endif %}>
-                    Instrutor / Professor
-                </option>
-                <option value="ADMIN" {% if object.perfil == 'ADMIN' %}selected{% endif %}>
-                    Administrador
-                </option>
-            </select>
-        </div>
-
-    </div>
-</div>
-
-<!-- ================= BLOCO 2: DADOS ================= -->
-<div class="bg-white rounded-[3.5rem] shadow-2xl border border-slate-50 p-12">
-
-    <div class="flex items-center gap-4 mb-10">
-        <div class="w-2 h-8 bg-secondary rounded-full"></div>
-        <h3 class="text-sm font-black text-slate-900 uppercase tracking-[4px]">
-            Dados Pessoais
-        </h3>
-    </div>
+<!-- ================= DADOS PESSOAIS ================= -->
+<section class="bg-white rounded-[3rem] shadow-xl border border-slate-100 p-12">
+    <h3 class="text-sm font-black text-slate-900 uppercase tracking-[3px] mb-10">
+        Dados Pessoais
+    </h3>
 
     <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
 
         <div class="md:col-span-6">
-            <label class="label-maya">Nome Completo</label>
+            <label class="label-maya">Nome completo</label>
             <input type="text" name="nome" value="{{ object.nome|default:'' }}" class="input-maya" required>
         </div>
 
@@ -143,46 +75,83 @@
         </div>
 
     </div>
-</div>
+</section>
 
-<!-- ================= BLOCO 3: AGENDA & FINANCEIRO ================= -->
-<div class="bg-white rounded-[3.5rem] shadow-2xl border border-slate-50 p-12">
+<!-- ================= ACESSO AO SISTEMA ================= -->
+<section class="bg-slate-50 rounded-[3rem] border border-slate-200 p-12">
+    <h3 class="text-sm font-black text-slate-900 uppercase tracking-[3px] mb-10">
+        Acesso ao Sistema
+    </h3>
 
-    <div class="flex items-center gap-4 mb-10">
-        <div class="w-2 h-8 bg-emerald-500 rounded-full"></div>
-        <h3 class="text-sm font-black text-slate-900 uppercase tracking-[4px]">
-            Agenda & Pagamento
-        </h3>
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+
+        <div class="md:col-span-4">
+            <label class="label-maya">Usuário (CPF / Login)</label>
+            <input type="text" name="username"
+                   value="{{ object.user.username|default:'' }}"
+                   class="input-maya"
+                   {% if object %}readonly{% endif %}
+                   required>
+        </div>
+
+        <div class="md:col-span-4">
+            <label class="label-maya">
+                {% if object %}Nova senha{% else %}Senha inicial{% endif %}
+            </label>
+            <input type="password" name="password"
+                   class="input-maya"
+                   {% if not object %}required{% endif %}>
+        </div>
+
+        <div class="md:col-span-4">
+            <label class="label-maya">Nível de acesso</label>
+            <select name="perfil" class="input-maya">
+                <option value="INSTRUTOR" {% if object.perfil == 'INSTRUTOR' %}selected{% endif %}>
+                    Instrutor / Professor
+                </option>
+                <option value="ADMIN" {% if object.perfil == 'ADMIN' %}selected{% endif %}>
+                    Administrador
+                </option>
+            </select>
+        </div>
+
     </div>
+</section>
+
+<!-- ================= AGENDA & PAGAMENTO ================= -->
+<section class="bg-white rounded-[3rem] shadow-xl border border-slate-100 p-12">
+    <h3 class="text-sm font-black text-slate-900 uppercase tracking-[3px] mb-10">
+        Agenda & Pagamento
+    </h3>
 
     <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-end">
 
         <div class="md:col-span-4">
-            <label class="label-maya">Registro Profissional</label>
+            <label class="label-maya">Registro profissional</label>
             <input type="text" name="crefito" value="{{ object.crefito|default:'' }}" class="input-maya">
         </div>
 
         <div class="md:col-span-4">
-            <label class="label-maya">Valor por Aula (R$)</label>
+            <label class="label-maya">Valor por aula (R$)</label>
             <input type="number" step="0.01" name="valor_hora_aula"
                    value="{{ object.valor_hora_aula|default:'0.00' }}"
                    class="input-maya">
         </div>
 
         <div class="md:col-span-4">
-            <label class="label-maya">Cor na Agenda</label>
+            <label class="label-maya">Cor na agenda</label>
             <input type="color" name="cor_agenda"
                    value="{{ object.cor_agenda|default:'#802422' }}"
                    class="w-16 h-16 rounded-2xl border-4 border-white shadow-lg cursor-pointer">
         </div>
 
     </div>
-</div>
+</section>
 
 <!-- ================= AÇÃO ================= -->
-<div class="flex justify-center pt-10">
+<div class="flex justify-end pt-10">
     <button type="submit"
-            class="btn bg-secondary hover:bg-blue-900 border-none text-white rounded-[2.5rem] px-24 h-20 shadow-2xl font-black uppercase tracking-[3px] italic hover:scale-105 transition-all">
+            class="btn bg-secondary hover:bg-blue-900 border-none text-white rounded-[2.5rem] px-24 h-18 shadow-2xl font-black uppercase tracking-widest hover:scale-105 transition-all">
         Salvar profissional
     </button>
 </div>
@@ -192,17 +161,12 @@
 
 <style>
 .label-maya {
-    @apply text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 mb-2 block;
+    @apply text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block;
 }
 .input-maya {
-    @apply input input-bordered rounded-2xl bg-slate-50 border-none font-bold text-slate-700 h-14 w-full focus:ring-2 focus:ring-primary/20;
-}
-.input-maya-dark {
-    @apply input rounded-2xl bg-white/5 border border-white/10 text-white h-14 w-full focus:ring-2 focus:ring-primary/40;
-}
-.select-maya-dark {
-    @apply select rounded-2xl bg-white/5 border border-white/10 text-white h-14 w-full;
+    @apply w-full bg-white border-2 border-slate-200 rounded-2xl px-5 h-14
+           text-slate-700 font-bold
+           focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all;
 }
 </style>
-
 {% endblock %}
