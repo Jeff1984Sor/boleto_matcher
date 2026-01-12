@@ -130,16 +130,15 @@
 </div>
 </section>
 
-<!-- ================= ENDEREÇO (NÚMERO AO LADO DO LOGRADOURO) ================= -->
+<!-- ================= ENDEREÇO ================= -->
 <section class="space-y-10 mt-16">
 <div class="text-center text-[11px] font-black text-slate-400 uppercase tracking-[4px]">
     Endereço & localização
 </div>
 
-<!-- LINHA 1: Logradouro + Número (lado a lado) -->
-<div class="grid grid-cols-1 md:grid-cols-12 gap-x-8 gap-y-6">
-    
-    <!-- Logradouro -->
+<!-- LINHA 1: Logradouro GRANDE + Número -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-x-6 gap-y-6">
+    <!-- Logradouro (75% da largura) -->
     <div class="md:col-span-9">
         <label class="block text-[11px] font-black text-slate-900 uppercase tracking-[2px] mb-2">Logradouro</label>
         <input type="text" name="{{ form.logradouro.html_name }}" value="{{ form.logradouro.value|default:'' }}" 
@@ -147,8 +146,7 @@
                {% if form.logradouro.field.required %}required{% endif %}>
         {% if form.logradouro.errors %}<div class="text-red-500 text-xs mt-1">{{ form.logradouro.errors.0 }}</div>{% endif %}
     </div>
-
-    <!-- Número (ao lado direito) -->
+    <!-- Número -->
     <div class="md:col-span-3">
         <label class="block text-[11px] font-black text-slate-900 uppercase tracking-[2px] mb-2">Número</label>
         <input type="text" name="{{ form.numero.html_name }}" value="{{ form.numero.value|default:'' }}" 
@@ -159,9 +157,7 @@
 </div>
 
 <!-- LINHA 2: CEP + Bairro + Cidade -->
-<div class="grid grid-cols-1 md:grid-cols-12 gap-x-8 gap-y-6">
-    
-    <!-- CEP -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-x-6 gap-y-6">
     <div class="md:col-span-3">
         <label class="block text-[11px] font-black text-slate-900 uppercase tracking-[2px] mb-2">CEP</label>
         <input type="text" name="{{ form.cep.html_name }}" value="{{ form.cep.value|default:'' }}" 
@@ -169,8 +165,6 @@
                {% if form.cep.field.required %}required{% endif %}>
         {% if form.cep.errors %}<div class="text-red-500 text-xs mt-1">{{ form.cep.errors.0 }}</div>{% endif %}
     </div>
-
-    <!-- Bairro -->
     <div class="md:col-span-5">
         <label class="block text-[11px] font-black text-slate-900 uppercase tracking-[2px] mb-2">Bairro</label>
         <input type="text" name="{{ form.bairro.html_name }}" value="{{ form.bairro.value|default:'' }}" 
@@ -178,8 +172,6 @@
                {% if form.bairro.field.required %}required{% endif %}>
         {% if form.bairro.errors %}<div class="text-red-500 text-xs mt-1">{{ form.bairro.errors.0 }}</div>{% endif %}
     </div>
-
-    <!-- Cidade -->
     <div class="md:col-span-4">
         <label class="block text-[11px] font-black text-slate-900 uppercase tracking-[2px] mb-2">Cidade</label>
         <input type="text" name="{{ form.cidade.html_name }}" value="{{ form.cidade.value|default:'' }}" 
@@ -188,7 +180,6 @@
         {% if form.cidade.errors %}<div class="text-red-500 text-xs mt-1">{{ form.cidade.errors.0 }}</div>{% endif %}
     </div>
 </div>
-
 </section>
 
 <!-- ================= ALERTA ================= -->
@@ -202,16 +193,12 @@
 <!-- ================= AÇÕES ================= -->
 <div class="mt-20 pt-10 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6">
     <a href="{% url 'aluno_list' %}"
-       class="text-[11px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-[2px] transition-colors">
+       class="text-slate-400 hover:text-slate-600 bg-white border border-slate-200 px-8 py-3 rounded-2xl font-black text-[11px] tracking-[2px] uppercase shadow-sm hover:shadow-md transition-all">
         Cancelar
     </a>
     <button type="submit"
             class="bg-primary text-white px-14 h-16 rounded-2xl font-black text-[12px] tracking-[3px] uppercase shadow-xl shadow-primary/30 hover:scale-[1.02] transition-all">
-        {% if form.instance.pk %}
-            Atualizar dados do aluno
-        {% else %}
-            Salvar dados do aluno
-        {% endif %}
+        Salvar
     </button>
 </div>
 
@@ -221,7 +208,7 @@
 
 <!-- NON FIELD ERRORS -->
 {% if form.non_field_errors %}
-<div class="mt-4 p-4 bg-red-50 border border-red-200 rounded-2xl">
+<div class="mt-4 p-4 bg-red-50 border border-red-200 rounded-2xl max-w-4xl mx-auto">
     {% for error in form.non_field_errors %}
     <div class="text-red-600 text-sm font-bold">{{ error }}</div>
     {% endfor %}
