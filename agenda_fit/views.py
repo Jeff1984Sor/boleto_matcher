@@ -56,12 +56,12 @@ def calendario_semanal(request):
     fim_semana = inicio_semana + timedelta(days=6)
 
     # =========================================================
-    # 2. PROFISSIONAL (ID DO USUÁRIO)
+    # 2. PROFISSIONAL (ID DO USER)
     # =========================================================
-    prof_id_raw = request.GET.get('prof_id')
+    prof_raw = request.GET.get('prof_id')
 
-    if prof_id_raw and prof_id_raw not in ('all', 'None', '') and prof_id_raw.isdigit():
-        prof_id = int(prof_id_raw)
+    if prof_raw and prof_raw not in ('all', 'None', '') and prof_raw.isdigit():
+        prof_id = int(prof_raw)
     else:
         prof_id = 'all'
 
@@ -75,23 +75,26 @@ def calendario_semanal(request):
         'aula',
         'aluno',
         'aula__profissional',
-        'aula__profissional__usuario',  # 🔥 IMPORTANTE
+        'aula__profissional__user',  # ✅ CERTO
     )
 
     # =========================================================
-    # 4. FILTRO POR PROFISSIONAL (USUÁRIO)
+    # 4. FILTRO POR PROFISSIONAL (USER)
     # =========================================================
     if prof_id != 'all':
         presencas = presencas.filter(
-            aula__profissional__usuario_id=prof_id
+            aula__profissional__user_id=prof_id
         )
 
     # =========================================================
-    # 5. LISTA DE PROFISSIONAIS (USUÁRIOS)
+    # 5. LISTA DE PROFISSIONAIS (SEM usuario)
     # =========================================================
-    lista_profissionais = Profissional.objects.filter(
-        ativo=True
-    ).select_related('usuario').order_by('usuario__first_name')
+    lista_profissionais = (
+        Profissional.objects
+        .filter(ativo=True)
+        .select_related('user')          # ✅ CERTO
+        .order_by('user__first_name')    # ✅ CERTO
+    )
 
     # =========================================================
     # 6. GRADE SEMANAL
@@ -125,7 +128,6 @@ def calendario_semanal(request):
     }
 
     return render(request, 'agenda_fit/calendario_semanal.html', context)
-
 # ==============================================================================
 # 2. AÇÕES DE AULA (BOTÕES)
 # ==============================================================================
