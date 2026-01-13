@@ -16,27 +16,30 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- === MAYACORP DESIGN SYSTEM === -->
-    <link rel="stylesheet" href="{% static 'css/tokens.css' %}?v=5">
-    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=5">
-    <link rel="stylesheet" href="{% static 'css/layout.css' %}?v=5">
-    <link rel="stylesheet" href="{% static 'css/forms.css' %}?v=5">
-    <link rel="stylesheet" href="{% static 'css/cards.css' %}?v=5">
-    <link rel="stylesheet" href="{% static 'css/components.css' %}?v=5">
-    <link rel="stylesheet" href="{% static 'css/states.css' %}?v=5">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=5">
+    <link rel="stylesheet" href="{% static 'css/tokens.css' %}?v=6">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=6">
+    <link rel="stylesheet" href="{% static 'css/layout.css' %}?v=6">
+    <link rel="stylesheet" href="{% static 'css/forms.css' %}?v=6">
+    <link rel="stylesheet" href="{% static 'css/cards.css' %}?v=6">
+    <link rel="stylesheet" href="{% static 'css/components.css' %}?v=6">
+    <link rel="stylesheet" href="{% static 'css/states.css' %}?v=6">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=6">
 
     {% tailwind_css %}
 
     <style>
+        /* === CORREÇÃO CRÍTICA DE LAYOUT === */
         body {
             padding-top: 0 !important;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
         }
+
+        /* Scroll principal */
         main {
             overflow-y: auto;
         }
 
-        /* Scroll padrão do app */
         .custom-scroll::-webkit-scrollbar {
             width: 8px;
         }
@@ -53,20 +56,18 @@
             background-color: rgba(0,0,0,0.3);
         }
 
-        /* Container branco padrão */
+        /* Container branco PADRÃO (dashboards, listas etc) */
         .page-container {
             width: 100%;
             max-width: 1280px;
             margin: 0 auto;
             padding: 2.5rem;
-            overflow: visible;
         }
 
-        /* Segurança para páginas com editor / grid pesado */
-        .editor-safe {
-            min-width: 0;
+        /* Páginas grandes (editor, preview, grids largos) */
+        .page-container-fluid {
             width: 100%;
-            overflow: visible;
+            padding: 2.5rem 3rem;
         }
     </style>
 </head>
@@ -74,7 +75,7 @@
 <body class="bg-[var(--bg-app)]">
 
 <!-- APP SHELL -->
-<div class="app-shell w-full h-screen flex">
+<div class="app-shell w-full min-h-screen flex">
 
     {% if user.is_authenticated %}
     <!-- SIDEBAR -->
@@ -84,13 +85,10 @@
     {% endif %}
 
     <!-- APP CONTENT -->
-    <div class="app-content flex-1 flex flex-col h-full bg-transparent">
+    <div class="app-content flex-1 flex flex-col min-h-screen bg-transparent">
 
         <!-- HEADER -->
-        <header class="h-20 px-8 flex items-center justify-between shrink-0
-                       bg-transparent text-white z-20">
-
-            <!-- Tenant -->
+        <header class="h-20 px-8 flex items-center justify-between shrink-0 bg-transparent text-white z-20">
             <div class="flex items-center gap-4">
                 {% if request.tenant.schema_name != 'public' %}
                     <div class="w-3 h-3 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]"></div>
@@ -104,7 +102,6 @@
                 {% endif %}
             </div>
 
-            <!-- User -->
             <div class="flex items-center gap-6">
                 <button class="w-10 h-10 rounded-full flex items-center justify-center
                                text-white/80 hover:text-white hover:bg-white/10 transition">
@@ -127,10 +124,9 @@
             </div>
         </header>
 
-        <!-- MAIN SCROLL -->
-        <main class="flex-1 overflow-y-auto custom-scroll">
+        <!-- MAIN -->
+        <main class="flex-1 custom-scroll">
 
-            <!-- MESSAGES -->
             {% if messages %}
             <div class="px-10 pt-6 space-y-3 max-w-5xl mx-auto">
                 {% for message in messages %}
@@ -147,12 +143,13 @@
             </div>
             {% endif %}
 
-            <!-- PAGE -->
-            
+            <!-- WRAPPER PADRÃO -->
+            {% block page_wrapper %}
+            <div class="page-container">
                 {% block content %}{% endblock %}
-            
+            </div>
+            {% endblock %}
 
-            <!-- FOOTER -->
             <footer class="pb-6 text-center">
                 <p class="text-[10px] uppercase tracking-widest text-white/40 font-bold">
                     MayaCorp System v2.0
