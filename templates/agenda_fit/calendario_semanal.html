@@ -25,31 +25,43 @@
             </div>
 
             <div class="flex items-center gap-4 w-full lg:w-auto">
+
+                <!-- NAVEGAÇÃO SEMANAL -->
                 <div class="join bg-slate-100 p-1.5 rounded-2xl border">
-                    <a href="?data={{ ant_semana }}&prof_id={{ prof_selecionado|default:'' }}"
+                    <a href="?data={{ ant_semana }}&prof_id={{ prof_selecionado }}"
                        class="btn btn-ghost btn-sm join-item rounded-xl">
                         <i class="fas fa-chevron-left"></i>
                     </a>
+
                     <button class="btn btn-ghost btn-sm join-item font-black px-6">
                         {{ inicio_semana|date:"d/M" }} — {{ fim_semana|date:"d/M" }}
                     </button>
-                    <a href="?data={{ prox_semana }}&prof_id={{ prof_selecionado|default:'' }}"
+
+                    <a href="?data={{ prox_semana }}&prof_id={{ prof_selecionado }}"
                        class="btn btn-ghost btn-sm join-item rounded-xl">
                         <i class="fas fa-chevron-right"></i>
                     </a>
                 </div>
 
+                <!-- FILTRO POR PROFISSIONAL -->
                 <form method="get" class="w-60">
                     <input type="hidden" name="data" value="{{ inicio_semana|date:'Y-m-d' }}">
+
                     <select name="prof_id"
                             class="select select-sm w-full bg-white border-2 rounded-xl font-bold"
                             onchange="this.form.submit()">
-                        <option value="all">Todos os profissionais</option>
+
+                        <option value="all" {% if prof_selecionado == 'all' %}selected{% endif %}>
+                            Todos os profissionais
+                        </option>
+
                         {% for prof in lista_profissionais %}
-                        <option value="{{ prof.id }}" {% if prof_selecionado == prof.id %}selected{% endif %}>
+                        <option value="{{ prof.id }}"
+                                {% if prof_selecionado|stringformat:"s" == prof.id|stringformat:"s" %}selected{% endif %}>
                             {{ prof.nome }}
                         </option>
                         {% endfor %}
+
                     </select>
                 </form>
 
