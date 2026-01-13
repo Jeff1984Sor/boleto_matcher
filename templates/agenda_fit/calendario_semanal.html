@@ -6,10 +6,11 @@
 {% block content %}
 <div class="max-w-full mx-auto px-2">
 
-    <!-- BARRA DE FERRAMENTAS -->
+    <!-- ================= BARRA DE FERRAMENTAS ================= -->
     <div class="bg-white/80 backdrop-blur-md rounded-[2rem] shadow-xl border border-slate-100 p-6 mb-10">
         <div class="flex flex-col lg:flex-row items-center justify-between gap-6">
 
+            <!-- TÍTULO -->
             <div>
                 <div class="flex items-center gap-4">
                     <div class="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-white shadow-lg">
@@ -24,26 +25,28 @@
                 </p>
             </div>
 
+            <!-- CONTROLES -->
             <div class="flex items-center gap-4 w-full lg:w-auto">
 
                 <!-- NAVEGAÇÃO SEMANAL -->
                 <div class="join bg-slate-100 p-1.5 rounded-2xl border">
-                    <a href="?data={{ ant_semana }}&prof_id={{ prof_selecionado }}"
+                    <a href="?data={{ ant_semana }}&prof_id={{ prof_selecionado|default:'all' }}"
                        class="btn btn-ghost btn-sm join-item rounded-xl">
                         <i class="fas fa-chevron-left"></i>
                     </a>
 
-                    <button class="btn btn-ghost btn-sm join-item font-black px-6">
+                    <button type="button"
+                            class="btn btn-ghost btn-sm join-item font-black px-6">
                         {{ inicio_semana|date:"d/M" }} — {{ fim_semana|date:"d/M" }}
                     </button>
 
-                    <a href="?data={{ prox_semana }}&prof_id={{ prof_selecionado }}"
+                    <a href="?data={{ prox_semana }}&prof_id={{ prof_selecionado|default:'all' }}"
                        class="btn btn-ghost btn-sm join-item rounded-xl">
                         <i class="fas fa-chevron-right"></i>
                     </a>
                 </div>
 
-                <!-- FILTRO POR PROFISSIONAL -->
+                <!-- FILTRO POR PROFISSIONAL (USUÁRIO DJANGO) -->
                 <form method="get" class="w-60">
                     <input type="hidden" name="data" value="{{ inicio_semana|date:'Y-m-d' }}">
 
@@ -51,14 +54,15 @@
                             class="select select-sm w-full bg-white border-2 rounded-xl font-bold"
                             onchange="this.form.submit()">
 
-                        <option value="all" {% if prof_selecionado == 'all' %}selected{% endif %}>
+                        <option value="all"
+                            {% if prof_selecionado == 'all' %}selected{% endif %}>
                             Todos os profissionais
                         </option>
 
                         {% for prof in lista_profissionais %}
-                        <option value="{{ prof.id }}"
-                                {% if prof_selecionado|stringformat:"s" == prof.id|stringformat:"s" %}selected{% endif %}>
-                            {{ prof.nome }}
+                        <option value="{{ prof.usuario.id }}"
+                            {% if prof_selecionado|stringformat:"s" == prof.usuario.id|stringformat:"s" %}selected{% endif %}>
+                            {{ prof.usuario.get_full_name|default:prof.usuario.username }}
                         </option>
                         {% endfor %}
 
@@ -69,7 +73,7 @@
         </div>
     </div>
 
-    <!-- GRADE -->
+    <!-- ================= GRADE SEMANAL ================= -->
     <div class="flex gap-5 overflow-x-auto pb-10 custom-scroll px-2">
         {% for dia in dias_da_semana %}
         <div class="flex-1 min-w-[240px] flex flex-col gap-5">
@@ -127,6 +131,7 @@
                         <i class="fas fa-user-tie" style="color: {{ p.aula.profissional.cor }}"></i>
                         {{ p.aula.profissional.nome }}
                     </div>
+
                 </div>
 
                 {% endfor %}
@@ -140,7 +145,7 @@
 
 </div>
 
-<!-- MODAL GLOBAL -->
+<!-- ================= MODAL CHECK-IN ================= -->
 <dialog id="modal_checkin" class="modal">
     <div class="modal-box bg-white rounded-[2.5rem] p-10 max-w-lg shadow-2xl">
 

@@ -43,7 +43,9 @@ API_KEY_N8N = "segredo_mayacorp_n8n_123"
 
 @login_required
 def calendario_semanal(request):
-    # 1. Data Base
+    # =========================================================
+    # 1. DATA BASE
+    # =========================================================
     data_get = request.GET.get('data')
     if data_get:
         data_base = timezone.datetime.strptime(data_get, '%Y-%m-%d').date()
@@ -53,46 +55,73 @@ def calendario_semanal(request):
     inicio_semana = data_base - timedelta(days=data_base.weekday())
     fim_semana = inicio_semana + timedelta(days=6)
 
-    # 2. Busca PRESENÇAS (Um card por aluno)
+    # =========================================================
+    # 2. PROFISSIONAL (ID DO USUÁRIO)
+    # =========================================================
+    prof_id_raw = request.GET.get('prof_id')
+
+    if prof_id_raw and prof_id_raw not in ('all', 'None', '') and prof_id_raw.isdigit():
+        prof_id = int(prof_id_raw)
+    else:
+        prof_id = 'all'
+
+    # =========================================================
+    # 3. PRESENÇAS BASE
+    # =========================================================
     presencas = Presenca.objects.filter(
         aula__data_hora_inicio__date__gte=inicio_semana,
         aula__data_hora_inicio__date__lte=fim_semana
-    ).select_related('aula', 'aluno', 'aula__profissional')
+    ).select_related(
+        'aula',
+        'aluno',
+        'aula__profissional',
+        'aula__profissional__usuario',  # 🔥 IMPORTANTE
+    )
 
-    # Filtro por Profissional
-    prof_id = request.GET.get('prof_id')
-    if prof_id and prof_id != 'all':
-        presencas = presencas.filter(aula__profissional_id=prof_id)
-    
-    lista_profissionais = Profissional.objects.filter(ativo=True)
+    # =========================================================
+    # 4. FILTRO POR PROFISSIONAL (USUÁRIO)
+    # =========================================================
+    if prof_id != 'all':
+        presencas = presencas.filter(
+            aula__profissional__usuario_id=prof_id
+        )
 
-    # 3. Organiza Grade por Dia
+    # =========================================================
+    # 5. LISTA DE PROFISSIONAIS (USUÁRIOS)
+    # =========================================================
+    lista_profissionais = Profissional.objects.filter(
+        ativo=True
+    ).select_related('usuario').order_by('usuario__first_name')
+
+    # =========================================================
+    # 6. GRADE SEMANAL
+    # =========================================================
     dias_da_semana = []
     grade_semanal = {i: [] for i in range(7)}
-    
+    hoje = timezone.now().date()
+
     for i in range(7):
-        dia_atual = inicio_semana + timedelta(days=i)
+        dia = inicio_semana + timedelta(days=i)
         dias_da_semana.append({
-            'data': dia_atual,
-            'hoje': dia_atual == timezone.now().date()
+            'data': dia,
+            'hoje': dia == hoje
         })
 
     for p in presencas:
-        dia_index = p.aula.data_hora_inicio.weekday()
-        grade_semanal[dia_index].append(p)
+        grade_semanal[p.aula.data_hora_inicio.weekday()].append(p)
 
-    prox_semana = (inicio_semana + timedelta(days=7)).strftime('%Y-%m-%d')
-    ant_semana = (inicio_semana - timedelta(days=7)).strftime('%Y-%m-%d')
-
+    # =========================================================
+    # 7. CONTEXTO FINAL
+    # =========================================================
     context = {
         'dias_da_semana': dias_da_semana,
         'grade_semanal': grade_semanal,
         'inicio_semana': inicio_semana,
         'fim_semana': fim_semana,
-        'prox_semana': prox_semana,
-        'ant_semana': ant_semana,
+        'prox_semana': (inicio_semana + timedelta(days=7)).strftime('%Y-%m-%d'),
+        'ant_semana': (inicio_semana - timedelta(days=7)).strftime('%Y-%m-%d'),
         'lista_profissionais': lista_profissionais,
-        'prof_selecionado': int(prof_id) if prof_id else None
+        'prof_selecionado': prof_id,
     }
 
     return render(request, 'agenda_fit/calendario_semanal.html', context)
