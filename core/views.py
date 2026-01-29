@@ -15,9 +15,6 @@ from django_tenants.utils import schema_context
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from cadastros_fit.models import Aluno
-from agenda_fit.models import Aula
-from financeiro_fit.models import Lancamento
 from django.views.generic import ListView, CreateView, UpdateView
 from django.contrib.auth.models import User
 from django.urls import reverse_lazy
@@ -34,13 +31,9 @@ def home(request):
     
     # Prepara o contexto com os dados do dashboard (da sua primeira função antiga)
     context = {
-        'total_alunos': Aluno.objects.count(),
-        'aulas_hoje': Aula.objects.filter(data_hora_inicio__date=hoje).count(),
-        'receber_hoje': Lancamento.objects.filter(
-            categoria__tipo='RECEITA', 
-            data_vencimento=hoje, 
-            status='PENDENTE'
-        ).count(),
+        'total_alunos': 0,
+        'aulas_hoje': 0,
+        'receber_hoje': 0,
         'banners': banners,
     }
     return render(request, 'home.html', context)

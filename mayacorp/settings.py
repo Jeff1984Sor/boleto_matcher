@@ -4,7 +4,10 @@ Django settings for mayacorp project.
 
 from pathlib import Path
 import os
-import dj_database_url 
+try:
+    import dj_database_url
+except ImportError:
+    dj_database_url = None
 from dotenv import load_dotenv
 import google.generativeai as genai
 
@@ -41,9 +44,6 @@ CSRF_TRUSTED_ORIGINS = [
 SHARED_APPS = (
     'django_tenants',
     'core',
-    'tailwind',  # App do motor do Tailwind
-    'theme',     # Seu app de design customizado
-    'django_browser_reload', # Atualiza o navegador sozinho no dev
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -57,13 +57,6 @@ SHARED_APPS = (
 
 TENANT_APPS = (
     'pdf_tools',
-    'cadastros_fit',
-    'contratos_fit',
-    'agenda_fit',
-    'financeiro_fit',
-    'comunicacao_fit',
-    'portal_aluno',
-    'termos_fit',
 )
 
 INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
@@ -78,14 +71,12 @@ TENANT_DOMAIN_MODEL = "core.Domain"
 MIDDLEWARE = [
     'django_tenants.middleware.main.TenantMainMiddleware', 
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django_browser_reload.middleware.BrowserReloadMiddleware', # Reload automático
     
 ]
 
@@ -128,7 +119,7 @@ DATABASES = {
     }
 }
 
-if os.getenv('DATABASE_URL'):
+if os.getenv('DATABASE_URL') and dj_database_url:
     db_config = dj_database_url.config(default=os.getenv('DATABASE_URL'))
     db_config['ENGINE'] = 'django_tenants.postgresql_backend'
     DATABASES = {'default': db_config}
@@ -140,18 +131,12 @@ if os.getenv('DATABASE_URL'):
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-    BASE_DIR / "theme" / "static", # <--- ESSA LINHA É VITAL PARA O TAILWIND
-]
+STATICFILES_DIRS = []
 
 # Configuração de Storage (Django 4.2+)
 STORAGES = {
     "default": {
         "BACKEND": "django_tenants.files.storages.TenantFileSystemStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
 
@@ -159,22 +144,6 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 MULTITENANT_RELATIVE_MEDIA_ROOT = "%s"
 
-# ==============================================================================
-# TAILWIND CONFIGURATION
-# ==============================================================================
-
-TAILWIND_APP_NAME = 'theme'
-INTERNAL_IPS = ["127.0.0.1"]
-
-import platform
-
-if platform.system() == "Windows":
-    # Caminho do seu PC
-    NPM_BIN_PATH = r"C:\Program Files\nodejs\npm.cmd"
-else:
-    # No Linux (GCP), o Django encontra sozinho no /usr/bin/npm
-    # Se der erro de "NPM not found", mude para: NPM_BIN_PATH = "/usr/bin/npm"
-    pass
 
 # ==============================================================================
 # OUTRAS CONFIGURAÇÕES (AUTH, CRISPY, GOOGLE)

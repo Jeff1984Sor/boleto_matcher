@@ -1,0 +1,24 @@
+﻿<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>PDF Tools</title></head>
+<body>
+  <h1>PDF Tools</h1>
+  <h2>Boletos</h2>
+  <ul>
+    {% for f in arquivos.boletos %}
+      <li>{{ f }}</li>
+    {% empty %}
+      <li>Nenhum boleto</li>
+    {% endfor %}
+  </ul>
+
+  <h2>Comprovantes</h2>
+  <ul>
+    {% for f in arquivos.comprovantes %}
+      <li>{{ f }}</li>
+    {% empty %}
+      <li>Nenhum comprovante</li>
+    {% endfor %}
+  </ul>
+</body>
+</html>
