@@ -4,7 +4,6 @@ import django.contrib.auth.models
 import django.contrib.auth.validators
 import django.db.models.deletion
 import django.utils.timezone
-import django_tenants.postgresql_backend.base
 from django.conf import settings
 from django.db import migrations, models
 
@@ -38,8 +37,7 @@ class Migration(migrations.Migration):
             name='Organizacao',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('schema_name', models.CharField(db_index=True, max_length=63, unique=True, validators=[django_tenants.postgresql_backend.base._check_schema_name])),
-                ('nome', models.CharField(max_length=100, verbose_name='Nome da Empresa')),
+                                ('nome', models.CharField(max_length=100, verbose_name='Nome da Empresa')),
                 ('cnpj', models.CharField(blank=True, max_length=18, null=True)),
                 ('criado_em', models.DateTimeField(auto_now_add=True)),
             ],
@@ -95,12 +93,7 @@ class Migration(migrations.Migration):
                 ('paginas_no_ciclo', models.PositiveIntegerField(verbose_name='Páginas Usadas')),
                 ('usuario', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='historico', to=settings.AUTH_USER_MODEL)),
             ],
-        ),
-        migrations.CreateModel(
-            name='Domain',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('domain', models.CharField(db_index=True, max_length=253, unique=True)),
+        ),                ('domain', models.CharField(db_index=True, max_length=253, unique=True)),
                 ('is_primary', models.BooleanField(db_index=True, default=True)),
                 ('tenant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='domains', to='core.organizacao')),
             ],

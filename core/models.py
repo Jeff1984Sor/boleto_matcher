@@ -1,6 +1,5 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django_tenants.models import TenantMixin, DomainMixin
 
 # 1. Criar a tabela de Produtos (Global)
 class Produto(models.Model):
@@ -12,24 +11,16 @@ class Produto(models.Model):
         return self.nome
 
 # 2. Organização (O Tenant)
-class Organizacao(TenantMixin):
+class Organizacao(models.Model):
     nome = models.CharField(max_length=100, verbose_name="Nome da Empresa")
     cnpj = models.CharField(max_length=18, blank=True, null=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     
     # Relação: Quais produtos essa empresa contratou?
     produtos_contratados = models.ManyToManyField(Produto, blank=True)
-
-    # --- AJUSTE IMPORTANTE 1: Criação Automática ---
-    # Isso faz o Django criar o Schema no banco assim que você salvar o objeto
-    auto_create_schema = True 
-    
     def __str__(self):
         return self.nome
 
-# 3. Domínio (URLs)
-class Domain(DomainMixin):
-    pass
 
 # 4. Usuário (Global / Public)
 class CustomUser(AbstractUser):
