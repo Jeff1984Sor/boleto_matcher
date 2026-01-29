@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PDF Tools | Reconciliacao</title>
+  <title>PDF Tools | Conciliacao</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
 
@@ -226,47 +226,47 @@
   <div class="wrap">
     <header>
       <h1>PDF Tools</h1>
-      <p>Fast reconciliation of boletos and comprovantes with structured extraction. Upload your files, run the match, and download the final ZIP.</p>
+      <p>Conciliacao rapida de boletos e comprovantes com extracao estruturada. Envie seus arquivos, rode a combinacao e baixe o ZIP final.</p>
       <div class="summary">
         <div class="stat">Boletos: <strong id="count-boletos">0</strong></div>
         <div class="stat">Comprovantes: <strong id="count-comprovantes">0</strong></div>
-        <div class="stat">Status: <strong id="status">Idle</strong></div>
+        <div class="stat">Status: <strong id="status">Parado</strong></div>
       </div>
     </header>
 
     <section class="grid">
       <div class="card span-7">
         <h3>Boletos</h3>
-        <p>Upload multiple boleto PDFs. We will match each boleto with the best comprovante.</p>
+        <p>Envie varios PDFs de boletos. Vamos combinar cada boleto com o melhor comprovante.</p>
         <div class="upload" id="drop-boletos">
-          <strong>Drop PDFs here</strong>
-          <span class="muted">or</span>
+          <strong>Solte os PDFs aqui</strong>
+          <span class="muted">ou</span>
           <input id="input-boletos" type="file" accept="application/pdf" multiple hidden>
-          <button class="btn" type="button" data-target="boletos">Select boletos</button>
+          <button class="btn" type="button" data-target="boletos">Selecionar boletos</button>
         </div>
         <div class="list" id="list-boletos"></div>
       </div>
 
       <div class="card span-5">
         <h3>Comprovantes</h3>
-        <p>Upload exactly one comprovantes PDF (multi-page). It will be split per page.</p>
+        <p>Envie apenas 1 PDF de comprovantes (com varias paginas). Ele sera dividido por pagina.</p>
         <div class="upload" id="drop-comprovantes">
-          <strong>Drop the comprovantes PDF</strong>
-          <span class="muted">or</span>
+          <strong>Solte o PDF de comprovantes</strong>
+          <span class="muted">ou</span>
           <input id="input-comprovantes" type="file" accept="application/pdf" hidden>
-          <button class="btn" type="button" data-target="comprovantes">Select comprovantes</button>
+          <button class="btn" type="button" data-target="comprovantes">Selecionar comprovantes</button>
         </div>
         <div class="list" id="list-comprovantes"></div>
       </div>
 
       <div class="card span-12">
-        <h3>Processing</h3>
-        <p>Start the reconciliation and track progress in real-time.</p>
+        <h3>Processamento</h3>
+        <p>Inicie a conciliacao e acompanhe o progresso em tempo real.</p>
         <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
-          <button class="btn" id="btn-process">Run reconciliation</button>
-          <button class="btn secondary" id="btn-refresh">Refresh list</button>
-          <button class="btn secondary" id="btn-clear">Clear all</button>
-          <a class="btn secondary" id="download" href="#" style="display:none;">Download ZIP</a>
+          <button class="btn" id="btn-process">Rodar conciliacao</button>
+          <button class="btn secondary" id="btn-refresh">Atualizar lista</button>
+          <button class="btn secondary" id="btn-clear">Limpar tudo</button>
+          <a class="btn secondary" id="download" href="#" style="display:none;">Baixar ZIP</a>
         </div>
         <div class="logs" id="log"></div>
       </div>
@@ -324,7 +324,7 @@
       if (!files.length) {
         const empty = document.createElement('div');
         empty.className = 'file';
-        empty.textContent = `No ${type} uploaded`;
+        empty.textContent = `Nenhum ${type} enviado`;
         listEl.appendChild(empty);
         return;
       }
@@ -344,10 +344,10 @@
 
     async function uploadFiles(type, files) {
       if (!files || !files.length) return;
-      setStatus('Uploading...');
+      setStatus('Enviando...');
       for (const file of files) {
         if (!file.name.toLowerCase().endsWith('.pdf')) {
-          log(`Skip: ${file.name} (not PDF)`);
+          log(`Pular: ${file.name} (nao e PDF)`);
           continue;
         }
         const fd = new FormData();
@@ -355,17 +355,17 @@
         fd.append('file', file);
         const res = await fetch(api.upload, { method: 'POST', body: fd });
         const data = await res.json();
-        if (data?.error) log(`Error: ${data.error}`);
-        else log(`Uploaded: ${data.filename}`);
+        if (data?.error) log(`Erro: ${data.error}`);
+        else log(`Enviado: ${data.filename}`);
       }
       await refreshList();
-      setStatus('Idle');
+      setStatus('Parado');
     }
 
     async function runProcess() {
       logEl.textContent = '';
       downloadEl.style.display = 'none';
-      setStatus('Processing...');
+      setStatus('Processando...');
       const res = await fetch(api.process, { cache: 'no-store' });
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -383,7 +383,7 @@
             const evt = JSON.parse(line);
             if (evt.type === 'log') log(evt.data);
             if (evt.type === 'finish') {
-              log(`Done. Total: ${evt.data.total}`);
+              log(`Concluido. Total: ${evt.data.total}`);
               downloadEl.href = evt.data.url;
               downloadEl.style.display = 'inline-flex';
             }
@@ -392,7 +392,7 @@
           }
         }
       }
-      setStatus('Idle');
+      setStatus('Parado');
       await refreshList();
     }
 
