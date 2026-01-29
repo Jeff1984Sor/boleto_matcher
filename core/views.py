@@ -21,7 +21,6 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 
 
 # Essa função agora manda o HTML completo (com menu)
-@login_required
 def home(request):
     hoje = timezone.now().date()
     
@@ -127,7 +126,6 @@ class UsuarioUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'core/form_usuario.html'
     success_url = reverse_lazy('core:lista_usuarios')
 
-@login_required
 def dashboard_view(request):
     # Aqui você pode buscar dados para o dashboard depois
     context = {

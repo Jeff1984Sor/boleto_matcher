@@ -7,7 +7,8 @@ def possui_produto(slug_produto):
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
             if not request.user.is_authenticated:
-                return redirect('login')
+                # Permite acesso anônimo quando não há autenticação
+                return view_func(request, *args, **kwargs)
             
             if request.user.is_superuser:
                 return view_func(request, *args, **kwargs)
