@@ -93,13 +93,6 @@ class Migration(migrations.Migration):
                 ('paginas_no_ciclo', models.PositiveIntegerField(verbose_name='Páginas Usadas')),
                 ('usuario', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='historico', to=settings.AUTH_USER_MODEL)),
             ],
-        ),                ('domain', models.CharField(db_index=True, max_length=253, unique=True)),
-                ('is_primary', models.BooleanField(db_index=True, default=True)),
-                ('tenant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='domains', to='core.organizacao')),
-            ],
-            options={
-                'abstract': False,
-            },
         ),
         migrations.AddField(
             model_name='organizacao',
