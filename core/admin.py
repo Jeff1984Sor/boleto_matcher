@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser, Produto, HistoricoConsumo, BannerHome, Organizacao, Domain
+from .models import CustomUser, Produto, HistoricoConsumo, BannerHome, Organizacao
 
 # --- ORGANIZAÇÃO ---
 @admin.register(Organizacao)
@@ -26,12 +26,6 @@ class HistoricoInline(admin.TabularInline):
     readonly_fields = ['data_fechamento', 'paginas_no_ciclo']
     extra = 0
     can_delete = False
-
-@admin.register(Domain)
-class DomainAdmin(admin.ModelAdmin):
-    list_display = ('domain', 'tenant', 'is_primary')
-    list_filter = ('tenant', 'is_primary')
-    search_fields = ('domain', 'tenant__nome')
 
 class CustomUserAdmin(UserAdmin):
     model = CustomUser
