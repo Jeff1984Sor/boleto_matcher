@@ -11,7 +11,6 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.http import HttpResponse
 from django.db import connection
-from django_tenants.utils import schema_context
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
@@ -76,32 +75,28 @@ def novo_usuario_sistema(request):
 
 def debug_auth(request):
     u_txt = 'suporte'
-    p_txt = '123' 
+    p_txt = '123'
 
     User = get_user_model()
-    html = f"<h2>Diagnóstico (Schema Atual: {connection.schema_name})</h2>"
-
-    # Tenta buscar no PUBLIC (Onde os usuários vivem)
+    html = "<h2>Diagnostico</h2>"
     try:
-        with schema_context('public'): # <--- FORÇA OLHAR NO PUBLIC
-            user_db = User.objects.get(username=u_txt)
-            html += f"<p style='color:blue'>✅ 1. Usuário encontrado no schema PUBLIC (ID: {user_db.id}).</p>"
-            
-            if user_db.check_password(p_txt):
-                 html += f"<p style='color:blue'>✅ 2. Senha bate.</p>"
-            else:
-                 html += f"<p style='color:red'>❌ 2. Senha errada.</p>"
+        user_db = User.objects.get(username=u_txt)
+        html += f"<p style='color:blue'>OK 1. Usuario encontrado (ID: {user_db.id}).</p>"
 
-            # Teste de Autenticação
-            user_auth = authenticate(request, username=u_txt, password=p_txt)
-            if user_auth:
-                login(request, user_auth)
-                html += f"<h1 style='color:green'>🚀 LOGIN SUCESSO!</h1> <a href='/admin/'>ENTRAR</a>"
-            else:
-                html += f"<h1 style='color:orange'>⚠️ Authenticate falhou (Router Issue?)</h1>"
+        if user_db.check_password(p_txt):
+             html += "<p style='color:blue'>OK 2. Senha bate.</p>"
+        else:
+             html += "<p style='color:red'>ERRO 2. Senha errada.</p>"
+
+        user_auth = authenticate(request, username=u_txt, password=p_txt)
+        if user_auth:
+            login(request, user_auth)
+            html += "<h1 style='color:green'>LOGIN SUCESSO!</h1> <a href='/admin/'>ENTRAR</a>"
+        else:
+            html += "<h1 style='color:orange'>WARN Authenticate falhou</h1>"
 
     except User.DoesNotExist:
-        html += f"<p style='color:red'>❌ Usuário não existe nem no Public.</p>"
+        html += "<p style='color:red'>ERRO Usuario nao existe.</p>"
 
     return HttpResponse(html)
 

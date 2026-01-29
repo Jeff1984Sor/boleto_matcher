@@ -38,38 +38,27 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 # ==============================================================================
-# CONFIGURAÇÃO MULTI-TENANT (DJANGO-TENANTS)
+# APLICA??ES (SINGLE-TENANT)
 # ==============================================================================
 
-SHARED_APPS = (
-    'django_tenants',
+INSTALLED_APPS = [
     'core',
+    'pdf_tools',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
     'crispy_forms',
     'crispy_bootstrap5',
-)
-
-TENANT_APPS = (
-    'pdf_tools',
-)
-
-INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
-
-TENANT_MODEL = "core.Organizacao" 
-TENANT_DOMAIN_MODEL = "core.Domain"
+]
 
 # ==============================================================================
 # MIDDLEWARE
 # ==============================================================================
 
 MIDDLEWARE = [
-    'django_tenants.middleware.main.TenantMainMiddleware', 
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -101,16 +90,12 @@ TEMPLATES = [
 WSGI_APPLICATION = 'mayacorp.wsgi.application'
 
 # ==============================================================================
-# DATABASE & ROUTER
+# DATABASE
 # ==============================================================================
-
-DATABASE_ROUTERS = (
-    'django_tenants.routers.TenantSyncRouter',
-)
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django_tenants.postgresql_backend', 
+        'ENGINE': 'django.db.backends.postgresql', 
         'NAME': os.getenv('DB_NAME', 'mayacorp_db'),
         'USER': os.getenv('DB_USER', 'postgres'),
         'PASSWORD': os.getenv('DB_PASSWORD', 'postgres'),
@@ -121,7 +106,6 @@ DATABASES = {
 
 if os.getenv('DATABASE_URL') and dj_database_url:
     db_config = dj_database_url.config(default=os.getenv('DATABASE_URL'))
-    db_config['ENGINE'] = 'django_tenants.postgresql_backend'
     DATABASES = {'default': db_config}
 
 # ==============================================================================
@@ -136,13 +120,15 @@ STATICFILES_DIRS = []
 # Configuração de Storage (Django 4.2+)
 STORAGES = {
     "default": {
-        "BACKEND": "django_tenants.files.storages.TenantFileSystemStorage",
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
-MULTITENANT_RELATIVE_MEDIA_ROOT = "%s"
 
 
 # ==============================================================================
