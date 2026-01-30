@@ -6,6 +6,7 @@ import json
 import re
 import logging
 import time
+import concurrent.futures
 import fitz  # PyMuPDF
 from difflib import SequenceMatcher
 from pypdf import PdfReader, PdfWriter
@@ -22,6 +23,16 @@ genai.configure(api_key=settings.GOOGLE_API_KEY)
 # ============================================================
 # FERRAMENTAS AUXILIARES
 # ============================================================
+
+def gerar_conteudo_com_timeout(model, parts, timeout_s):
+    """Executa generate_content com timeout para evitar travar o stream."""
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(model.generate_content, parts)
+        try:
+            return future.result(timeout=timeout_s)
+        except concurrent.futures.TimeoutError:
+            logger.error(f"Timeout na chamada do Gemini ({timeout_s}s).")
+            return None
 
 def limpar_numeros(texto):
     """Remove todos os caracteres não numéricos de uma string."""
@@ -69,6 +80,7 @@ def extrair_dados_estruturados_com_ia(imagem_pil, tipo_doc):
     Usa um modelo de IA para extrair um JSON estruturado de uma imagem de documento.
     """
     model = genai.GenerativeModel('gemini-2.5-pro')
+    timeout_s = int(os.getenv('GEMINI_TIMEOUT_SECONDS', '300'))
     prompt = f"""
     Analise esta imagem de um {tipo_doc}. Sua tarefa é extrair as seguintes informações
     e retorná-las em um objeto JSON VÁLIDO.
@@ -103,7 +115,10 @@ def extrair_dados_estruturados_com_ia(imagem_pil, tipo_doc):
     """
     for tentativa in range(3):
         try:
-            response = model.generate_content([prompt, imagem_pil])
+            response = gerar_conteudo_com_timeout(model, [prompt, imagem_pil], timeout_s)
+            if response is None:
+                time.sleep(2 * (tentativa + 1))
+                continue
             texto_resposta = response.text.strip()
             if texto_resposta.startswith("```json"):
                 texto_resposta = texto_resposta[7:]
@@ -150,6 +165,7 @@ def chamar_gemini_desempate(img_boleto, lista_imgs_comprovantes):
     """Usa IA para análise profunda e desempate."""
     logger.info(f"Acionando IA de desempate para {len(lista_imgs_comprovantes)} comprovantes.")
     model = genai.GenerativeModel('gemini-2.5-pro')
+    timeout_s = int(os.getenv('GEMINI_TIMEOUT_SECONDS', '300'))
     prompt_parts = [
         "Você é um analista financeiro. Sua tarefa é resolver uma ambiguidade.",
         "Apresento UMA imagem de BOLETO e VÁRIAS de COMPROVANTES com o mesmo valor.",
@@ -164,7 +180,9 @@ def chamar_gemini_desempate(img_boleto, lista_imgs_comprovantes):
     Formato: { "melhor_indice_candidato": <numero>, "justificativa": "<sua análise>" }
     """)
     try:
-        response = model.generate_content(prompt_parts)
+        response = gerar_conteudo_com_timeout(model, prompt_parts, timeout_s)
+        if response is None:
+            return {"melhor_indice_candidato": -1, "justificativa": "Timeout na IA."}
         texto_resposta = response.text.replace('```json', '').replace('```', '').strip()
         return json.loads(texto_resposta)
     except Exception as e:
