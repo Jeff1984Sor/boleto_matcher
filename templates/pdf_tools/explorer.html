@@ -175,6 +175,23 @@
       border: 1px solid var(--stroke);
       background: rgba(9, 14, 19, 0.5);
       font-size: 13px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .file.processing {
+      border-color: var(--accent);
+      box-shadow: var(--glow);
+      background: rgba(0, 209, 178, 0.08);
+    }
+
+    .file.success {
+      border-color: var(--ok);
+      background: rgba(71, 227, 125, 0.12);
+    }
+
+    .file.warning {
+      border-color: var(--warn);
+      background: rgba(242, 183, 5, 0.1);
     }
 
     .chip {
@@ -279,6 +296,7 @@
     const countBoletos = document.getElementById('count-boletos');
     const countComprovantes = document.getElementById('count-comprovantes');
     const downloadEl = document.getElementById('download');
+    const fileRows = new Map();
 
     const api = {
       upload: '/tools/pdf/api/upload/',
@@ -300,6 +318,8 @@
     function createFileRow(type, name) {
       const row = document.createElement('div');
       row.className = 'file';
+      row.dataset.type = type;
+      row.dataset.name = name;
       row.innerHTML = `
         <span>${name}</span>
         <div style="display:flex; gap:8px; align-items:center;">
@@ -318,6 +338,13 @@
       return row;
     }
 
+    function setFileState(name, state) {
+      const row = fileRows.get(name);
+      if (!row) return;
+      row.classList.remove('processing', 'success', 'warning');
+      if (state) row.classList.add(state);
+    }
+
     function renderList(type, files) {
       const listEl = document.getElementById(`list-${type}`);
       listEl.innerHTML = '';
@@ -328,7 +355,12 @@
         listEl.appendChild(empty);
         return;
       }
-      files.forEach(name => listEl.appendChild(createFileRow(type, name)));
+      if (type === 'boletos') fileRows.clear();
+      files.forEach(name => {
+        const row = createFileRow(type, name);
+        listEl.appendChild(row);
+        if (type === 'boletos') fileRows.set(name, row);
+      });
     }
 
     async function refreshList() {
@@ -392,6 +424,8 @@
           try {
             const evt = JSON.parse(line);
             if (evt.type === 'log') log(evt.data);
+            if (evt.type === 'file_start') setFileState(evt.data.filename, 'processing');
+            if (evt.type === 'file_done') setFileState(evt.data.filename, evt.data.status);
             if (evt.type === 'finish') {
               log(`Concluido. Total: ${evt.data.total}`);
               downloadEl.href = evt.data.url;
