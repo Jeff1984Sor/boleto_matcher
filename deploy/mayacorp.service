@@ -7,7 +7,7 @@ User=mayacorp22
 Group=mayacorp22
 WorkingDirectory=/home/mayacorp22/boleto_matcher
 EnvironmentFile=/home/mayacorp22/boleto_matcher/.env
-ExecStart=/home/mayacorp22/boleto_matcher/.venv/bin/gunicorn mayacorp.wsgi:application --bind 0.0.0.0:9000 --workers 2 --timeout 120 --access-logfile - --error-logfile - --log-level info
+ExecStart=/home/mayacorp22/boleto_matcher/.venv/bin/gunicorn mayacorp.wsgi:application --bind 0.0.0.0:9000 --workers 2 --timeout 600 --access-logfile - --error-logfile - --log-level info
 Restart=always
 RestartSec=3
 

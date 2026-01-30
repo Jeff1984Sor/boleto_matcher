@@ -367,6 +367,16 @@
       downloadEl.style.display = 'none';
       setStatus('Processando...');
       const res = await fetch(api.process, { cache: 'no-store' });
+      if (!res.ok) {
+        let msg = `Erro ${res.status}`;
+        try {
+          const data = await res.json();
+          if (data?.error) msg = `Erro: ${data.error}`;
+        } catch (e) {}
+        log(msg);
+        setStatus('Parado');
+        return;
+      }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
