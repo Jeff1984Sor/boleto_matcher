@@ -79,7 +79,7 @@ def extrair_dados_estruturados_com_ia(imagem_pil, tipo_doc):
     """
     Usa um modelo de IA para extrair um JSON estruturado de uma imagem de documento.
     """
-    model = genai.GenerativeModel('gemini-2.5-pro')
+    model = genai.GenerativeModel(settings.GEMINI_MODEL)
     timeout_s = int(os.getenv('GEMINI_TIMEOUT_SECONDS', '300'))
     prompt = f"""
     Analise esta imagem de um {tipo_doc}. Sua tarefa é extrair as seguintes informações
@@ -164,7 +164,7 @@ def processar_pagina(pdf_bytes, tipo_doc, nome_arquivo=""):
 def chamar_gemini_desempate(img_boleto, lista_imgs_comprovantes):
     """Usa IA para análise profunda e desempate."""
     logger.info(f"Acionando IA de desempate para {len(lista_imgs_comprovantes)} comprovantes.")
-    model = genai.GenerativeModel('gemini-2.5-pro')
+    model = genai.GenerativeModel(settings.GEMINI_MODEL)
     timeout_s = int(os.getenv('GEMINI_TIMEOUT_SECONDS', '300'))
     prompt_parts = [
         "Você é um analista financeiro. Sua tarefa é resolver uma ambiguidade.",

@@ -146,6 +146,7 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-2.5-pro')
 if GOOGLE_API_KEY:
     genai.configure(api_key=GOOGLE_API_KEY)
 
