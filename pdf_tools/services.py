@@ -376,6 +376,61 @@ def processar_reconciliacao(caminho_comprovantes, lista_caminhos_boletos, user):
         except Exception as e:
             yield emit('log', f"Ã¢ÂÅ’ Erro no arquivo {nome_arquivo}: {e}")
 
+    # --- ETAPA 2B: REANALISE DOS NAO COMBINADOS ---
+    boletos_sem_match = [b for b in lista_final_boletos if not b.get('match')]
+    if boletos_sem_match:
+        yield emit('log', f"Rodada final: reanalisando {len(boletos_sem_match)} boletos sem match com comprovantes restantes.")
+    recuperados_pos_analise = 0
+    for boleto in boletos_sem_match:
+        comprovantes_sem_match = [c for c in pool_comprovantes if not c.get('usado')]
+        if not comprovantes_sem_match:
+            break
+
+        # Primeiro tenta reduzir o universo por valor para manter a IA focada.
+        candidatos_finais = comprovantes_sem_match
+        filtro_valor = False
+        if boleto.get('valor', 0) > 0:
+            candidatos_mesmo_valor = [
+                c for c in comprovantes_sem_match
+                if abs(c.get('valor', 0) - boleto['valor']) < 0.05
+            ]
+            if candidatos_mesmo_valor:
+                candidatos_finais = candidatos_mesmo_valor
+                filtro_valor = True
+
+        # Se restou apenas um candidato claro, aproveita esse desempate final.
+        if len(candidatos_finais) == 1:
+            escolhido = candidatos_finais[0]
+            boleto['match'] = escolhido
+            boleto['motivo'] = "POS-VERIFICACAO (CANDIDATO UNICO RESTANTE)"
+            escolhido['usado'] = True
+            recuperados_pos_analise += 1
+            yield emit('log', f"   COMBINADO (POS): {boleto['nome']} -> Comprovante Pag {escolhido['id']+1} (Candidato unico)")
+            continue
+
+        try:
+            universo = "mesmo valor" if filtro_valor else "todos os restantes"
+            yield emit('log', f"   Reanalise IA (POS): {boleto['nome']} com {len(candidatos_finais)} comprovantes ({universo}).")
+            img_boleto = pdf_bytes_para_imagem_pil(boleto['pdf_bytes'])
+            imgs_candidatos = [pdf_bytes_para_imagem_pil(c['pdf_bytes']) for c in candidatos_finais]
+            resultado_pos = chamar_gemini_desempate(img_boleto, imgs_candidatos)
+            indice_escolhido = resultado_pos.get('melhor_indice_candidato', -1)
+
+            if isinstance(indice_escolhido, int) and 0 <= indice_escolhido < len(candidatos_finais):
+                escolhido = candidatos_finais[indice_escolhido]
+                boleto['match'] = escolhido
+                boleto['motivo'] = f"IA POS-VERIFICACAO ({resultado_pos.get('justificativa')})"
+                escolhido['usado'] = True
+                recuperados_pos_analise += 1
+                yield emit('log', f"   COMBINADO (POS): {boleto['nome']} -> Comprovante Pag {escolhido['id']+1}")
+            else:
+                yield emit('log', f"   POS sem match: {boleto['nome']} (IA sem confianca suficiente).")
+        except Exception as e:
+            yield emit('log', f"   Erro na reanalise POS de {boleto['nome']}: {e}")
+
+    if recuperados_pos_analise > 0:
+        yield emit('log', f"Reanalise POS concluiu com {recuperados_pos_analise} combinacoes recuperadas.")
+
     # --- ETAPA 3: GERAR ZIP ---
     yield emit('log', 'Ã°Å¸â€™Â¾ Montando o arquivo ZIP final...')
     output_zip = io.BytesIO()
