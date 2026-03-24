@@ -1,4 +1,4 @@
-﻿import io
+import io
 import os
 import zipfile
 import uuid
@@ -282,10 +282,10 @@ def processar_reconciliacao(caminho_comprovantes, lista_caminhos_boletos, user):
             f"Pagador: {pagador} | BeneficiÃƒÂ¡rio: {beneficiario} | CÃƒÂ³d: {codigo}"
         )
 
-    yield emit('log', 'Ã°Å¸Å¡â‚¬ Iniciando reconciliaÃƒÂ§ÃƒÂ£o com extraÃƒÂ§ÃƒÂ£o estruturada...')
+    yield emit('log', 'Iniciando reconciliacao com extracao estruturada...')
 
     # --- ETAPA 1: LER COMPROVANTES ---
-    yield emit('log', 'Ã°Å¸â€œÂ¸ Lendo Comprovantes...')
+    yield emit('log', 'Lendo comprovantes...')
     pool_comprovantes = []
     try:
         doc_comprovantes = fitz.open(caminho_comprovantes)
@@ -305,7 +305,7 @@ def processar_reconciliacao(caminho_comprovantes, lista_caminhos_boletos, user):
         yield emit('log', f"Ã¢ÂÅ’ Erro crÃƒÂ­tico ao ler comprovantes: {e}"); return
 
     # --- ETAPA 2: LER BOLETOS E COMBINAR ---
-    yield emit('log', 'Ã¢Å¡Â¡ Analisando Boletos e combinando...')
+    yield emit('log', 'Analisando boletos e combinando...')
     lista_final_boletos = []
     for path_boleto in lista_caminhos_boletos:
         nome_arquivo = os.path.basename(path_boleto)
@@ -432,7 +432,7 @@ def processar_reconciliacao(caminho_comprovantes, lista_caminhos_boletos, user):
         yield emit('log', f"Reanalise POS concluiu com {recuperados_pos_analise} combinacoes recuperadas.")
 
     # --- ETAPA 3: GERAR ZIP ---
-    yield emit('log', 'Ã°Å¸â€™Â¾ Montando o arquivo ZIP final...')
+    yield emit('log', 'Montando o arquivo ZIP final...')
     output_zip = io.BytesIO()
     with zipfile.ZipFile(output_zip, 'w', zipfile.ZIP_DEFLATED) as zip_file:
         for boleto in lista_final_boletos:
