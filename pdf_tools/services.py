@@ -120,6 +120,18 @@ def nomes_parecidos(nome_a, nome_b):
         return False
     return a == b or a in b or b in a
 
+def extrair_referencia_nome_arquivo(nome_arquivo):
+    partes = str(nome_arquivo or '').split(' - ')
+    if len(partes) < 2:
+        return ''
+    referencia = re.sub(r'\(.*?\)', '', partes[1]).strip()
+    return normalizar_texto(referencia)
+
+def referencia_aparece_no_texto(referencia, texto):
+    ref = normalizar_texto(referencia)
+    txt = normalizar_texto(texto)
+    return bool(ref and txt and ref in txt)
+
 def datas_sao_iguais(data_a, data_b):
     return bool(data_a and data_b and str(data_a) == str(data_b))
 
@@ -128,6 +140,12 @@ def valores_sao_iguais(valor_a, valor_b, tolerancia=0.05):
         return float(valor_a or 0) > 0 and float(valor_b or 0) > 0 and abs(float(valor_a) - float(valor_b)) < tolerancia
     except (TypeError, ValueError):
         return False
+
+def diferenca_valor(valor_a, valor_b):
+    try:
+        return abs(float(valor_a or 0) - float(valor_b or 0))
+    except (TypeError, ValueError):
+        return float('inf')
 
 def calcular_score_match(boleto, comprovante):
     bd = boleto.get('dados_completos', {})
@@ -467,6 +485,24 @@ def processar_reconciliacao(caminho_comprovantes, lista_caminhos_boletos, user):
                     boleto_atual['motivo'] = "AMBIGUO (score baixo e IA indecisa)"
             else:
                 boleto_atual['motivo'] = "SEM CANDIDATO COM SCORE MINIMO"
+
+            if not boleto_atual['match'] and not boleto_atual.get('codigo'):
+                tolerancia_repasse = float(os.getenv('MATCH_TOLERANCIA_REPASSE', '20'))
+                referencia_arquivo = extrair_referencia_nome_arquivo(nome_arquivo)
+                candidatos_repasse = [
+                    c for c in candidatos
+                    if not c.get('codigo')
+                    and referencia_aparece_no_texto(referencia_arquivo, c.get('dados_completos', {}).get('nome_beneficiario'))
+                    and diferenca_valor(boleto_atual.get('valor'), c.get('valor')) <= tolerancia_repasse
+                ]
+                if candidatos_repasse:
+                    escolhido = min(candidatos_repasse, key=lambda c: diferenca_valor(boleto_atual.get('valor'), c.get('valor')))
+                    boleto_atual['match'] = escolhido
+                    escolhido['usado'] = True
+                    boleto_atual['motivo'] = (
+                        f"REPASSE POR NOME+VALOR (ref {referencia_arquivo}, "
+                        f"diff R${diferenca_valor(boleto_atual.get('valor'), escolhido.get('valor')):.2f})"
+                    )
 
             if boleto_atual['match']:
                 yield emit('log', f"   Ã¢Å“â€¦ COMBINADO: {nome_arquivo} -> Comprovante PÃƒÂ¡g {boleto_atual['match']['id']+1} (Motivo: {boleto_atual['motivo']})")
