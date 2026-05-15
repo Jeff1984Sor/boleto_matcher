@@ -487,7 +487,7 @@ def processar_reconciliacao(caminho_comprovantes, lista_caminhos_boletos, user):
                 boleto_atual['motivo'] = "SEM CANDIDATO COM SCORE MINIMO"
 
             if not boleto_atual['match'] and not boleto_atual.get('codigo'):
-                tolerancia_repasse = float(os.getenv('MATCH_TOLERANCIA_REPASSE', '20'))
+                tolerancia_repasse = float(os.getenv('MATCH_TOLERANCIA_REPASSE', '35'))
                 referencia_arquivo = extrair_referencia_nome_arquivo(nome_arquivo)
                 candidatos_repasse = [
                     c for c in candidatos
