@@ -123,6 +123,12 @@ def nomes_parecidos(nome_a, nome_b):
 def datas_sao_iguais(data_a, data_b):
     return bool(data_a and data_b and str(data_a) == str(data_b))
 
+def valores_sao_iguais(valor_a, valor_b, tolerancia=0.05):
+    try:
+        return float(valor_a or 0) > 0 and float(valor_b or 0) > 0 and abs(float(valor_a) - float(valor_b)) < tolerancia
+    except (TypeError, ValueError):
+        return False
+
 def calcular_score_match(boleto, comprovante):
     bd = boleto.get('dados_completos', {})
     cd = comprovante.get('dados_completos', {})
@@ -418,7 +424,25 @@ def processar_reconciliacao(caminho_comprovantes, lista_caminhos_boletos, user):
                     melhor_score = score
                     melhor_motivos = motivos
 
-            if melhor_candidato and melhor_score >= 40:
+            candidatos_codigo = [
+                c for c in candidatos
+                if boleto_atual.get('codigo') and c.get('codigo') and codigos_sao_iguais(boleto_atual.get('codigo'), c.get('codigo'))
+            ]
+            candidatos_valor = [
+                c for c in candidatos
+                if valores_sao_iguais(boleto_atual.get('valor'), c.get('valor'))
+            ]
+
+            if len(candidatos_codigo) == 1:
+                boleto_atual['match'] = candidatos_codigo[0]
+                boleto_atual['match']['usado'] = True
+                boleto_atual['motivo'] = "CODIGO DE BARRAS (UNICO)"
+            elif len(candidatos_valor) == 1:
+                boleto_atual['match'] = candidatos_valor[0]
+                boleto_atual['match']['usado'] = True
+                score_valor, motivos_valor = calcular_score_match(boleto_atual, candidatos_valor[0])
+                boleto_atual['motivo'] = f"VALOR UNICO (score {score_valor}: {', '.join(motivos_valor)})"
+            elif melhor_candidato and melhor_score >= 40:
                 boleto_atual['match'] = melhor_candidato
                 melhor_candidato['usado'] = True
                 boleto_atual['motivo'] = f"SCORE {melhor_score} ({', '.join(melhor_motivos)})"
@@ -447,21 +471,9 @@ def processar_reconciliacao(caminho_comprovantes, lista_caminhos_boletos, user):
             if boleto_atual['match']:
                 yield emit('log', f"   Ã¢Å“â€¦ COMBINADO: {nome_arquivo} -> Comprovante PÃƒÂ¡g {boleto_atual['match']['id']+1} (Motivo: {boleto_atual['motivo']})")
                 yield emit('file_done', {'filename': nome_arquivo, 'status': 'success'})
-                matches_resultado.append({
-                    'boleto': serializar_extracao_item(boleto_atual, 'boleto'),
-                    'comprovante': serializar_extracao_item(boleto_atual['match'], 'comprovante'),
-                    'status': 'match',
-                    'motivo': boleto_atual['motivo'],
-                })
             else:
                 yield emit('log', f"   Ã¢Å¡Â Ã¯Â¸Â NÃƒÆ’O COMBINADO: {nome_arquivo}")
                 yield emit('file_done', {'filename': nome_arquivo, 'status': 'warning'})
-                matches_resultado.append({
-                    'boleto': serializar_extracao_item(boleto_atual, 'boleto'),
-                    'comprovante': None,
-                    'status': 'sem_match',
-                    'motivo': boleto_atual['motivo'],
-                })
             lista_final_boletos.append(boleto_atual)
         except Exception as e:
             yield emit('log', f"Ã¢ÂÅ’ Erro no arquivo {nome_arquivo}: {e}")
@@ -523,6 +535,15 @@ def processar_reconciliacao(caminho_comprovantes, lista_caminhos_boletos, user):
 
     # --- ETAPA 3: GERAR ZIP ---
     yield emit('log', 'Montando o arquivo ZIP final...')
+    matches_resultado = [
+        {
+            'boleto': serializar_extracao_item(boleto, 'boleto'),
+            'comprovante': serializar_extracao_item(boleto['match'], 'comprovante') if boleto.get('match') else None,
+            'status': 'match' if boleto.get('match') else 'sem_match',
+            'motivo': boleto.get('motivo'),
+        }
+        for boleto in lista_final_boletos
+    ]
     output_zip = io.BytesIO()
     with zipfile.ZipFile(output_zip, 'w', zipfile.ZIP_DEFLATED) as zip_file:
         zip_file.writestr(
