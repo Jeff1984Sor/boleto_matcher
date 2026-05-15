@@ -105,6 +105,85 @@ def extrair_valor_nome(nome_arquivo):
         except: pass
     return 0.0
 
+def normalizar_texto(texto):
+    return re.sub(r'\s+', ' ', str(texto or '').strip()).upper()
+
+def cnpj_sao_iguais(cnpj_a, cnpj_b):
+    a = limpar_numeros(cnpj_a)
+    b = limpar_numeros(cnpj_b)
+    return bool(a and b and a == b)
+
+def nomes_parecidos(nome_a, nome_b):
+    a = normalizar_texto(nome_a)
+    b = normalizar_texto(nome_b)
+    if not a or not b:
+        return False
+    return a == b or a in b or b in a
+
+def datas_sao_iguais(data_a, data_b):
+    return bool(data_a and data_b and str(data_a) == str(data_b))
+
+def calcular_score_match(boleto, comprovante):
+    bd = boleto.get('dados_completos', {})
+    cd = comprovante.get('dados_completos', {})
+    score = 0
+    motivos = []
+
+    if boleto.get('codigo') and comprovante.get('codigo') and codigos_sao_iguais(boleto.get('codigo'), comprovante.get('codigo')):
+        score += 60
+        motivos.append('codigo_barras')
+
+    if cnpj_sao_iguais(bd.get('cnpj_pagador'), cd.get('cnpj_pagador')):
+        score += 20
+        motivos.append('cnpj_pagador')
+    if cnpj_sao_iguais(bd.get('cnpj_beneficiario'), cd.get('cnpj_beneficiario')):
+        score += 20
+        motivos.append('cnpj_beneficiario')
+
+    if nomes_parecidos(bd.get('nome_pagador'), cd.get('nome_pagador')):
+        score += 10
+        motivos.append('nome_pagador')
+    if nomes_parecidos(bd.get('nome_beneficiario'), cd.get('nome_beneficiario')):
+        score += 10
+        motivos.append('nome_beneficiario')
+
+    if boleto.get('valor', 0) > 0 and comprovante.get('valor', 0) > 0:
+        diferenca = abs(boleto['valor'] - comprovante['valor'])
+        if diferenca < 0.01:
+            score += 30
+            motivos.append('valor_exato')
+        elif diferenca < 0.05:
+            score += 20
+            motivos.append('valor_tolerancia')
+
+    data_boleto = bd.get('data_pagamento') or bd.get('data_vencimento')
+    data_comp = cd.get('data_pagamento') or cd.get('data_vencimento')
+    if datas_sao_iguais(data_boleto, data_comp):
+        score += 8
+        motivos.append('data')
+
+    return score, motivos
+
+def serializar_extracao_item(item, tipo):
+    d = item.get('dados_completos', {})
+    base = {
+        'tipo': tipo,
+        'valor': item.get('valor'),
+        'codigo_barras': item.get('codigo', ''),
+        'nome_pagador': d.get('nome_pagador'),
+        'cnpj_pagador': d.get('cnpj_pagador'),
+        'nome_beneficiario': d.get('nome_beneficiario'),
+        'cnpj_beneficiario': d.get('cnpj_beneficiario'),
+        'data_pagamento': d.get('data_pagamento'),
+        'data_vencimento': d.get('data_vencimento'),
+        'dados_completos': d,
+    }
+    if tipo == 'comprovante':
+        base['pagina'] = item.get('id', 0) + 1
+    else:
+        base['arquivo'] = item.get('nome')
+    return base
+
 def pdf_bytes_para_imagem_pil(pdf_bytes):
     """Converte a primeira pÃƒÂ¡gina de um PDF em uma imagem PIL de alta qualidade."""
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
@@ -284,6 +363,10 @@ def processar_reconciliacao(caminho_comprovantes, lista_caminhos_boletos, user):
 
     yield emit('log', 'Iniciando reconciliacao com extracao estruturada...')
 
+    comprovantes_extraidos = []
+    boletos_extraidos = []
+    matches_resultado = []
+
     # --- ETAPA 1: LER COMPROVANTES ---
     yield emit('log', 'Lendo comprovantes...')
     pool_comprovantes = []
@@ -299,6 +382,7 @@ def processar_reconciliacao(caminho_comprovantes, lista_caminhos_boletos, user):
                 'id': i, **dados_pagina,
                 'pdf_bytes': pdf_bytes, 'usado': False
             })
+            comprovantes_extraidos.append(serializar_extracao_item(pool_comprovantes[-1], 'comprovante'))
             yield emit('log', formatar_log_extracao(dados_pagina, "Comprovante", f"PÃƒÂ¡g {i+1}"))
             yield emit('comp_status', {'index': i, 'msg': f"R$ {dados_pagina['valor']:.2f}"})
     except Exception as e:
@@ -321,57 +405,63 @@ def processar_reconciliacao(caminho_comprovantes, lista_caminhos_boletos, user):
                 'pdf_bytes': pdf_bytes_boleto, 'match': None,
                 'motivo': 'Sem comprovante compatÃƒÂ­vel'
             }
+            boletos_extraidos.append(serializar_extracao_item(boleto_atual, 'boleto'))
             
-            if boleto_atual['codigo']:
-                candidatos_codigo = [
-                    c for c in pool_comprovantes
-                    if not c['usado'] and c['codigo'] and codigos_sao_iguais(boleto_atual['codigo'], c['codigo'])
-                ]
-                if len(candidatos_codigo) == 1:
-                    boleto_atual['match'] = candidatos_codigo[0]
-                    boleto_atual['motivo'] = "CODIGO DE BARRAS (COMPLETO)"
-                    boleto_atual['match']['usado'] = True
-                elif len(candidatos_codigo) > 1 and boleto_atual['valor'] > 0:
-                    candidatos_codigo_valor = [c for c in candidatos_codigo if abs(c['valor'] - boleto_atual['valor']) < 0.05]
-                    if len(candidatos_codigo_valor) == 1:
-                        boleto_atual['match'] = candidatos_codigo_valor[0]
-                        boleto_atual['motivo'] = "CODIGO DE BARRAS (COMPLETO) + VALOR"
-                        boleto_atual['match']['usado'] = True
+            candidatos = [c for c in pool_comprovantes if not c['usado']]
+            melhor_candidato = None
+            melhor_score = -1
+            melhor_motivos = []
+            for c in candidatos:
+                score, motivos = calcular_score_match(boleto_atual, c)
+                if score > melhor_score:
+                    melhor_candidato = c
+                    melhor_score = score
+                    melhor_motivos = motivos
 
-            if not boleto_atual['match'] and boleto_atual['valor'] > 0:
-                candidatos = [c for c in pool_comprovantes if not c['usado'] and abs(c['valor'] - boleto_atual['valor']) < 0.05]
-                if candidatos:
-                    melhor_candidato = None
-                    if boleto_atual['codigo']:
-                        for c in candidatos:
-                            if c['codigo'] and codigos_sao_iguais(boleto_atual['codigo'], c['codigo']):
-                                melhor_candidato = c
-                                boleto_atual['motivo'] = "CODIGO DE BARRAS (COMPLETO)"
-                                break
-                    if not melhor_candidato and len(candidatos) == 1:
-                        melhor_candidato = candidatos[0]
-                        boleto_atual['motivo'] = "VALOR (Candidato Unico)"
-                    elif not melhor_candidato and len(candidatos) > 1:
-                        yield emit('log', f"   - Ambiguidade em R${boleto_atual['valor']:.2f}. Acionando IA de analise profunda...")
-                        img_boleto = pdf_bytes_para_imagem_pil(boleto_atual['pdf_bytes'])
-                        imgs_comprovantes_candidatos = [pdf_bytes_para_imagem_pil(c['pdf_bytes']) for c in candidatos]
-                        resultado_desempate = chamar_gemini_desempate(img_boleto, imgs_comprovantes_candidatos)
-                        indice_escolhido = resultado_desempate.get('melhor_indice_candidato', -1)
-                        if indice_escolhido != -1:
-                            melhor_candidato = candidatos[indice_escolhido]
-                            boleto_atual['motivo'] = f"IA PROFUNDA ({resultado_desempate.get('justificativa')})"
-                        else:
-                            boleto_atual['motivo'] = "AMBIGUO (IA indecisa, sem match automatico)"
-                    if melhor_candidato:
-                        boleto_atual['match'] = melhor_candidato
-                        melhor_candidato['usado'] = True
+            if melhor_candidato and melhor_score >= 40:
+                boleto_atual['match'] = melhor_candidato
+                melhor_candidato['usado'] = True
+                boleto_atual['motivo'] = f"SCORE {melhor_score} ({', '.join(melhor_motivos)})"
+            elif melhor_candidato and melhor_score >= 20:
+                # Ambiguo por score baixo: tenta IA apenas com top candidatos.
+                top = sorted(
+                    [(c, *calcular_score_match(boleto_atual, c)) for c in candidatos],
+                    key=lambda x: x[1],
+                    reverse=True
+                )[:5]
+                candidatos_ia = [x[0] for x in top]
+                yield emit('log', f"   - Ambiguidade por score em {nome_arquivo}. Acionando IA com top {len(candidatos_ia)} candidatos...")
+                img_boleto = pdf_bytes_para_imagem_pil(boleto_atual['pdf_bytes'])
+                imgs = [pdf_bytes_para_imagem_pil(c['pdf_bytes']) for c in candidatos_ia]
+                resultado_desempate = chamar_gemini_desempate(img_boleto, imgs)
+                indice_escolhido = resultado_desempate.get('melhor_indice_candidato', -1)
+                if isinstance(indice_escolhido, int) and 0 <= indice_escolhido < len(candidatos_ia):
+                    boleto_atual['match'] = candidatos_ia[indice_escolhido]
+                    boleto_atual['match']['usado'] = True
+                    boleto_atual['motivo'] = f"IA ({resultado_desempate.get('justificativa')})"
+                else:
+                    boleto_atual['motivo'] = "AMBIGUO (score baixo e IA indecisa)"
+            else:
+                boleto_atual['motivo'] = "SEM CANDIDATO COM SCORE MINIMO"
 
             if boleto_atual['match']:
                 yield emit('log', f"   Ã¢Å“â€¦ COMBINADO: {nome_arquivo} -> Comprovante PÃƒÂ¡g {boleto_atual['match']['id']+1} (Motivo: {boleto_atual['motivo']})")
                 yield emit('file_done', {'filename': nome_arquivo, 'status': 'success'})
+                matches_resultado.append({
+                    'boleto': serializar_extracao_item(boleto_atual, 'boleto'),
+                    'comprovante': serializar_extracao_item(boleto_atual['match'], 'comprovante'),
+                    'status': 'match',
+                    'motivo': boleto_atual['motivo'],
+                })
             else:
                 yield emit('log', f"   Ã¢Å¡Â Ã¯Â¸Â NÃƒÆ’O COMBINADO: {nome_arquivo}")
                 yield emit('file_done', {'filename': nome_arquivo, 'status': 'warning'})
+                matches_resultado.append({
+                    'boleto': serializar_extracao_item(boleto_atual, 'boleto'),
+                    'comprovante': None,
+                    'status': 'sem_match',
+                    'motivo': boleto_atual['motivo'],
+                })
             lista_final_boletos.append(boleto_atual)
         except Exception as e:
             yield emit('log', f"Ã¢ÂÅ’ Erro no arquivo {nome_arquivo}: {e}")
@@ -435,6 +525,18 @@ def processar_reconciliacao(caminho_comprovantes, lista_caminhos_boletos, user):
     yield emit('log', 'Montando o arquivo ZIP final...')
     output_zip = io.BytesIO()
     with zipfile.ZipFile(output_zip, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        zip_file.writestr(
+            "comprovantes_extraidos.json",
+            json.dumps(comprovantes_extraidos, ensure_ascii=False, indent=2)
+        )
+        zip_file.writestr(
+            "boletos_extraidos.json",
+            json.dumps(boletos_extraidos, ensure_ascii=False, indent=2)
+        )
+        zip_file.writestr(
+            "matches_resultado.json",
+            json.dumps(matches_resultado, ensure_ascii=False, indent=2)
+        )
         for boleto in lista_final_boletos:
             writer = PdfWriter()
             writer.append(io.BytesIO(boleto['pdf_bytes']))
